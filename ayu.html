@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Player — Ayu</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000}
+  video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
+  .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
+  .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
+  .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
+  .download-btn .bi { font-size:1.05rem; }
+  .download-btn:hover{background:rgba(255,255,255,0.02)}
+  @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card card-player">
+      <div class="video-area">
+        <video id="video" playsinline webkit-playsinline preload="metadata"></video>
+      </div>
+
+      <div class="top-meta">
+        <div class="title" id="title">Ayu</div>
+        <div class="date" id="date"></div>
+      </div>
+
+      <div class="controls">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <button id="prev" class="btn btn-outline-light btn-small">
+            <i class="bi bi-skip-start-fill"></i> Prev
+          </button>
+
+          <button id="play" class="btn btn-primary btn-play">
+            <i class="bi bi-play-fill"></i> Play
+          </button>
+
+          <button id="next" class="btn btn-outline-light btn-small">
+            <i class="bi bi-skip-end-fill"></i> Next
+          </button>
+
+          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
+
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+            <select id="speed" class="form-select form-select-sm" style="width:90px">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+          </div>
+        </div>
+
+        <div class="seek-row">
+          <div class="time" id="current">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+          <div class="time" id="duration">0:00</div>
+        </div>
+      </div>
+
+      <div class="downloads">
+        <div class="heading">
+          <div>Full konten</div>
+          <div class="text-muted small">klik tombol untuk buka</div>
+        </div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const videos = [
+    "https://cdn.videy.co/Wy3gD61N1.mp4",
+    "https://cdn.videy.co/ZHLoGhWG1.mp4",
+    "https://cdn.videy.co/9s2bmJp01.mp4",
+    "https://cdn.videy.co/reZMNv8x1.mp4",
+    "https://cdn.videy.co/laZXrYcG1.mp4"
+  ];
+  const thumbnail = "foto/dmwbro.jpg";
+  const downloads = {
+    terabox: "https://1024terabox.com/s/1aKUJn1qW1ADjOy8Ooux_ww"
+  };
+
+  const video = document.getElementById('video');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const speedSel = document.getElementById('speed');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const titleEl = document.getElementById('title');
+  const dateEl = document.getElementById('date');
+  const downloadsWrap = document.getElementById('downloadButtons');
+
+  let idx = 0;
+  let isSeeking = false;
+
+  titleEl.textContent = "Ayu";
+  dateEl.textContent = "";
+
+  video.poster = thumbnail;
+  video.preload = "metadata";
+  video.src = videos.length ? videos[0] : "";
+  video.playbackRate = 1;
+  speedSel.value = "1";
+
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = "";
+    if(downloads.terabox){
+      const b = document.createElement('a');
+      b.className = "download-btn";
+      b.href = downloads.terabox;
+      b.target = "_blank";
+      b.rel = "noopener noreferrer nofollow";
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
+      downloadsWrap.appendChild(b);
+    }
+  }
+
+  function fmt(s){
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
+    return `${min}:${sec}`;
+  }
+
+  video.addEventListener('loadedmetadata', () => {
+    durationT.textContent = fmt(video.duration);
+    seek.max = video.duration || 100;
+  });
+  video.addEventListener('timeupdate', () => {
+    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  });
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
+
+  function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
+  playBtn.addEventListener('click', togglePlay);
+  video.addEventListener('click', togglePlay);
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+
+  prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
+  nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
+
+  function loadAndPlay(i){ video.src = videos[i]; video.play().catch(()=>{}); }
+
+  loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+  document.getElementById('fs')?.addEventListener('click', ()=> {
+    const el = document.querySelector('.video-area');
+    if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });
+
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
+
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  buildDownloadButtons();
+</script>
+
+<script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+</html>
