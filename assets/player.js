@@ -1,6 +1,6 @@
 // assets/player.js
-// Updated: download buttons show "<source> — full"
-// Slight improvement: set player.src directly after adding source (helps some browsers)
+// Updated: downloads placed under #downloadArea, no "open stream in tab" debug button,
+// videy streams excluded from download list, robust play + muted fallback, debug message only.
 
 (() => {
   const POSTS_JSON_CANDIDATES = ['/data/posts.json','/posts.json','/posts.json?nocache=1'];
@@ -86,6 +86,7 @@
     const postTitle = document.getElementById('postTitle');
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
+    const downloadArea = document.getElementById('downloadArea');
 
     // ensure volZone
     let volZone = document.getElementById('volZone');
@@ -98,7 +99,7 @@
 
     const volumeIndicator = document.getElementById('volumeIndicator') || (function(){ const el=document.createElement('div'); el.id='volumeIndicator'; el.className='volume-indicator'; el.style.display='none'; document.body.appendChild(el); return el; })();
 
-    // detect slug
+    // slug detection
     const metaSlugEl = document.querySelector('meta[name="slug"]');
     const urlParams = new URLSearchParams(window.location.search);
     const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
@@ -145,7 +146,7 @@
     // streams & downloads
     const { streams, downloads } = buildLinks(post.links || {});
     post._streams = streams.filter(s => isPlayableURL(s));
-    post._downloadLinks = downloads;
+    post._downloadLinks = downloads; // only non-videy here per buildLinks
 
     // render meta & poster
     if (postTitle) postTitle.textContent = post.title || '';
@@ -153,12 +154,10 @@
     if (postDesc) postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
     if (post.thumb && player) try { player.poster = safeEncodeUrl(post.thumb); } catch(e){}
 
-    // render download buttons — label: "<source> — full"
+    // render download buttons (placed in #downloadArea) - label: "<source> — full"
     async function renderDownloads(){
-      const pa = document.querySelector('.post-actions');
-      if (!pa) return;
-      const old = document.getElementById('downloadLinksList'); if (old) old.remove();
-      const wrapDiv = document.createElement('div'); wrapDiv.id='downloadLinksList'; wrapDiv.style.display='flex'; wrapDiv.style.flexDirection='column'; wrapDiv.style.gap='8px'; wrapDiv.style.marginBottom='8px';
+      if (!downloadArea) return;
+      downloadArea.innerHTML = '';
       if (Array.isArray(post._downloadLinks) && post._downloadLinks.length){
         for (const it of post._downloadLinks){
           const btn = document.createElement('a');
@@ -175,25 +174,30 @@
           btn.style.color='#fff';
           btn.style.fontWeight='700';
           btn.style.textDecoration='none';
-          // LABEL per permintaan: hanya server name + "full"
           btn.textContent = (it.source || 'link') + ' — full';
-          // optionally set download attr for direct files
+          // only set download attr for direct file types (rare for MF/Terabox)
           if (isDirectFile(it.url)) try { btn.setAttribute('download',''); } catch(e){}
-          // asynchronous HEAD to append size if allowed (non-blocking)
+          // append and try HEAD to add size if allowed
+          downloadArea.appendChild(btn);
           (async ()=>{
             const info = await fetchHeadInfo(it.url);
             if (info && info.ok && info.length) {
               btn.textContent = (it.source || 'link') + ' — full (' + humanFileSize(info.length) + ')';
             }
           })();
-          wrapDiv.appendChild(btn);
         }
+      } else {
+        // no downloads — keep area empty or show small hint
+        const hint = document.createElement('div');
+        hint.style.color = 'var(--muted, #6b7280)';
+        hint.style.fontSize = '13px';
+        hint.textContent = 'Tidak ada link download (hanya streaming).';
+        downloadArea.appendChild(hint);
       }
-      pa.insertBefore(wrapDiv, pa.firstChild);
     }
     await renderDownloads();
 
-    // load stream into player - set player.src directly (helps some browsers)
+    // setupMediaForUrl
     async function setupMediaForUrl(u){
       while (player.firstChild) player.removeChild(player.firstChild);
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
@@ -213,15 +217,12 @@
             const hls = new Hls({capLevelToPlayerSize:true});
             hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
           } else {
-            const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} dbg('native hls used');
-            // also set player.src
-            try { player.src = src; player.load(); } catch(e){}
+            const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} try{ player.src = src; player.load(); }catch(e){}
           }
         } catch(err){ dbg('hls error', err); const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} try{ player.src = src; player.load(); }catch(e){} }
       } else {
         const s = document.createElement('source'); s.src = src; s.type = src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/unknown'; player.appendChild(s);
         try{ player.load(); } catch(e){}
-        // set src directly as well
         try { player.src = src; player.load(); } catch(e){}
         dbg('mp4 loaded', src);
       }
@@ -232,6 +233,7 @@
     function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
     function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
+    // play fallback (NO open-in-tab)
     async function attemptPlayWithFallback(streamUrl){
       try {
         await player.play();
@@ -249,38 +251,24 @@
         } catch(e2){
           dbg('muted play also rejected', e2);
           player.muted = wasMuted;
+          // show in-page debug message (no open-in-tab)
           const debugEl = document.getElementById('debug');
-          if (debugEl) debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. Likely CORS/hotlink/redirect.';
-          // show open-in-tab button for debugging
-          const existing = document.getElementById('openStreamDebugBtn');
-          if (!existing) {
-            const openBtn = document.createElement('a');
-            openBtn.id = 'openStreamDebugBtn';
-            openBtn.textContent = 'Buka stream di tab (debug)';
-            openBtn.href = streamUrl;
-            openBtn.target = '_blank';
-            openBtn.rel = 'noopener noreferrer';
-            openBtn.style.display = 'inline-block';
-            openBtn.style.padding = '8px 12px';
-            openBtn.style.borderRadius = '10px';
-            openBtn.style.background = '#111';
-            openBtn.style.color = '#fff';
-            openBtn.style.fontWeight = '700';
-            const pa = document.querySelector('.post-actions') || document.body;
-            pa.appendChild(openBtn);
+          if (debugEl) {
+            debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. Kemungkinan: CORS/hotlink/redirect. Untuk perbaikan: gunakan direct raw .mp4 yang mengembalikan 200/206 & Access-Control-Allow-Origin: * atau gunakan server-side proxy.';
           }
           return { ok:false, error: e2 };
         }
       }
     }
 
-    if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(post._streams && post._streams[0]); else player.pause(); });
+    // controls hookup
+    if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(player.currentSrc || (post._streams && post._streams[0])); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
         await setupMediaForUrl(post._streams[0]);
       }
       window._userInteracted = true;
-      await attemptPlayWithFallback(player.currentSrc || post._streams && post._streams[0]);
+      await attemptPlayWithFallback(player.currentSrc || (post._streams && post._streams[0]));
     });
     if (player) {
       player.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(player.currentSrc); else player.pause(); });
@@ -295,7 +283,7 @@
       player.addEventListener('error', (e) => { dbg('media element error', e, player.error && player.error.code); });
     }
 
-    // volume & controls (unchanged)
+    // volume & other UI (same)
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
     function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
     function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
@@ -318,59 +306,4 @@
       zone.addEventListener('pointerup', endGesture); zone.addEventListener('pointercancel', endGesture); zone.addEventListener('lostpointercapture', ()=>{ active=false; });
     })();
 
-    if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
-    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
-    const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
-
-    try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
-
-    // playlist controls (streams only)
-    (function attachPlaylist(){
-      if (!Array.isArray(post._streams) || post._streams.length === 0) return;
-      const streams = post._streams.slice();
-      const old = document.getElementById('playlistControls'); if (old) old.remove();
-      const plc = document.createElement('div'); plc.id='playlistControls'; plc.style.display='flex'; plc.style.gap='8px'; plc.style.alignItems='center'; plc.style.marginTop='8px';
-      const prevBtn = document.createElement('button'); prevBtn.className='icon-btn'; prevBtn.textContent='‹ Prev';
-      const idxInput = document.createElement('input'); idxInput.type='number'; idxInput.min='1'; idxInput.value='1'; idxInput.style.width='64px';
-      const countSpan = document.createElement('span'); countSpan.textContent=` / ${streams.length}`;
-      const nextBtn = document.createElement('button'); nextBtn.className='icon-btn'; nextBtn.textContent='Next ›';
-      plc.append(prevBtn, idxInput, countSpan, nextBtn);
-      const pa = document.querySelector('.post-actions') || document.body; pa.appendChild(plc);
-
-      let cur = 0;
-      let userInteracted = false;
-      window._userInteracted = false;
-      if (bigPlay) bigPlay.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
-      if (playBtn) playBtn.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
-
-      async function playAt(i, autoplayIfInteracted=true){
-        i = Math.max(0, Math.min(streams.length-1, i));
-        cur = i; idxInput.value = cur+1;
-        await setupMediaForUrl(streams[cur]);
-        if (autoplayIfInteracted && (userInteracted || window._userInteracted)) {
-          const res = await attemptPlayWithFallback(player.currentSrc || streams[cur]);
-          if (!res.ok) dbg('playAt failed', res.error);
-        } else showOverlay();
-      }
-
-      prevBtn.addEventListener('click', async ()=> { if (cur>0) await playAt(cur-1); });
-      nextBtn.addEventListener('click', async ()=> { if (cur<streams.length-1) await playAt(cur+1); });
-      idxInput.addEventListener('change', async ()=> { const v = Number(idxInput.value)-1; if (Number.isInteger(v) && v>=0 && v<streams.length) await playAt(v); else idxInput.value = cur+1; });
-
-      player.addEventListener('ended', async ()=> {
-        if (cur < streams.length-1) { cur++; idxInput.value = cur+1; await setupMediaForUrl(streams[cur]); if (userInteracted || window._userInteracted) { try { await player.play(); } catch(e){ dbg('auto-next blocked', e); showOverlay(); } } else showOverlay(); } else { dbg('playlist ended'); showOverlay(); }
-      });
-
-      // initial load
-      const initial = 0;
-      cur = initial; idxInput.value = cur+1;
-      setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
-    })();
-
-    try { setPlayIcon(player.paused); } catch(e){}
-    try { updateMuteUI(); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
-    dbg('player ready for post', post.slug || post.id || post.path || post.title);
-  }
-
-  init().catch(err => { console.error(err); try { const el=document.getElementById('debug'); if (el) el.textContent = 'init error: '+String(err); } catch(e){} });
-})();
+    if (fsBtn) fsBtn.addEventListener('click', async ()=> { try
