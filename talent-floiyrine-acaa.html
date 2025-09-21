@@ -1,64 +1,65 @@
+
 <!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — Clean Responsive</title>
+<title>Player — Clean</title>
 
 <!-- Bootstrap 5 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <!-- Bootstrap Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-<!-- AOS (optional lightweight animations) -->
-<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
 <style>
   :root{
-    --bg:#071022; --panel:#0b1220; --muted:#98a8b3; --accent:#3b82f6;
+    --bg:#071022; --card:#0b1220; --muted:#98a8b3; --accent:#3b82f6;
   }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
-  .container-player{max-width:1100px;margin:20px auto;padding:16px}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
   .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
-  .video-wrap{background:#000;display:block}
-  video{width:100%;height:auto;max-height:65vh;object-fit:contain;display:block;background:#000}
-  /* controls below video */
-  .controls{padding:14px;border-top:1px solid rgba(255,255,255,0.03)}
-  .btn-lg-custom{min-width:110px}
-  .range-wrapper{display:flex;align-items:center;gap:12px}
-  .time{width:48px;text-align:center;color:var(--muted);font-size:14px}
-  .meta{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.02)}
-  .title{font-weight:700;font-size:20px;margin:0}
-  .date{color:var(--muted);font-size:13px;margin-top:6px}
-  .playlist-col{border-left:1px solid rgba(255,255,255,0.02);padding:16px;height:100%}
-  .plist-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
-  .plist-item img{width:84px;height:52px;object-fit:cover;border-radius:8px}
-  .plist-item.active{background:rgba(59,130,246,0.06);border-left:4px solid var(--accent)}
-  /* small screens tweaks */
-  @media(max-width:767px){
-    .btn-lg-custom{min-width:86px}
-  }
+  .video-area{background:#000;display:block}
+  /* video not show native controls; custom controls below */
+  video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
+  /* controls are separate block below the video and won't overlap or move relative to video size */
+  .controls { padding:18px; border-top:1px solid rgba(255,255,255,0.03); }
+  .top-meta{padding:16px 18px 0 18px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .btn-large { min-width:110px; }
+  .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background:transparent }
+  .download-btn { min-width:150px; text-align:left; }
+  @media(max-width:520px){ .btn-large{min-width:86px} .title{font-size:18px} }
 </style>
 </head>
 <body>
-<div class="container-player">
-  <div class="card card-player row g-0">
-    <div class="col-12 col-lg-8">
-      <div class="video-wrap" data-aos="fade-up">
-        <video id="video" playsinline webkit-playsinline preload="metadata" controlslist="nodownload"></video>
+  <div class="wrap">
+    <div class="card card-player">
+      <!-- video -->
+      <div class="video-area">
+        <video id="video" playsinline webkit-playsinline preload="metadata"></video>
       </div>
 
-      <!-- CONTROLS (below video, separate) -->
-      <div class="controls" data-aos="fade-up" data-aos-delay="80">
-        <div class="d-flex flex-wrap align-items-center gap-2">
-          <button id="prev" class="btn btn-outline-light btn-lg btn-lg-custom"><i class="bi bi-skip-start-fill"></i> Prev</button>
-          <button id="play" class="btn btn-primary btn-lg btn-lg-custom"><i class="bi bi-play-fill"></i> Play</button>
-          <button id="next" class="btn btn-outline-light btn-lg btn-lg-custom"><i class="bi bi-skip-end-fill"></i> Next</button>
+      <!-- metadata (title) -->
+      <div class="top-meta">
+        <div class="title" id="title">TALENT FLOIYRINE ACAA</div>
+        <div class="date" id="date">10 Agustus 2025</div>
+      </div>
+
+      <!-- controls (completely separate block) -->
+      <div class="controls">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <button id="prev" class="btn btn-outline-light btn-lg btn-large"><i class="bi bi-skip-start-fill"></i> Prev</button>
+          <button id="play" class="btn btn-primary btn-lg btn-large"><i class="bi bi-play-fill"></i> Play</button>
+          <button id="next" class="btn btn-outline-light btn-lg btn-large"><i class="bi bi-skip-end-fill"></i> Next</button>
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
           <div class="ms-auto d-flex align-items-center gap-2">
             <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
-            <select id="speed" class="form-select form-select-sm" style="width:88px">
+            <select id="speed" class="form-select form-select-sm" style="width:90px">
               <option value="0.5">0.5x</option>
               <option value="0.75">0.75x</option>
               <option value="1" selected>1x</option>
@@ -70,93 +71,52 @@
           </div>
         </div>
 
-        <div class="mt-3">
-          <div class="range-wrapper">
-            <div class="time" id="current">0:00</div>
-            <input id="seek" type="range" min="0" max="100" step="0.01" class="form-range" value="0" style="flex:1">
-            <div class="time" id="duration">0:00</div>
-          </div>
+        <div class="seek-row">
+          <div class="time" id="current">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+          <div class="time" id="duration">0:00</div>
         </div>
       </div>
 
-      <!-- meta -->
-      <div class="meta" data-aos="fade-up" data-aos-delay="120">
-        <div class="title" id="title">-</div>
-        <div class="date" id="date">-</div>
-      </div>
-
-      <!-- downloads (collapsed by default) -->
-      <div class="p-3 border-top" data-aos="fade-up" data-aos-delay="160">
-        <div class="accordion" id="downloadsAcc">
-          <div class="accordion-item bg-transparent" style="border:none">
-            <h2 class="accordion-header" id="headingDownloads">
-              <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDownloads" aria-expanded="false" aria-controls="collapseDownloads">
-                Download (full files)
-              </button>
-            </h2>
-            <div id="collapseDownloads" class="accordion-collapse collapse" aria-labelledby="headingDownloads" data-bs-parent="#downloadsAcc">
-              <div class="accordion-body" style="background:transparent">
-                <div id="downloads" class="small"></div>
-              </div>
-            </div>
-          </div>
+      <!-- downloads area: show as labeled buttons with icons, not raw URLs -->
+      <div class="downloads">
+        <div class="d-flex align-items-center justify-content-between">
+          <strong>Full konten</strong>
+          <small class="text-muted">klik tombol untuk buka</small>
+        </div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons">
+          <!-- buttons injected here -->
         </div>
       </div>
-
-    </div>
-
-    <!-- Playlist column (visible on large screens only) -->
-    <div class="col-12 col-lg-4 d-none d-lg-block playlist-col" data-aos="fade-left">
-      <h6>Playlist</h6>
-      <div id="playlist" class="mt-3"></div>
     </div>
   </div>
-</div>
 
-<!-- JS: Bootstrap, AOS -->
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+
 <script>
-  AOS.init({duration:300, once:true});
-
-  // ===== DATA =====
-  const data = [
-    {
-      "id": 4000,
-      "slug": "talent-floiyrine-acaa",
-      "title": "TALENT FLOIYRINE ACAA",
-      "thumb": "/foto/b6dpqr.jpg",
-      "path": "/talent-floiyrine-acaa.html",
-      "date": "2025-08-10T00:00:00Z",
-      "links": {
-        "videy": [
-          "https://cdn.videy.co/fq3vnyai1.mp4",
-          "https://cdn.videy.co/z8B3jMxB1.mp4",
-          "https://cdn.videy.co/mSDArJW71.mp4",
-          "https://cdn.videy.co/fdMXlrr61.mp4",
-          "https://cdn.videy.co/6I2IFand1.mp4",
-          "https://cdn.videy.co/NXwqxz4Y1.mp4",
-          "https://cdn.videy.co/GgQBnCVH1.mp4",
-          "https://cdn.videy.co/HlsDYou11.mp4",
-          "https://cdn.videy.co/MsfyAux01.mp4",
-          "https://cdn.videy.co/gB1vHJC71.mp4",
-          "https://cdn.videy.co/5ete3cTl1.mp4",
-          "https://cdn.videy.co/nX5DmjcN1.mp4"
-        ],
-        "mediafire": [
-          "https://www.mediafire.com/file/9q8yw3qmym5mkz7/TALENT_FLOIYRINE_ACAA.zip/file"
-        ],
-        "terabox": [
-          "https://1024terabox.com/s/1GCjCnKE2oqBLCjpEa4egCA"
-        ],
-        "pixeldrain": [],
-        "bonus": []
-      }
-    }
+  // Minimal data only
+  const videos = [
+    "https://cdn.videy.co/fq3vnyai1.mp4",
+    "https://cdn.videy.co/z8B3jMxB1.mp4",
+    "https://cdn.videy.co/mSDArJW71.mp4",
+    "https://cdn.videy.co/fdMXlrr61.mp4",
+    "https://cdn.videy.co/6I2IFand1.mp4",
+    "https://cdn.videy.co/NXwqxz4Y1.mp4",
+    "https://cdn.videy.co/GgQBnCVH1.mp4",
+    "https://cdn.videy.co/HlsDYou11.mp4",
+    "https://cdn.videy.co/MsfyAux01.mp4",
+    "https://cdn.videy.co/gB1vHJC71.mp4",
+    "https://cdn.videy.co/5ete3cTl1.mp4",
+    "https://cdn.videy.co/nX5DmjcN1.mp4"
   ];
+  const thumbnail = "/foto/b6dpqr.jpg";
+  const downloads = {
+    mediafire: "https://www.mediafire.com/file/9q8yw3qmym5mkz7/TALENT_FLOIYRINE_ACAA.zip/file",
+    terabox: "https://1024terabox.com/s/1GCjCnKE2oqBLCjpEa4egCA"
+  };
 
-  // ===== refs =====
-  const item = data[0];
+  // Refs
   const video = document.getElementById('video');
   const playBtn = document.getElementById('play');
   const prevBtn = document.getElementById('prev');
@@ -168,82 +128,65 @@
   const durationT = document.getElementById('duration');
   const titleEl = document.getElementById('title');
   const dateEl = document.getElementById('date');
-  const downloadsEl = document.getElementById('downloads');
-  const playlistEl = document.getElementById('playlist');
-  const fsBtn = document.getElementById('fs');
+  const downloadsWrap = document.getElementById('downloadButtons');
 
-  let currentIndex = 0;
+  // State
+  let idx = 0;
   let isSeeking = false;
 
-  // init
-  titleEl.textContent = item.title;
-  dateEl.textContent = (new Date(item.date)).toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' });
+  // Setup: minimal metadata (title/date hardcoded)
+  titleEl.textContent = "TALENT FLOIYRINE ACAA";
+  dateEl && (dateEl.textContent = "10 Agustus 2025");
 
-  const videos = item.links.videy || [];
-  video.src = videos.length ? videos[0] : '';
-  video.playbackRate = 1; // default 1x
-  speedSel.value = '1';
+  // video attributes: no native controls to avoid browser overlay
+  video.poster = thumbnail;
+  video.preload = "metadata";
+  video.src = videos.length ? videos[0] : "";
+  video.playbackRate = 1;
+  speedSel.value = "1";
 
-  // build playlist (for large screens)
-  function buildPlaylist(){
-    playlistEl.innerHTML = '';
-    if(!videos.length){ playlistEl.innerHTML = '<div class="text-muted small">Playlist kosong.</div>'; return; }
-    videos.forEach((src,i) => {
-      const node = document.createElement('div');
-      node.className = 'plist-item mb-2';
-      node.dataset.idx = i;
-      node.innerHTML = `
-        <img src="${item.thumb}" alt="thumb-${i}">
-        <div>
-          <div style="font-weight:700">Bagian ${i+1}</div>
-          <div class="text-muted small">${(new URL(src)).hostname} • ${src.split('/').pop()}</div>
-        </div>
-      `;
-      node.addEventListener('click', ()=> playIndex(i));
-      playlistEl.appendChild(node);
-    });
-    updateActive();
-  }
-
-  function updateActive(){
-    const nodes = playlistEl.querySelectorAll('.plist-item');
-    nodes.forEach(n => n.classList.toggle('active', Number(n.dataset.idx) === currentIndex));
-  }
-
-  function playIndex(i){
-    if(!videos[i]) return;
-    currentIndex = i;
-    video.src = videos[i];
-    video.play().catch(()=>{});
-    updateActive();
-    // ensure collapsible downloads closed (no UI overlap)
-    const downloadsCollapse = document.getElementById('collapseDownloads');
-    if (downloadsCollapse && downloadsCollapse.classList.contains('show')) {
-      const bs = bootstrap.Collapse.getInstance(downloadsCollapse);
-      if(bs) bs.hide();
+  // Build download buttons (icons + label — NOT showing raw URL)
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = "";
+    if(downloads.mediafire){
+      const a = document.createElement('a');
+      a.className = "btn btn-outline-light download-btn d-flex align-items-center gap-2";
+      a.href = downloads.mediafire;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.innerHTML = '<i class="bi bi-cloud-arrow-down"></i><span>Mediafire — Full konten</span>';
+      downloadsWrap.appendChild(a);
+    }
+    if(downloads.terabox){
+      const b = document.createElement('a');
+      b.className = "btn btn-outline-light download-btn d-flex align-items-center gap-2";
+      b.href = downloads.terabox;
+      b.target = "_blank";
+      b.rel = "noopener";
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down"></i><span>Terabox — Full konten</span>';
+      downloadsWrap.appendChild(b);
     }
   }
 
-  // time & seek
+  // Helpers
   function fmt(s){
-    if(!isFinite(s)) return '0:00';
-    const sec = Math.floor(s%60).toString().padStart(2,'0');
-    const min = Math.floor(s/60);
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
     return `${min}:${sec}`;
   }
 
+  // Events: time/seek
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
   });
-
-  video.addEventListener('timeupdate', ()=>{
+  video.addEventListener('timeupdate', () => {
     if(!isSeeking){
       seek.value = video.currentTime;
       currentT.textContent = fmt(video.currentTime);
     }
   });
-
   seek.addEventListener('input', ()=> {
     isSeeking = true;
     currentT.textContent = fmt(seek.value);
@@ -253,56 +196,58 @@
     isSeeking = false;
   });
 
-  // play/pause
+  // Play/pause
   function togglePlay(){
     if(video.paused) video.play();
     else video.pause();
   }
   playBtn.addEventListener('click', togglePlay);
   video.addEventListener('click', togglePlay);
-  video.addEventListener('play', ()=> {
-    playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
-  });
-  video.addEventListener('pause', ()=> {
-    playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play';
-  });
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
 
-  // prev / next
+  // Prev/Next
   prevBtn.addEventListener('click', ()=> {
-    if(currentIndex > 0) playIndex(currentIndex - 1);
-    else playIndex(videos.length - 1);
+    if(idx > 0) idx--;
+    else idx = videos.length - 1;
+    loadAndPlay(idx);
   });
   nextBtn.addEventListener('click', ()=> {
-    if(currentIndex < videos.length - 1) playIndex(currentIndex + 1);
-    else playIndex(0);
+    if(idx < videos.length - 1) idx++;
+    else idx = 0;
+    loadAndPlay(idx);
   });
 
-  // loop toggle
+  function loadAndPlay(i){
+    video.src = videos[i];
+    video.play().catch(()=>{});
+    // ensure controls block is separate so layout stays steady
+  }
+
+  // Loop toggle
   loopBtn.addEventListener('click', ()=> {
     video.loop = !video.loop;
     loopBtn.classList.toggle('btn-primary', video.loop);
     loopBtn.classList.toggle('btn-outline-light', !video.loop);
   });
 
-  // speed
-  speedSel.addEventListener('change', ()=> {
-    video.playbackRate = Number(speedSel.value);
-  });
+  // Speed
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
-  // fullscreen
-  fsBtn && fsBtn.addEventListener('click', ()=> {
-    const el = document.querySelector('.video-wrap');
+  // Fullscreen
+  document.getElementById('fs').addEventListener('click', ()=>{
+    const el = document.querySelector('.video-area');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
-  // auto-next
+  // Auto-next when ended
   video.addEventListener('ended', ()=> {
-    if(currentIndex < videos.length - 1) playIndex(currentIndex + 1);
+    if(idx < videos.length - 1){ idx++; loadAndPlay(idx); }
   });
 
-  // keyboard shortcuts
-  window.addEventListener('keydown', (e)=> {
+  // Keyboard shortcuts (desktop)
+  window.addEventListener('keydown', (e)=>{
     if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
     if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
@@ -310,42 +255,11 @@
     if(e.key === 'm'){ video.muted = !video.muted; }
   });
 
-  // render downloads collapsed by default
-  function renderDownloads(){
-    downloadsEl.innerHTML = '';
-    const links = item.links || {};
-    function add(title, arr){
-      if(!arr || !arr.length) return;
-      const h = document.createElement('div');
-      h.innerHTML = '<strong>' + title + '</strong>';
-      downloadsEl.appendChild(h);
-      arr.forEach(u=>{
-        const a = document.createElement('a');
-        a.href = u;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.className = 'd-block text-break mb-1';
-        a.textContent = u;
-        downloadsEl.appendChild(a);
-      });
-    }
-    add('Mediafire', links.mediafire);
-    add('Terabox', links.terabox);
-    add('Pixeldrain', links.pixeldrain);
-    add('Bonus', links.bonus);
-  }
-
-  // block right-click
-  document.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-  });
+  // block right click
+  document.addEventListener('contextmenu', e => e.preventDefault());
 
   // init
-  buildPlaylist();
-  renderDownloads();
-  updateActive();
-
-  // hide playlist on small screens already handled via d-none d-lg-block
+  buildDownloadButtons();
 </script>
 </body>
 </html>
