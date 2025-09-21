@@ -8,12 +8,65 @@
   <meta name="slug" content="talent-floiyrine-acaa" id="metaSlug" />
   <link rel="stylesheet" href="/assets/player.css">
   <style>
-    /* small inline tweaks */
+    /* Fallback CSS for video player to prevent cropping */
+    #playerWrap, #videoWrap {
+      position: relative;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9; /* Default, overridden by JS */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+    }
+    #player {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Prevent cropping */
+      background: #000;
+    }
+    .theater #playerWrap, .theater #videoWrap {
+      width: 100%;
+      height: 100vh;
+      max-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .theater #player {
+      width: 100%;
+      height: 100%;
+      max-height: 100vh;
+      object-fit: contain;
+    }
+    :fullscreen #playerWrap, :fullscreen #videoWrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #player:fullscreen {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    /* Existing inline styles */
     #playlistControls { margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     #playlistControls .icon-btn { padding:6px 10px; min-width:40px; }
     #playlistControls input[type=number] { padding:6px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); width:72px; text-align:center; }
     #downloadArea { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
     .download-link.small { padding:8px 12px; border-radius:10px; background:#000; color:#fff; text-decoration:none; display:inline-block; font-weight:700; }
+    /* Error message styling */
+    #playerError {
+      display: none;
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -53,6 +106,8 @@
           <button id="mute" class="icon-btn" title="Mute" aria-label="Mute">🔊</button>
         </div>
       </div>
+      <!-- Error message container -->
+      <div id="playerError" aria-live="assertive"></div>
     </div>
 
     <!-- playlist & prev/next (injected by player.js) -->
