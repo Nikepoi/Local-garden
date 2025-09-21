@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Local Player - NIKEPOI UNIVERSE</title>
+  <meta name="description" content="Local Player" id="metaDescription" />
+  <meta name="slug" content="" id="metaSlug" />
+  <link rel="stylesheet" href="/assets/player.css">
+  <style>
+    #playlistControls { margin-top:10px; display:flex; gap:8px; align-items:center; }
+    #playlistControls .icon-btn { padding:6px 10px; min-width:40px; }
+    #playlistControls input[type=number] { padding:6px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-top">
+      <a href="/index.html" class="nav-back" aria-label="Kembali ke daftar">Kembali</a>
+    </div>
+
+    <div id="playerWrap" class="player" role="region" aria-label="Player">
+      <div id="videoWrap" class="video-container" aria-label="Video container">
+        <video id="player" playsinline preload="metadata" crossorigin="anonymous"
+               controlsList="nodownload noremoteplayback" disablepictureinpicture
+               poster="/assets/thumbs/default.jpg">
+          Your browser does not support the video tag.
+        </video>
+
+        <div id="overlay" class="vp-play-overlay" aria-hidden="true">
+          <button id="bigPlay" class="big-play-btn" aria-label="Play">Play</button>
+        </div>
+
+        <div id="volZone" class="vol-zone" aria-hidden="true"></div>
+      </div>
+
+      <div id="controlsPanel" class="controls-panel" aria-label="Player controls">
+        <div class="progress-row">
+          <input id="progress" class="vp-progress" type="range" min="0" max="100" value="0" aria-label="Seek">
+          <div class="vp-time" id="time" aria-live="polite">00:00 / 00:00</div>
+        </div>
+        <div class="buttons-row">
+          <button id="playPause" class="icon-btn" aria-label="Play / Pause" title="Play / Pause">
+            <svg id="iconPlay" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="speedBtn" class="icon-btn" title="Playback speed">1×</button>
+          <div style="flex:1"></div>
+          <button id="cinema" class="icon-btn" title="Cinema mode" aria-label="Cinema">T</button>
+          <button id="fs" class="icon-btn" title="Fullscreen" aria-label="Fullscreen">⤢</button>
+          <button id="mute" class="icon-btn" title="Mute" aria-label="Mute">🔊</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="post-actions">
+      <a id="downloadBtn" class="download-link" style="display:none" target="_blank" rel="noopener noreferrer" aria-label="Download video"><span>Download</span></a>
+      <!-- playlist controls injected here -->
+    </div>
+
+    <div id="metaBox" class="meta-box">
+      <h2 id="postTitle"></h2>
+      <div class="small" id="postDate"></div>
+      <!-- excerpt removed intentionally -->
+    </div>
+
+    <div id="debug" class="debug" aria-hidden="false">Debug output will appear here.</div>
+  </div>
+
+  <!-- scripts -->
+  <script src="/assets/animeBanner.inject.js" defer></script>
+  <script src="/assets/ads.js" defer></script>
+  <script src="/assets/player.js" defer></script>
+</body>
+</html>
