@@ -1,8 +1,6 @@
-// assets/player.js (updated)
-// - shows download links with filename + size (HEAD if allowed, fallback to path)
-// - streams (videy) are used only by the player
-// - robust play attempt: user gesture -> try play -> if rejected try muted play -> if rejected show debug + "Open stream" button
-// - no videy stream is shown as download button
+// assets/player.js
+// Updated: download buttons show "<source> — full"
+// Slight improvement: set player.src directly after adding source (helps some browsers)
 
 (() => {
   const POSTS_JSON_CANDIDATES = ['/data/posts.json','/posts.json','/posts.json?nocache=1'];
@@ -14,15 +12,7 @@
   }
   function safeEncodeUrl(u){ return u ? String(u).split(' ').join('%20') : u; }
   function formatTime(s){ if (!isFinite(s)) return '00:00'; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-  function humanFileSize(bytes) {
-    if (!isFinite(bytes)) return 'unknown';
-    const thresh = 1024;
-    if (Math.abs(bytes) < thresh) return bytes + ' B';
-    const units = ['KB','MB','GB','TB'];
-    let u = -1;
-    do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1);
-    return bytes.toFixed(1) + ' ' + units[u];
-  }
+  function humanFileSize(bytes) { if (!isFinite(bytes)) return 'unknown'; const thresh = 1024; if (Math.abs(bytes) < thresh) return bytes + ' B'; const units = ['KB','MB','GB','TB']; let u = -1; do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1); return bytes.toFixed(1) + ' ' + units[u]; }
   async function tryLoadJsonCandidates(cands){
     for (const c of cands) {
       try {
@@ -56,9 +46,6 @@
   }
   function isPlayableURL(u){ return /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(String(u||'')); }
   function isDirectFile(u){ return /\.(zip|rar|7z|mp4|webm|ogg)(\?.*)?$/i.test(String(u||'')); }
-  function filenameFromUrl(u){
-    try { const p = new URL(u).pathname; return decodeURIComponent(p.split('/').pop() || u); } catch(e){ return u.split('/').pop() || u; }
-  }
 
   function waitForCanPlay(el, timeout = 4000){
     return new Promise(resolve => {
@@ -71,7 +58,6 @@
     });
   }
 
-  // attempt HEAD to get content-length/type; many hosts disallow CORS for HEAD -> catch and ignore
   async function fetchHeadInfo(url){
     try {
       const res = await fetch(url, { method: 'HEAD' });
@@ -79,10 +65,7 @@
       const len = res.headers.get('content-length');
       const type = res.headers.get('content-type');
       return { length: len ? Number(len) : null, type: type || null, ok: true };
-    } catch(e){
-      // not fatal; return null so UI falls back
-      return { ok:false, error: String(e) };
-    }
+    } catch(e){ return { ok:false, error: String(e) }; }
   }
 
   async function init(){
@@ -159,7 +142,7 @@
       return;
     }
 
-    // build streams & downloads
+    // streams & downloads
     const { streams, downloads } = buildLinks(post.links || {});
     post._streams = streams.filter(s => isPlayableURL(s));
     post._downloadLinks = downloads;
@@ -170,7 +153,7 @@
     if (postDesc) postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
     if (post.thumb && player) try { player.poster = safeEncodeUrl(post.thumb); } catch(e){}
 
-    // render download links with file info (HEAD attempt)
+    // render download buttons — label: "<source> — full"
     async function renderDownloads(){
       const pa = document.querySelector('.post-actions');
       if (!pa) return;
@@ -178,7 +161,6 @@
       const wrapDiv = document.createElement('div'); wrapDiv.id='downloadLinksList'; wrapDiv.style.display='flex'; wrapDiv.style.flexDirection='column'; wrapDiv.style.gap='8px'; wrapDiv.style.marginBottom='8px';
       if (Array.isArray(post._downloadLinks) && post._downloadLinks.length){
         for (const it of post._downloadLinks){
-          const filename = filenameFromUrl(it.url);
           const btn = document.createElement('a');
           btn.className='download-link';
           btn.href = it.url;
@@ -193,29 +175,26 @@
           btn.style.color='#fff';
           btn.style.fontWeight='700';
           btn.style.textDecoration='none';
-          btn.textContent = (it.source || 'link') + ' — ' + filename;
-          // try HEAD to get size (may fail due to CORS)
+          // LABEL per permintaan: hanya server name + "full"
+          btn.textContent = (it.source || 'link') + ' — full';
+          // optionally set download attr for direct files
+          if (isDirectFile(it.url)) try { btn.setAttribute('download',''); } catch(e){}
+          // asynchronous HEAD to append size if allowed (non-blocking)
           (async ()=>{
             const info = await fetchHeadInfo(it.url);
             if (info && info.ok && info.length) {
-              btn.textContent = (it.source || 'link') + ' — ' + filename + ' (' + humanFileSize(info.length) + ')';
+              btn.textContent = (it.source || 'link') + ' — full (' + humanFileSize(info.length) + ')';
             }
           })();
-          // set download attr only when direct file extension
-          if (isDirectFile(it.url)) {
-            try { btn.setAttribute('download', ''); } catch(e){}
-          }
           wrapDiv.appendChild(btn);
         }
       }
       pa.insertBefore(wrapDiv, pa.firstChild);
     }
-
     await renderDownloads();
 
-    // setupMedia: load stream url in player
+    // load stream into player - set player.src directly (helps some browsers)
     async function setupMediaForUrl(u){
-      // clear
       while (player.firstChild) player.removeChild(player.firstChild);
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
       if (!u) {
@@ -235,11 +214,15 @@
             hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
           } else {
             const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} dbg('native hls used');
+            // also set player.src
+            try { player.src = src; player.load(); } catch(e){}
           }
-        } catch(err){ dbg('hls error', err); const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} }
+        } catch(err){ dbg('hls error', err); const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} try{ player.src = src; player.load(); }catch(e){} }
       } else {
         const s = document.createElement('source'); s.src = src; s.type = src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/unknown'; player.appendChild(s);
         try{ player.load(); } catch(e){}
+        // set src directly as well
+        try { player.src = src; player.load(); } catch(e){}
         dbg('mp4 loaded', src);
       }
       await waitForCanPlay(player, 4000);
@@ -249,10 +232,6 @@
     function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
     function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
-    // robust play attempt after user gesture:
-    // 1) try player.play()
-    // 2) if rejected -> set muted true and try again
-    // 3) if still rejected -> show error + open-in-new-tab button for stream (debug)
     async function attemptPlayWithFallback(streamUrl){
       try {
         await player.play();
@@ -260,24 +239,19 @@
         return { ok:true };
       } catch(e1){
         dbg('play() rejected, trying muted play', e1);
-        // try muted play (some browsers allow muted autoplay after user gesture)
         const wasMuted = player.muted;
         try {
           player.muted = true;
           await player.play();
           setPlayIcon(false); hideOverlay();
-          // restore muted state to previous after brief time? keep muted false so user can unmute manually
           player.muted = wasMuted;
           return { ok:true, mutedFallback:true };
         } catch(e2){
           dbg('muted play also rejected', e2);
           player.muted = wasMuted;
-          // show debug and provide button to open stream in new tab for debugging
           const debugEl = document.getElementById('debug');
-          if (debugEl) {
-            debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. Likely CORS/hotlink/redirect.';
-          }
-          // create an "Open stream" button near playlist (only once)
+          if (debugEl) debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. Likely CORS/hotlink/redirect.';
+          // show open-in-tab button for debugging
           const existing = document.getElementById('openStreamDebugBtn');
           if (!existing) {
             const openBtn = document.createElement('a');
@@ -300,16 +274,12 @@
       }
     }
 
-    // connect controls
     if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(post._streams && post._streams[0]); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
-      // ensure a stream loaded
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
         await setupMediaForUrl(post._streams[0]);
       }
-      // mark userInteracted (used by playlist logic)
       window._userInteracted = true;
-      // attempt play robustly
       await attemptPlayWithFallback(player.currentSrc || post._streams && post._streams[0]);
     });
     if (player) {
@@ -325,7 +295,7 @@
       player.addEventListener('error', (e) => { dbg('media element error', e, player.error && player.error.code); });
     }
 
-    // volume UI
+    // volume & controls (unchanged)
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
     function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
     function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
@@ -354,7 +324,7 @@
 
     try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
 
-    // Playlist (streams only)
+    // playlist controls (streams only)
     (function attachPlaylist(){
       if (!Array.isArray(post._streams) || post._streams.length === 0) return;
       const streams = post._streams.slice();
@@ -391,17 +361,16 @@
         if (cur < streams.length-1) { cur++; idxInput.value = cur+1; await setupMediaForUrl(streams[cur]); if (userInteracted || window._userInteracted) { try { await player.play(); } catch(e){ dbg('auto-next blocked', e); showOverlay(); } } else showOverlay(); } else { dbg('playlist ended'); showOverlay(); }
       });
 
-      // initial load (do not autoplay)
+      // initial load
       const initial = 0;
       cur = initial; idxInput.value = cur+1;
       setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
     })();
 
-    // init UI states
     try { setPlayIcon(player.paused); } catch(e){}
     try { updateMuteUI(); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
     dbg('player ready for post', post.slug || post.id || post.path || post.title);
-  } // init
+  }
 
   init().catch(err => { console.error(err); try { const el=document.getElementById('debug'); if (el) el.textContent = 'init error: '+String(err); } catch(e){} });
 })();
