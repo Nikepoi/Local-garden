@@ -1,6 +1,10 @@
-// assets/player.js (REPLACE with this)
-// Uses posts.json (array). videy[] -> playlist (player only). other links -> download area.
-// No open-in-new-tab for .mp4 streams. Robust play (user gesture -> try play -> muted fallback -> debug).
+// assets/player.js (REPLACE this file with the code below)
+// - Expects /data/posts.json as array
+// - videy[] => playlist used by player
+// - other links => download area (mediafire/terabox/pixeldrain/bonus)
+// - mp4 streams never exposed as download links; download area only shows non-videy links
+// - Uses player.src for mp4/webm, uses hls.js for m3u8 if available
+// - Robust play attempt: user gesture -> try play -> muted fallback -> debug message
 
 (() => {
   const POSTS_JSON = '/data/posts.json';
@@ -19,13 +23,12 @@
   function formatTime(s){ if (!isFinite(s)) return '00:00'; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 
   async function loadJSON(url){
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
   }
 
   async function init(){
-    // DOM refs
     const player = document.getElementById('player');
     const playerWrap = document.getElementById('playerWrap');
     const wrap = document.getElementById('videoWrap');
@@ -44,7 +47,7 @@
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
 
-    // ensure download area exists (insert under .post-actions if present)
+    // ensure downloadArea exists
     let downloadArea = document.getElementById('downloadArea');
     if (!downloadArea) {
       const pa = document.querySelector('.post-actions') || document.querySelector('.meta-box') || document.querySelector('.container') || document.body;
@@ -54,7 +57,7 @@
       pa.appendChild(downloadArea);
     }
 
-    // ensure volZone & volPop
+    // vol zone and popup
     let volZone = document.getElementById('volZone');
     if (!volZone && wrap){ volZone = document.createElement('div'); volZone.id='volZone'; volZone.className='vol-zone'; wrap.appendChild(volZone); }
 
@@ -64,7 +67,7 @@
 
     const volumeIndicator = document.getElementById('volumeIndicator') || (function(){ const el=document.createElement('div'); el.id='volumeIndicator'; el.className='volume-indicator'; el.style.display='none'; document.body.appendChild(el); return el; })();
 
-    // slug detection (meta / query / filename)
+    // slug detection
     const metaSlugEl = document.querySelector('meta[name="slug"]');
     const urlParams = new URLSearchParams(window.location.search);
     const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
@@ -76,7 +79,7 @@
     ].filter(Boolean);
     const slugUsed = slugCandidates.length ? slugCandidates[0] : '';
 
-    // load posts.json
+    // load JSON
     let posts;
     try {
       posts = await loadJSON(POSTS_JSON);
@@ -84,7 +87,7 @@
       if (!Array.isArray(posts) || !posts.length) throw new Error('posts.json invalid or empty');
       dbg('posts.json loaded', posts.length + ' items');
     } catch(e){
-      dbg('posts.json error', String(e));
+      dbg('posts.json err', String(e));
       const el = document.getElementById('debug'); if (el) el.textContent = 'posts.json load failed: ' + String(e);
       return;
     }
@@ -92,7 +95,7 @@
     // find post
     let post = null;
     if (slugUsed) {
-      post = posts.find(p => {
+      post = posts.find(p=>{
         if (!p) return false;
         const pslug = (p.slug||'').toString(), pid = (p.id||'').toString(), ppath = (p.path||'').toString();
         const filename = (ppath.split('/').pop()||'').replace('.html','');
@@ -111,20 +114,21 @@
     const links = post.links || {};
     const streams = Array.isArray(links.videy) ? links.videy.map(x => safeUrl(x)).filter(Boolean) : [];
     const downloads = [];
-    ['mediafire','terabox','pixeldrain','bonus'].forEach(k => {
+    ['mediafire','terabox','pixeldrain','bonus'].forEach(k=>{
       const arr = Array.isArray(links[k]) ? links[k] : [];
       arr.forEach(u => { if (u && typeof u === 'string') downloads.push({ url: safeUrl(u), source: k }); });
     });
+
     post._streams = streams.filter(s => isPlayableURL(s));
     post._downloadLinks = downloads;
 
-    // render meta & poster
+    // render meta + poster
     if (postTitle) postTitle.textContent = post.title || '';
     if (postDate) postDate.textContent = post.date || '';
     if (postDesc) postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
     if (post.thumb && player) try { player.poster = safeUrl(post.thumb); } catch(e){}
 
-    // render download links area (non-videy links). Put below playlist area so it doesn't block controls.
+    // render download area (non-videy)
     function renderDownloadArea(){
       if (!downloadArea) return;
       downloadArea.innerHTML = '';
@@ -150,7 +154,7 @@
     }
     renderDownloadArea();
 
-    // wait for canplay helper
+    // helper: wait for canplay/loadedmetadata
     function waitForCanPlay(el, timeout = 4000){
       return new Promise(resolve => {
         let done = false;
@@ -162,26 +166,21 @@
       });
     }
 
-    // setup media: set player.src (simpler & reliable)
+    // setupMedia: set player.src for mp4/webm; use hls.js for m3u8
     async function setupMediaForUrl(u){
-      try {
-        // destroy previous hls if present
-        if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
-      } catch(e){}
+      try { if (player._hls && typeof player._hls.destroy === 'function'){ player._hls.destroy(); player._hls = null; } } catch(e){}
 
       if (!u){
         player.removeAttribute('src');
         while (player.firstChild) player.removeChild(player.firstChild);
-        const fallback = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-        player.src = fallback;
+        player.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
         try{ player.load(); } catch(e){}
-        dbg('no stream supplied, fallback loaded');
         return;
       }
 
       const src = safeUrl(u);
-      // m3u8: use hls.js if supported; otherwise set src and rely on native
-      if (src.toLowerCase().endsWith('.m3u8')) {
+      // m3u8 path
+      if (src.toLowerCase().endsWith('.m3u8')){
         try {
           if (!window.Hls){
             await new Promise((resolve,reject)=>{
@@ -194,8 +193,10 @@
           }
           if (window.Hls && Hls.isSupported()){
             const hls = new Hls({capLevelToPlayerSize:true});
-            hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
-            // no player.src set; hls.js handles it
+            hls.loadSource(src);
+            hls.attachMedia(player);
+            player._hls = hls;
+            dbg('HLS attached', src);
           } else {
             player.src = src;
             try{ player.load(); } catch(e){}
@@ -207,35 +208,31 @@
           try{ player.load(); } catch(e){}
         }
       } else {
-        // mp4/webm direct file
+        // mp4/webm: set src directly for reliable player.currentSrc
         player.src = src;
         try{ player.load(); } catch(e){}
-        dbg('mp4/webm set', src);
+        dbg('source set', src);
       }
 
-      // attempt to let browser parse metadata
+      // attempt to let browser parse metadata quickly
       await waitForCanPlay(player, 3500);
     }
 
     // UI helpers
-    function setPlayIcon(paused){ if (!iconPlay) return; try {
-      if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
-      else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>';
-    } catch(e){} }
+    function setPlayIcon(paused){ if (!iconPlay) return; try { iconPlay.innerHTML = paused ? '<path d="M8 5v14l11-7z" fill="currentColor"/>' : '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>'; }catch(e){} }
     function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
     function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
-    // robust play attempt (no open tab). Uses current player.src set earlier.
+    // robust play attempt (no open-tab)
     async function attemptPlayWithFallback(){
-      const currentSrc = player.currentSrc || player.src || '';
-      dbg('attemptPlayWithFallback src=' + currentSrc);
+      const current = player.currentSrc || player.src || '';
+      dbg('attempt play src=' + (current||'[none]'));
       try {
         await player.play();
         setPlayIcon(false); hideOverlay();
-        dbg('play OK');
         return { ok:true };
       } catch(e1){
-        dbg('play() rejected, trying muted', e1);
+        dbg('play rejected', e1);
         const wasMuted = player.muted;
         try {
           player.muted = true;
@@ -249,27 +246,16 @@
           dbg('muted play rejected', e2);
           const debugEl = document.getElementById('debug');
           if (debugEl) {
-            const errCode = (player.error && player.error.code) || 'no-media-error';
-            const msg = [
-              (new Date()).toLocaleTimeString(),
-              '— Playback blocked.',
-              'src:' + (currentSrc || '[empty]'),
-              'mediaError=' + (player.error ? JSON.stringify(player.error) : 'null'),
-              'readyState=' + player.readyState,
-              'networkState=' + player.networkState,
-              'Server must return raw video (200/206) with Content-Type: video/mp4 and not HTML/attachment.'
-            ].join(' | ');
-            debugEl.textContent = msg;
+            debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. src=' + (current||'[none]') + ' | readyState=' + player.readyState + ' | networkState=' + player.networkState;
           }
           return { ok:false, error:e2 };
         }
       }
     }
 
-    // wire controls
+    // wire basic controls
     if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
-      // if no src loaded, load first stream
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
         await setupMediaForUrl(post._streams[0]);
       }
@@ -287,15 +273,12 @@
         try{ if (!Number.isNaN(pct) && progress) progress.value = pct; } catch(e){}
         if (timeEl) timeEl.textContent = `${formatTime(player.currentTime)} / ${formatTime(player.duration)}`;
       });
-      player.addEventListener('error', (e) => { dbg('media element error event', e, player.error && player.error.code); });
+      player.addEventListener('error', (e) => { dbg('media element error', e, player.error && player.error.code); });
     }
 
     // volume UI
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
-    function updateMuteUI(){ if (!iconMute || !player) return; try {
-      if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>';
-      else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>';
-    } catch(e){} }
+    function updateMuteUI(){ if (!iconMute || !player) return; try { if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; } catch(e){} }
     function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
 
     if (muteBtn) muteBtn.addEventListener('click', (ev)=> {
@@ -336,7 +319,7 @@
       const nextBtn = document.createElement('button'); nextBtn.className='icon-btn'; nextBtn.textContent='Next ›';
       plc.append(prevBtn, idxInput, countSpan, nextBtn);
       const pa = document.querySelector('.post-actions') || document.body;
-      pa.insertBefore(plc, pa.firstChild); // ensure playlist above downloads
+      pa.insertBefore(plc, pa.firstChild); // playlist above downloads
 
       let cur = 0;
       let userInteracted = false;
@@ -368,12 +351,12 @@
         } else { dbg('playlist ended'); showOverlay(); }
       });
 
-      // initial load (do not autoplay) - ensure first stream loaded into player.src
+      // initial load (do not autoplay)
       cur = 0; idxInput.value = cur+1;
       setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
     })();
 
-    // final UI init
+    // final init
     try { setPlayIcon(player.paused); } catch(e){}
     try { updateMuteUI(); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
     dbg('player ready for post', post.slug || post.id || post.path || post.title);
