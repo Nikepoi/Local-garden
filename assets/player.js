@@ -1,22 +1,74 @@
 // assets/player.js
-(() => {
-  const POSTS_JSON = '/data/posts.json';
+// Updated: download buttons show "<source> — full"
+// Slight improvement: set player.src directly after adding source (helps some browsers)
 
-  function dbg(...args) {
+(() => {
+  const POSTS_JSON_CANDIDATES = ['/data/posts.json','/posts.json','/posts.json?nocache=1'];
+
+  function dbg(...args){
     console.log(...args);
     const el = document.getElementById('debug');
-    try { el.textContent = (new Date()).toLocaleTimeString() + ' — ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' | '); } catch(e) {}
+    try { if (el) el.textContent = (new Date()).toLocaleTimeString() + ' — ' + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' | '); } catch(e){}
   }
-  function safeEncodeUrl(u) { if (!u) return u; return u.split(' ').join('%20'); }
-  function formatTime(s) { if (!isFinite(s)) return '00:00'; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60); if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-
-  async function loadJSON(url) {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
+  function safeEncodeUrl(u){ return u ? String(u).split(' ').join('%20') : u; }
+  function formatTime(s){ if (!isFinite(s)) return '00:00'; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+  function humanFileSize(bytes) { if (!isFinite(bytes)) return 'unknown'; const thresh = 1024; if (Math.abs(bytes) < thresh) return bytes + ' B'; const units = ['KB','MB','GB','TB']; let u = -1; do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1); return bytes.toFixed(1) + ' ' + units[u]; }
+  async function tryLoadJsonCandidates(cands){
+    for (const c of cands) {
+      try {
+        const r = await fetch(c, {cache: 'no-store'});
+        if (!r.ok) { dbg('posts.json load fail', c, r.status); continue; }
+        const json = await r.json();
+        dbg('posts.json loaded from', c);
+        return { data: json, path: c };
+      } catch(e){
+        dbg('posts.json fetch error', c, String(e));
+      }
+    }
+    throw new Error('No posts.json candidate could be loaded');
   }
 
-  async function init() {
+  function buildLinks(linksObj){
+    const out = { streams: [], downloads: [] };
+    if (!linksObj || typeof linksObj !== 'object') return out;
+    const order = ['videy','mediafire','terabox','pixeldrain','bonus'];
+    order.forEach(k=>{
+      const arr = Array.isArray(linksObj[k]) ? linksObj[k] : [];
+      arr.forEach(u=>{
+        if (!u || typeof u !== 'string') return;
+        const url = u.trim();
+        if (!url) return;
+        if (k === 'videy') out.streams.push(url);
+        else out.downloads.push({ url, source: k });
+      });
+    });
+    return out;
+  }
+  function isPlayableURL(u){ return /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(String(u||'')); }
+  function isDirectFile(u){ return /\.(zip|rar|7z|mp4|webm|ogg)(\?.*)?$/i.test(String(u||'')); }
+
+  function waitForCanPlay(el, timeout = 4000){
+    return new Promise(resolve => {
+      let done = false;
+      function cleanup(){ el.removeEventListener('loadedmetadata', onOk); el.removeEventListener('canplay', onOk); clearTimeout(timer); }
+      function onOk(){ if (done) return; done=true; cleanup(); resolve(true); }
+      const timer = setTimeout(()=>{ if (done) return; done=true; cleanup(); resolve(false); }, timeout);
+      el.addEventListener('loadedmetadata', onOk);
+      el.addEventListener('canplay', onOk);
+    });
+  }
+
+  async function fetchHeadInfo(url){
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (!res.ok) throw new Error('HEAD status ' + res.status);
+      const len = res.headers.get('content-length');
+      const type = res.headers.get('content-type');
+      return { length: len ? Number(len) : null, type: type || null, ok: true };
+    } catch(e){ return { ok:false, error: String(e) }; }
+  }
+
+  async function init(){
     const player = document.getElementById('player');
     const playerWrap = document.getElementById('playerWrap');
     const wrap = document.getElementById('videoWrap');
@@ -31,349 +83,294 @@
     const fsBtn = document.getElementById('fs');
     const cinemaBtn = document.getElementById('cinema');
     const speedBtn = document.getElementById('speedBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
     const postTitle = document.getElementById('postTitle');
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
 
-    // Create vol zone and vol pop if not present
+    // ensure volZone
     let volZone = document.getElementById('volZone');
-    if (!volZone) {
-      volZone = document.createElement('div');
-      volZone.id = 'volZone';
-      volZone.className = 'vol-zone';
-      wrap.appendChild(volZone);
-    }
+    if (!volZone && wrap) { volZone = document.createElement('div'); volZone.id = 'volZone'; volZone.className = 'vol-zone'; wrap.appendChild(volZone); }
 
+    // vol pop
     let volPop = document.getElementById('volPop');
-    if (!volPop) {
-      volPop = document.createElement('div');
-      volPop.id = 'volPop';
-      volPop.className = 'vol-pop';
-      volPop.innerHTML = '<input id="volSlider" type="range" min="0" max="100" step="1" value="100" aria-label="Volume">';
-      document.body.appendChild(volPop);
-    }
+    if (!volPop) { volPop = document.createElement('div'); volPop.id='volPop'; volPop.className='vol-pop'; volPop.innerHTML='<input id="volSlider" type="range" min="0" max="100" step="1" value="100" aria-label="Volume">'; document.body.appendChild(volPop); }
     const volSlider = document.getElementById('volSlider');
 
-    const volumeIndicator = document.getElementById('volumeIndicator') || (function() {
-      const el = document.createElement('div'); el.id = 'volumeIndicator'; el.className = 'volume-indicator'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); el.style.display = 'none';
-      document.body.appendChild(el); return el;
-    })();
+    const volumeIndicator = document.getElementById('volumeIndicator') || (function(){ const el=document.createElement('div'); el.id='volumeIndicator'; el.className='volume-indicator'; el.style.display='none'; document.body.appendChild(el); return el; })();
 
-    // Get slug from path
-    const rawName = (location.pathname.split('/').pop() || '').replace('.html', '');
-    const slug = decodeURIComponent(rawName || '');
+    // detect slug
+    const metaSlugEl = document.querySelector('meta[name="slug"]');
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
+    const slugCandidates = [
+      metaSlugEl && metaSlugEl.content ? metaSlugEl.content : null,
+      urlParams.get('slug'),
+      urlParams.get('id'),
+      rawName
+    ].filter(Boolean);
+    const slugUsed = slugCandidates.length ? slugCandidates[0] : '';
 
-    // Load posts
-    let post = null;
+    // load posts.json
+    let posts = null;
     try {
-      dbg('Fetching', POSTS_JSON);
-      const posts = await loadJSON(POSTS_JSON);
-      dbg('posts loaded', Array.isArray(posts) ? posts.length + ' items' : typeof posts);
-      if (Array.isArray(posts)) {
-        post = posts.find(p => {
-          if (!p) return false;
-          const pslug = (p.slug || '').toString(), pid = (p.id || '').toString(), ppath = (p.path || '').toString();
-          const filename = (ppath.split('/').pop() || '').replace('.html', '');
-          return pslug === slug || pid === slug || filename === slug || ppath.endsWith('/' + slug + '.html');
-        });
-        if (!post && posts.length === 1) post = posts[0];
+      const r = await tryLoadJsonCandidates(POSTS_JSON_CANDIDATES);
+      posts = Array.isArray(r.data) ? r.data : (r.data && Array.isArray(r.data.posts) ? r.data.posts : null);
+      if (!posts || !posts.length) throw new Error('posts.json contains no posts array');
+    } catch(e){
+      dbg('posts.json load failed', String(e));
+      const el = document.getElementById('debug'); if (el) el.textContent = 'posts.json load failed: ' + String(e);
+      return;
+    }
+
+    // find post
+    let post = null;
+    if (slugUsed) {
+      post = posts.find(p=>{
+        if (!p) return false;
+        const pslug = (p.slug||'').toString(), pid = (p.id||'').toString(), ppath = (p.path||'').toString();
+        const filename = (ppath.split('/').pop()||'').replace('.html','');
+        return pslug === slugUsed || pid === slugUsed || filename === slugUsed || (p.url && p.url.endsWith('/' + slugUsed + '.html'));
+      });
+    }
+    if (!post && posts.length === 1) post = posts[0];
+    if (!post && rawName) post = posts.find(p => (p.title||'').toLowerCase().includes(rawName.toLowerCase()));
+
+    if (!post) {
+      const sample = posts.slice(0,6).map(x => x.slug||x.id||x.path||x.title).join(', ');
+      const el = document.getElementById('debug'); if (el) el.textContent = 'No matching post for slug "'+slugUsed+'". Available: '+sample;
+      dbg('no post match', slugUsed);
+      return;
+    }
+
+    // streams & downloads
+    const { streams, downloads } = buildLinks(post.links || {});
+    post._streams = streams.filter(s => isPlayableURL(s));
+    post._downloadLinks = downloads;
+
+    // render meta & poster
+    if (postTitle) postTitle.textContent = post.title || '';
+    if (postDate) postDate.textContent = post.date || '';
+    if (postDesc) postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
+    if (post.thumb && player) try { player.poster = safeEncodeUrl(post.thumb); } catch(e){}
+
+    // render download buttons — label: "<source> — full"
+    async function renderDownloads(){
+      const pa = document.querySelector('.post-actions');
+      if (!pa) return;
+      const old = document.getElementById('downloadLinksList'); if (old) old.remove();
+      const wrapDiv = document.createElement('div'); wrapDiv.id='downloadLinksList'; wrapDiv.style.display='flex'; wrapDiv.style.flexDirection='column'; wrapDiv.style.gap='8px'; wrapDiv.style.marginBottom='8px';
+      if (Array.isArray(post._downloadLinks) && post._downloadLinks.length){
+        for (const it of post._downloadLinks){
+          const btn = document.createElement('a');
+          btn.className='download-link';
+          btn.href = it.url;
+          btn.target = '_blank';
+          btn.rel = 'noopener noreferrer';
+          btn.style.display='inline-flex';
+          btn.style.alignItems='center';
+          btn.style.justifyContent='center';
+          btn.style.padding='10px 14px';
+          btn.style.borderRadius='12px';
+          btn.style.background='#000';
+          btn.style.color='#fff';
+          btn.style.fontWeight='700';
+          btn.style.textDecoration='none';
+          // LABEL per permintaan: hanya server name + "full"
+          btn.textContent = (it.source || 'link') + ' — full';
+          // optionally set download attr for direct files
+          if (isDirectFile(it.url)) try { btn.setAttribute('download',''); } catch(e){}
+          // asynchronous HEAD to append size if allowed (non-blocking)
+          (async ()=>{
+            const info = await fetchHeadInfo(it.url);
+            if (info && info.ok && info.length) {
+              btn.textContent = (it.source || 'link') + ' — full (' + humanFileSize(info.length) + ')';
+            }
+          })();
+          wrapDiv.appendChild(btn);
+        }
       }
-    } catch(err) {
-      dbg('posts.json error', String(err));
+      pa.insertBefore(wrapDiv, pa.firstChild);
     }
+    await renderDownloads();
 
-    function renderPost(p) {
-      if (!p) { postTitle.textContent = 'Posting tidak ditemukan'; postDate.textContent = ''; postDesc.innerHTML = 'Tidak ada entri yang cocok.'; dbg('No matching post', slug); return; }
-      postTitle.textContent = p.title || 'No title';
-      postDate.textContent = p.date || '';
-      postDesc.innerHTML = (p.excerpt || '').toString().replace(/<img\b[^>]*>/gi, '').replace(/\n/g, '<br>');
-      if (p.thumb) try { player.poster = safeEncodeUrl(p.thumb); } catch(e) {}
-    }
-
-    async function setupMedia(p) {
-      // Clear previous
+    // load stream into player - set player.src directly (helps some browsers)
+    async function setupMediaForUrl(u){
       while (player.firstChild) player.removeChild(player.firstChild);
-      if (player._hls && typeof player._hls.destroy === 'function') { try { player._hls.destroy(); } catch(e) {} player._hls = null; }
-
-      // Get video streams from links.videy
-      const streams = p && p.links && p.links.videy && Array.isArray(p.links.videy) ? p.links.videy : [];
-      let currentStreamIndex = 0; // Track current video
-      let stream = streams.length > 0 ? safeEncodeUrl(streams[currentStreamIndex]) : null; // Default to first video
-
-      if (!stream) {
-        const s = document.createElement('source');
-        s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-        s.type = 'video/mp4';
-        player.appendChild(s);
-        try { player.load(); } catch(e) {}
-        downloadBtn.style.display = 'none';
+      if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
+      if (!u) {
+        const s = document.createElement('source'); s.src='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type='video/mp4'; player.appendChild(s); try{ player.load(); } catch(e){}
         return;
       }
-
-      // Load video stream
-      async function loadStream(streamUrl) {
+      const src = safeEncodeUrl(u);
+      if (src.toLowerCase().endsWith('.m3u8')) {
         try {
-          const s = document.createElement('source');
-          s.src = streamUrl;
-          s.type = 'video/mp4'; // All streams are MP4
-          player.appendChild(s);
-          try { player.load(); } catch(e) {}
-          dbg('MP4 loaded', streamUrl);
-          return true;
-        } catch(e) {
-          dbg('Stream error', streamUrl, e);
-          return false;
-        }
-      }
-
-      // Try loading current stream
-      await loadStream(stream);
-
-      // Add prev/next buttons
-      if (streams.length > 1) {
-        const prevBtn = document.createElement('button');
-        prevBtn.id = 'prevVideo';
-        prevBtn.className = 'icon-btn';
-        prevBtn.title = 'Previous Video';
-        prevBtn.setAttribute('aria-label', 'Previous Video');
-        prevBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-        const nextBtn = document.createElement('button');
-        nextBtn.id = 'nextVideo';
-        nextBtn.className = 'icon-btn';
-        nextBtn.title = 'Next Video';
-        nextBtn.setAttribute('aria-label', 'Next Video');
-        nextBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-        // Update button states
-        function updateNavButtons() {
-          prevBtn.disabled = currentStreamIndex === 0;
-          nextBtn.disabled = currentStreamIndex === streams.length - 1;
-        }
-        updateNavButtons();
-
-        // Event listeners for prev/next
-        prevBtn.addEventListener('click', async () => {
-          if (currentStreamIndex > 0) {
-            currentStreamIndex--;
-            await loadStream(safeEncodeUrl(streams[currentStreamIndex]));
-            await safePlay();
-            updateNavButtons();
+          if (!window.Hls) {
+            await new Promise((resolve,reject)=>{
+              const s = document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/hls.js@1.5.0/dist/hls.min.js'; s.onload=()=>resolve(); s.onerror=()=>reject(new Error('hls load fail')); document.head.appendChild(s);
+            });
           }
-        });
-        nextBtn.addEventListener('click', async () => {
-          if (currentStreamIndex < streams.length - 1) {
-            currentStreamIndex++;
-            await loadStream(safeEncodeUrl(streams[currentStreamIndex]));
-            await safePlay();
-            updateNavButtons();
+          if (window.Hls && Hls.isSupported()) {
+            const hls = new Hls({capLevelToPlayerSize:true});
+            hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
+          } else {
+            const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} dbg('native hls used');
+            // also set player.src
+            try { player.src = src; player.load(); } catch(e){}
           }
-        });
-
-        // Add buttons to controls panel
-        const buttonsRow = document.querySelector('.buttons-row');
-        buttonsRow.prepend(nextBtn);
-        buttonsRow.prepend(prevBtn);
-      }
-
-      // Handle download links (exclude videy)
-      const downloadLinks = [];
-      if (p && p.links) {
-        if (p.links.mediafire && p.links.mediafire.length > 0) downloadLinks.push(...p.links.mediafire.map(link => ({ url: link, type: 'Mediafire' })));
-        if (p.links.terabox && p.links.terabox.length > 0) downloadLinks.push(...p.links.terabox.map(link => ({ url: link, type: 'Terabox' })));
-        if (p.links.pixeldrain && p.links.pixeldrain.length > 0) downloadLinks.push(...p.links.pixeldrain.map(link => ({ url: link, type: 'Pixeldrain' })));
-        if (p.links.bonus && p.links.bonus.length > 0) downloadLinks.push(...p.links.bonus.map(link => ({ url: link, type: 'Bonus' })));
-      }
-
-      if (downloadLinks.length > 0) {
-        if (downloadLinks.length === 1) {
-          downloadBtn.href = downloadLinks[0].url;
-          downloadBtn.style.display = 'inline-flex';
-          downloadBtn.querySelector('span').textContent = downloadLinks[0].type;
-        } else {
-          downloadBtn.style.display = 'none'; // Hide single download button
-          const downloadMenu = document.createElement('div');
-          downloadMenu.className = 'download-menu';
-          downloadMenu.innerHTML = `
-            <button class="icon-btn" aria-label="Download options">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
-                <path d="M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21 21H3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Downloads
-            </button>
-            <ul>
-              ${downloadLinks.map(link => `<li><a href="${link.url}" target="_blank" rel="noopener">${link.type}</a></li>`).join('')}
-            </ul>`;
-          document.querySelector('.post-actions').appendChild(downloadMenu);
-        }
+        } catch(err){ dbg('hls error', err); const s = document.createElement('source'); s.src=src; s.type='application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); }catch(e){} try{ player.src = src; player.load(); }catch(e){} }
       } else {
-        downloadBtn.style.display = 'none';
+        const s = document.createElement('source'); s.src = src; s.type = src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/unknown'; player.appendChild(s);
+        try{ player.load(); } catch(e){}
+        // set src directly as well
+        try { player.src = src; player.load(); } catch(e){}
+        dbg('mp4 loaded', src);
       }
-
-      dbg('Setup media complete', streams.length, 'videos', downloadLinks.length, 'download links');
+      await waitForCanPlay(player, 4000);
     }
 
-    renderPost(post);
-    await setupMedia(post);
+    function setPlayIcon(paused){ if (!iconPlay) return; if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>'; else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>'; }
+    function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
+    function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
-    // UI helpers
-    async function safePlay() {
+    async function attemptPlayWithFallback(streamUrl){
       try {
-        const p = player.play();
-        if (p && typeof p.then === 'function') await p;
+        await player.play();
         setPlayIcon(false); hideOverlay();
-      } catch(err) {
-        dbg('play() rejected', err);
-        showOverlay();
+        return { ok:true };
+      } catch(e1){
+        dbg('play() rejected, trying muted play', e1);
+        const wasMuted = player.muted;
+        try {
+          player.muted = true;
+          await player.play();
+          setPlayIcon(false); hideOverlay();
+          player.muted = wasMuted;
+          return { ok:true, mutedFallback:true };
+        } catch(e2){
+          dbg('muted play also rejected', e2);
+          player.muted = wasMuted;
+          const debugEl = document.getElementById('debug');
+          if (debugEl) debugEl.textContent = (new Date()).toLocaleTimeString() + ' — Playback blocked. Likely CORS/hotlink/redirect.';
+          // show open-in-tab button for debugging
+          const existing = document.getElementById('openStreamDebugBtn');
+          if (!existing) {
+            const openBtn = document.createElement('a');
+            openBtn.id = 'openStreamDebugBtn';
+            openBtn.textContent = 'Buka stream di tab (debug)';
+            openBtn.href = streamUrl;
+            openBtn.target = '_blank';
+            openBtn.rel = 'noopener noreferrer';
+            openBtn.style.display = 'inline-block';
+            openBtn.style.padding = '8px 12px';
+            openBtn.style.borderRadius = '10px';
+            openBtn.style.background = '#111';
+            openBtn.style.color = '#fff';
+            openBtn.style.fontWeight = '700';
+            const pa = document.querySelector('.post-actions') || document.body;
+            pa.appendChild(openBtn);
+          }
+          return { ok:false, error: e2 };
+        }
       }
     }
-    function setPlayIcon(paused) {
-      if (!iconPlay) return;
-      if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
-      else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>';
+
+    if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(post._streams && post._streams[0]); else player.pause(); });
+    if (bigPlay) bigPlay.addEventListener('click', async ()=> {
+      if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
+        await setupMediaForUrl(post._streams[0]);
+      }
+      window._userInteracted = true;
+      await attemptPlayWithFallback(player.currentSrc || post._streams && post._streams[0]);
+    });
+    if (player) {
+      player.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(player.currentSrc); else player.pause(); });
+      player.addEventListener('play', ()=> { setPlayIcon(false); hideOverlay(); });
+      player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); });
+      player.addEventListener('loadedmetadata', ()=> { if (timeEl) timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`; });
+      player.addEventListener('timeupdate', ()=> {
+        const pct = (player.currentTime / Math.max(1, player.duration)) * 100;
+        try{ if (!Number.isNaN(pct) && progress) progress.value = pct; } catch(e){}
+        if (timeEl) timeEl.textContent = `${formatTime(player.currentTime)} / ${formatTime(player.duration)}`;
+      });
+      player.addEventListener('error', (e) => { dbg('media element error', e, player.error && player.error.code); });
     }
-    function showOverlay() { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden', 'false'); }
-    function hideOverlay() { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden', 'true'); }
 
-    // Play/pause
-    playBtn.addEventListener('click', () => { if (player.paused) safePlay(); else player.pause(); });
-    bigPlay.addEventListener('click', () => safePlay());
-    player.addEventListener('click', () => { if (player.paused) safePlay(); else player.pause(); });
-
-    player.addEventListener('play', () => { setPlayIcon(false); hideOverlay(); });
-    player.addEventListener('playing', () => { setPlayIcon(false); hideOverlay(); });
-    player.addEventListener('pause', () => { setPlayIcon(true); showOverlay(); });
-    player.addEventListener('ended', () => { setPlayIcon(true); showOverlay(); });
-
-    // Seek/time
-    player.addEventListener('loadedmetadata', () => { timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`; });
-    player.addEventListener('timeupdate', () => {
-      const pct = (player.currentTime / Math.max(1, player.duration)) * 100;
-      if (!Number.isNaN(pct)) progress.value = pct;
-      timeEl.textContent = `${formatTime(player.currentTime)} / ${formatTime(player.duration)}`;
-    });
-    progress.addEventListener('input', (e) => {
-      const pct = Number(e.target.value); const t = (pct/100) * (player.duration || 0);
-      timeEl.textContent = `${formatTime(t)} / ${formatTime(player.duration)}`;
-    });
-    progress.addEventListener('change', (e) => { const pct = Number(e.target.value); player.currentTime = (pct/100) * (player.duration || 0); });
-
-    // Mute & visible vol slider
+    // volume & controls (unchanged)
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
-    function updateMuteUI() { if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
-    function showVolumeIndicator(perc) { if (!volumeIndicator) return; volumeIndicator.style.display = 'inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(() => volumeIndicator.style.display = 'none', 900); }
-    muteBtn.addEventListener('click', (ev) => {
-      if (player.muted || player.volume === 0) { player.muted = false; player.volume = prevVolume || 1; }
-      else { prevVolume = player.volume; player.muted = true; }
-      updateMuteUI(); showVolumeIndicator(Math.round((player.muted ? 0 : player.volume) * 100));
-      placeVolPop(muteBtn);
-    });
-    player.addEventListener('volumechange', () => { if (!player.muted) prevVolume = player.volume; updateMuteUI(); showVolumeIndicator(Math.round((player.muted ? 0 : player.volume) * 100)); volSlider.value = Math.round((player.muted ? 0 : player.volume) * 100); });
+    function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
+    function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
 
-    // Vol pop positioning & slider control
-    function placeVolPop(anchor) {
-      if (!volPop) return;
-      const rect = anchor.getBoundingClientRect();
-      volPop.style.display = 'block';
-      volPop.style.left = (rect.right - 140) + 'px';
-      volPop.style.top = (rect.top - 56) + 'px';
-      if (window._volPopTimeout) clearTimeout(window._volPopTimeout);
-      window._volPopTimeout = setTimeout(() => { volPop.style.display = 'none'; }, 4000);
-    }
-    volSlider.addEventListener('input', (e) => {
-      const v = Number(e.target.value) / 100;
-      player.volume = v;
-      player.muted = v === 0;
-      showVolumeIndicator(Math.round(v * 100));
+    if (muteBtn) muteBtn.addEventListener('click', (ev)=> {
+      if (player.muted || player.volume === 0){ player.muted = false; player.volume = prevVolume || 1; } else { prevVolume = player.volume; player.muted = true; }
+      updateMuteUI(); showVolumeIndicator(Math.round((player.muted?0:player.volume)*100));
+      const rect = muteBtn.getBoundingClientRect(); volPop.style.display='block'; volPop.style.left = (rect.right - 140) + 'px'; volPop.style.top = (rect.top - 56) + 'px';
+      if (window._volPopTimeout) clearTimeout(window._volPopTimeout); window._volPopTimeout = setTimeout(()=> { volPop.style.display='none'; }, 4000);
     });
-    document.addEventListener('click', (ev) => {
-      if (!volPop) return;
-      if (volPop.contains(ev.target) || muteBtn.contains(ev.target)) return;
-      volPop.style.display = 'none';
-    });
+    if (volSlider) volSlider.addEventListener('input', (e)=> { const v = Number(e.target.value)/100; player.volume = v; player.muted = v === 0; showVolumeIndicator(Math.round(v*100)); });
 
-    // Vertical volume gesture zone
-    (function enableVerticalVolume() {
-      let active = false, startY = 0, startVolume = 1, pointerId = null;
-      const zone = volZone;
-      if (!zone) return;
-      zone.addEventListener('pointerdown', ev => {
-        ev.preventDefault();
-        active = true; pointerId = ev.pointerId; startY = ev.clientY;
-        startVolume = player.muted ? (prevVolume || 1) : (player.volume || 1);
-        player.muted = false;
-        zone.setPointerCapture(pointerId);
-        showVolumeIndicator(Math.round(startVolume * 100));
-      });
-      zone.addEventListener('pointermove', ev => {
-        if (!active) return;
-        const dy = startY - ev.clientY;
-        const delta = dy / 160; // Sensitivity
-        let newVol = Math.max(0, Math.min(1, startVolume + delta));
-        player.volume = newVol;
-        player.muted = newVol === 0;
-        showVolumeIndicator(Math.round(newVol * 100));
-        volSlider.value = Math.round(newVol * 100);
-      });
-      function endGesture(ev) {
-        if (!active) return; active = false;
-        try { zone.releasePointerCapture(ev.pointerId || pointerId); } catch(e) {}
-        pointerId = null;
-      }
-      zone.addEventListener('pointerup', endGesture);
-      zone.addEventListener('pointercancel', endGesture);
-      zone.addEventListener('lostpointercapture', () => { active = false; });
+    document.addEventListener('click', (ev)=> { if (!volPop) return; if (volPop.contains(ev.target) || (muteBtn && muteBtn.contains(ev.target))) return; volPop.style.display = 'none'; });
+
+    (function enableVerticalVolume(){
+      let active=false, startY=0, startVolume=1, pointerId=null; const zone = volZone; if (!zone) return;
+      zone.addEventListener('pointerdown', ev => { ev.preventDefault(); active=true; pointerId=ev.pointerId; startY=ev.clientY; startVolume = player.muted ? (prevVolume||1) : (player.volume||1); player.muted = false; try{ zone.setPointerCapture(pointerId); }catch(e){} showVolumeIndicator(Math.round(startVolume*100)); });
+      zone.addEventListener('pointermove', ev => { if (!active) return; const dy = startY - ev.clientY; const delta = dy/160; let newVol = Math.max(0, Math.min(1, startVolume + delta)); player.volume = newVol; player.muted = newVol === 0; showVolumeIndicator(Math.round(newVol*100)); if (volSlider) volSlider.value = Math.round(newVol*100); });
+      function endGesture(ev){ if (!active) return; active=false; try{ zone.releasePointerCapture(ev.pointerId||pointerId); }catch(e){} pointerId=null; }
+      zone.addEventListener('pointerup', endGesture); zone.addEventListener('pointercancel', endGesture); zone.addEventListener('lostpointercapture', ()=>{ active=false; });
     })();
 
-    // Fullscreen
-    fsBtn.addEventListener('click', async () => {
-      try {
-        if (document.fullscreenElement) await document.exitFullscreen();
-        else await playerWrap.requestFullscreen();
-      } catch(e) { dbg('fs err', e); }
-    });
+    if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
+    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
+    const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
 
-    // Cinema mode
-    cinemaBtn.addEventListener('click', () => {
-      const active = playerWrap.classList.toggle('theater');
-      document.body.classList.toggle('theater', active);
-    });
+    try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
 
-    // Speed
-    const speeds = [1, 1.25, 1.5, 2]; let speedIndex = 0;
-    speedBtn.addEventListener('click', () => {
-      speedIndex = (speedIndex + 1) % speeds.length; player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex] + '×';
-    });
+    // playlist controls (streams only)
+    (function attachPlaylist(){
+      if (!Array.isArray(post._streams) || post._streams.length === 0) return;
+      const streams = post._streams.slice();
+      const old = document.getElementById('playlistControls'); if (old) old.remove();
+      const plc = document.createElement('div'); plc.id='playlistControls'; plc.style.display='flex'; plc.style.gap='8px'; plc.style.alignItems='center'; plc.style.marginTop='8px';
+      const prevBtn = document.createElement('button'); prevBtn.className='icon-btn'; prevBtn.textContent='‹ Prev';
+      const idxInput = document.createElement('input'); idxInput.type='number'; idxInput.min='1'; idxInput.value='1'; idxInput.style.width='64px';
+      const countSpan = document.createElement('span'); countSpan.textContent=` / ${streams.length}`;
+      const nextBtn = document.createElement('button'); nextBtn.className='icon-btn'; nextBtn.textContent='Next ›';
+      plc.append(prevBtn, idxInput, countSpan, nextBtn);
+      const pa = document.querySelector('.post-actions') || document.body; pa.appendChild(plc);
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes((document.activeElement || {}).tagName)) return;
-      if (e.code === 'Space') { e.preventDefault(); if (player.paused) safePlay(); else player.pause(); }
-      if (e.key === 'f') fsBtn.click();
-      if (e.key === 't') cinemaBtn.click();
-      if (e.key === 'm') muteBtn.click();
-      if (e.key === 'ArrowRight') player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
-      if (e.key === 'ArrowLeft') player.currentTime = Math.max(0, player.currentTime - 10);
-      if (e.key === 'ArrowUp') { player.volume = Math.min(1, player.volume + 0.05); showVolumeIndicator(Math.round(player.volume * 100)); volSlider.value = Math.round(player.volume * 100); }
-      if (e.key === 'ArrowDown') { player.volume = Math.max(0, player.volume - 0.05); showVolumeIndicator(Math.round(player.volume * 100)); volSlider.value = Math.round(player.volume * 100); }
-    });
+      let cur = 0;
+      let userInteracted = false;
+      window._userInteracted = false;
+      if (bigPlay) bigPlay.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
+      if (playBtn) playBtn.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
 
-    // Prevent context & drag
-    wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false);
-    player.addEventListener('contextmenu', ev => ev.preventDefault(), false);
-    player.addEventListener('dragstart', ev => ev.preventDefault());
+      async function playAt(i, autoplayIfInteracted=true){
+        i = Math.max(0, Math.min(streams.length-1, i));
+        cur = i; idxInput.value = cur+1;
+        await setupMediaForUrl(streams[cur]);
+        if (autoplayIfInteracted && (userInteracted || window._userInteracted)) {
+          const res = await attemptPlayWithFallback(player.currentSrc || streams[cur]);
+          if (!res.ok) dbg('playAt failed', res.error);
+        } else showOverlay();
+      }
 
-    // Init UI states
-    setPlayIcon(player.paused);
-    updateMuteUI();
-    volSlider.value = Math.round((player.muted ? 0 : player.volume || 1) * 100);
+      prevBtn.addEventListener('click', async ()=> { if (cur>0) await playAt(cur-1); });
+      nextBtn.addEventListener('click', async ()=> { if (cur<streams.length-1) await playAt(cur+1); });
+      idxInput.addEventListener('change', async ()=> { const v = Number(idxInput.value)-1; if (Number.isInteger(v) && v>=0 && v<streams.length) await playAt(v); else idxInput.value = cur+1; });
 
-    dbg('player ready', post ? (post.slug || post.id || post.path) : 'no-post');
+      player.addEventListener('ended', async ()=> {
+        if (cur < streams.length-1) { cur++; idxInput.value = cur+1; await setupMediaForUrl(streams[cur]); if (userInteracted || window._userInteracted) { try { await player.play(); } catch(e){ dbg('auto-next blocked', e); showOverlay(); } } else showOverlay(); } else { dbg('playlist ended'); showOverlay(); }
+      });
+
+      // initial load
+      const initial = 0;
+      cur = initial; idxInput.value = cur+1;
+      setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
+    })();
+
+    try { setPlayIcon(player.paused); } catch(e){}
+    try { updateMuteUI(); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
+    dbg('player ready for post', post.slug || post.id || post.path || post.title);
   }
 
-  // Run
-  init().catch(err => { console.error(err); dbg('init error: ' + err); });
+  init().catch(err => { console.error(err); try { const el=document.getElementById('debug'); if (el) el.textContent = 'init error: '+String(err); } catch(e){} });
 })();
