@@ -1,10 +1,13 @@
-// assets/player.js (final - all-in-one)
+// assets/player.js (full)
 // Minimal, no HEAD/CORS, playlist from links.videy, download links only for non-videy sources.
 // Robust play attempts: user gesture -> try play -> try muted play -> show debug (no open tab).
+//
+// This file includes a small CSS injection so the download links are styled automatically.
 
 (() => {
   const POSTS_JSON = '/data/posts.json';
 
+  /* --- Utilities -------------------------------------------------------- */
   function dbg(...args){
     console.log(...args);
     const el = document.getElementById('debug');
@@ -24,6 +27,38 @@
     return res.json();
   }
 
+  /* --- Inject small CSS for download list (keeps file self-contained) --- */
+  (function injectDownloadCss(){
+    const css = `
+    /* Download list styles injected by assets/player.js */
+    .download-list { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+    .download-link.item {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background:#000;
+      color:#fff;
+      padding:14px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:700;
+      gap:8px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    }
+    .download-link.item .dl-left { flex:0 0 auto; }
+    .download-link.item .dl-source { color:#fff; font-weight:800; text-transform:none; }
+    .download-link.item .dl-center { flex:1 1 auto; padding:0 12px; color:#fff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .download-link.item .dl-right { flex:0 0 auto; color:#fff; opacity:0.95; font-weight:700; }
+    .download-hint { color:var(--muted,#6b7280); font-size:13px; padding:8px 4px; }
+    .playlist-controls { margin-top:8px; gap:8px; display:flex; align-items:center; }
+    `;
+    try {
+      const s = document.createElement('style'); s.setAttribute('data-origin','assets/player.js'); s.appendChild(document.createTextNode(css));
+      document.head && document.head.appendChild(s);
+    } catch(e){ /* ignore */ }
+  })();
+
+  /* --- Main init ------------------------------------------------------- */
   async function init(){
     // elements (graceful fallback if some ids are missing)
     const player = document.getElementById('player');
@@ -40,20 +75,16 @@
       iconPlay = document.createElementNS('http://www.w3.org/2000/svg','svg');
       iconPlay.setAttribute('id','iconPlay'); iconPlay.setAttribute('viewBox','0 0 24 24'); iconPlay.setAttribute('width','18'); iconPlay.setAttribute('height','18');
       iconPlay.innerHTML = '<path d="M8 5v14l11-7z"/>';
-      playBtn.appendChild(iconPlay);
+      try { playBtn.appendChild(iconPlay); } catch(e){}
     }
     let iconMute = document.getElementById('iconMute');
     const muteBtn = document.getElementById('mute') || (function(){ const b=document.createElement('button'); b.id='mute'; b.className='icon-btn'; b.textContent='🔊'; if (playerWrap) (playerWrap.querySelector('.buttons-row')||playerWrap).appendChild(b); return b; })();
     if (!iconMute) {
-      // create an element inside muteBtn for consistent updates
       iconMute = document.createElement('span');
       iconMute.id = 'iconMute';
       iconMute.style.display = 'inline-block';
-      // empty svg style fallback
       iconMute.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5z"/></svg>';
-      // replace text content if present
-      try { muteBtn.textContent = ''; } catch(e){}
-      muteBtn.appendChild(iconMute);
+      try { muteBtn.textContent = ''; muteBtn.appendChild(iconMute); } catch(e){}
     }
 
     const fsBtn = document.getElementById('fs');
@@ -133,17 +164,26 @@
     if (postDesc) { postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>'); if (!postDesc.parentElement) document.getElementById('metaBox')?.appendChild(postDesc); }
     if (post.thumb && player) try { player.poster = safeUrl(post.thumb); } catch(e){}
 
-    // render download links (styled, only non-videy)
+    /* --- renderDownloadArea: only change/format source labels here --- */
     function renderDownloadArea(){
       if (!downloadArea) return;
       downloadArea.innerHTML = '';
       const list = document.createElement('div');
       list.className = 'download-list';
+
+      // map sumber -> label yang rapi (tanpa emot/emoji)
+      const SOURCE_LABELS = {
+        mediafire: 'Mediafire',
+        terabox: 'Terabox',
+        pixeldrain: 'Pixeldrain',
+        bonus: 'Bonus'
+      };
+
       if (Array.isArray(post._downloadLinks) && post._downloadLinks.length){
         post._downloadLinks.forEach(it => {
           const url = it.url || '';
-          const source = (it.source || 'link').toString();
-          const sourceLabel = source.replace(/^\w/, c => c.toUpperCase());
+          const source = (it.source || 'link').toString().toLowerCase();
+          const sourceLabel = SOURCE_LABELS[source] || source.replace(/^\w/, c => c.toUpperCase());
           const fn = filenameFromUrl(url);
           const shortFn = fn && fn.length > 48 ? fn.slice(0,45) + '...' : fn;
 
@@ -152,10 +192,11 @@
           a.href = url;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
+          // Struktur: [Source] — filename — full
           a.innerHTML = `
             <span class="dl-left"><span class="dl-source">${sourceLabel}</span></span>
-            <span class="dl-center" title="${fn || ''}">${shortFn || fn || 'file'}</span>
-            <span class="dl-right">full</span>
+            <span class="dl-center" title="${fn || ''}"> — ${shortFn || fn || 'file'}</span>
+            <span class="dl-right"> — full</span>
           `;
           if (isDirectFile(url)) try { a.setAttribute('download',''); } catch(e){}
           list.appendChild(a);
@@ -170,7 +211,7 @@
     }
     renderDownloadArea();
 
-    // helper to wait canplay/loadedmetadata
+    /* --- helper: wait canplay/loadedmetadata -------------------------------- */
     function waitForCanPlay(el, timeout = 4000){
       return new Promise(resolve => {
         let done = false;
@@ -182,7 +223,7 @@
       });
     }
 
-    // setup media (simple: set <source> and load). Remove crossorigin attribute to avoid CORS preflight concerns.
+    /* --- setupMediaForUrl: set <source> and load ----------------------------- */
     async function setupMediaForUrl(u){
       try { while (player.firstChild) player.removeChild(player.firstChild); } catch(e){}
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
@@ -224,7 +265,7 @@
       await waitForCanPlay(player, 3500);
     }
 
-    // UI helpers (set icons with graceful fallback)
+    /* --- UI helpers -------------------------------------------------------- */
     function setPlayIcon(paused){
       if (!iconPlay) return;
       try {
@@ -242,10 +283,10 @@
         try { iconMute.textContent = (player.muted||player.volume===0) ? '🔈' : '🔊'; } catch(e){}
       }
     }
-    function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
-    function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
+    function showOverlay(){ const overlay = document.getElementById('overlay'); if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
+    function hideOverlay(){ const overlay = document.getElementById('overlay'); if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
-    // robust play attempt: try play -> muted fallback -> report debug
+    /* --- robust play attempt ----------------------------------------------- */
     async function attemptPlayWithFallback(){
       const currentSrc = player.currentSrc || '';
       dbg('attemptPlayWithFallback currentSrc=' + currentSrc);
@@ -287,7 +328,7 @@
       }
     }
 
-    // wire controls
+    /* --- wire controls ---------------------------------------------------- */
     if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
@@ -310,7 +351,7 @@
       player.addEventListener('error', (e) => { dbg('media element error event', e, player.error && player.error.code); });
     }
 
-    // progress / seek
+    /* --- progress / seek -------------------------------------------------- */
     if (progress) {
       progress.addEventListener('input', (e) => {
         const pct = Number(e.target.value || 0);
@@ -323,7 +364,7 @@
       });
     }
 
-    // volume UI
+    /* --- volume UI -------------------------------------------------------- */
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
     if (muteBtn) muteBtn.addEventListener('click', (ev)=> {
       if (player.muted || player.volume === 0){ player.muted = false; player.volume = prevVolume || 1; } else { prevVolume = player.volume; player.muted = true; }
@@ -345,15 +386,15 @@
       zone.addEventListener('pointerup', endGesture); zone.addEventListener('pointercancel', endGesture); zone.addEventListener('lostpointercapture', ()=>{ active=false; });
     })();
 
-    // prevent context & drag
+    /* --- prevent context & drag ------------------------------------------- */
     try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
 
-    // fs / cinema / speed
+    /* --- fs / cinema / speed ---------------------------------------------- */
     if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
     if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
     const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
 
-    // keyboard shortcuts (space, f, t, m, arrows)
+    /* --- keyboard shortcuts ------------------------------------------------ */
     document.addEventListener('keydown', (e)=> {
       if (['INPUT','TEXTAREA'].includes((document.activeElement||{}).tagName)) return;
       if (e.code === 'Space') { e.preventDefault(); if (player.paused) attemptPlayWithFallback(); else player.pause(); }
@@ -366,7 +407,7 @@
       if (e.key === 'ArrowDown'){ player.volume = Math.max(0, player.volume - 0.05); showVolumeIndicator(Math.round(player.volume*100)); volSlider && (volSlider.value = Math.round(player.volume*100)); updateMuteUI(); }
     });
 
-    // Playlist (videy streams only)
+    /* --- Playlist (videy streams only) ------------------------------------ */
     (function attachPlaylist(){
       if (!Array.isArray(post._streams) || post._streams.length === 0) return;
       const streams = post._streams.slice();
@@ -415,7 +456,7 @@
       setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
     })();
 
-    // final UI init
+    /* --- final UI init ---------------------------------------------------- */
     try { setPlayIcon(player.paused); } catch(e){}
     try { updateMuteUI(); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
     dbg('player ready for post', post.slug || post.id || post.path || post.title);
