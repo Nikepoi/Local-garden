@@ -1,5 +1,7 @@
 // assets/player.js
-// Separated player logic: HLS, overlay, seek/time, volume gesture + slider, fullscreen, cinema
+// Player logic: HLS, overlay, seek/time, volume gesture + slider, fullscreen, cinema
+// Preserves original behavior; added minimal playlist/download fixes for local links
+
 (() => {
   const POSTS_JSON = '/data/posts.json';
 
@@ -8,14 +10,14 @@
     const el = document.getElementById('debug');
     try { el.textContent = (new Date()).toLocaleTimeString() + ' — ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' | '); } catch(e){}
   }
-  function safeEncodeUrl(u){ if (!u) return u; return u.split(' ').join('%20'); }
+  function safeEncodeUrl(u){ if (!u) return u; return String(u).split(' ').join('%20'); }
   function formatTime(s){ if (!isFinite(s)) return '00:00'; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 
   async function loadJSON(url){
     const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error('HTTP ' + res.status); return res.json();
   }
 
-  // ----- NEW: build streams from post.links (plain urls) -----
+  // ------------------ helper: build streams from post.links ------------------
   function buildStreamsFromLinksPlain(linksObj){
     if (!linksObj || typeof linksObj !== 'object') return [];
     const order = ['videy','mediafire','terabox','pixeldrain','bonus'];
@@ -32,6 +34,15 @@
     return out;
   }
 
+  // small helpers
+  function isPlayableURL(u){
+    return /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(String(u || ''));
+  }
+  function isDirectFile(u){
+    return /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(u || ''));
+  }
+
+  // ------------------ main init ------------------
   async function init(){
     const player = document.getElementById('player');
     const playerWrap = document.getElementById('playerWrap');
@@ -52,7 +63,7 @@
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
 
-    // create vol zone and vol pop if not present
+    // ensure volZone exists
     let volZone = document.getElementById('volZone');
     if (!volZone) {
       volZone = document.createElement('div');
@@ -61,6 +72,7 @@
       wrap.appendChild(volZone);
     }
 
+    // vol pop slider
     let volPop = document.getElementById('volPop');
     if (!volPop) {
       volPop = document.createElement('div');
@@ -76,11 +88,12 @@
       document.body.appendChild(el); return el;
     })();
 
-    // get slug from path
+    // slug from path or meta (meta preferred)
+    const metaSlugEl = document.querySelector('meta[name="slug"]');
     const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
-    const slug = decodeURIComponent(rawName || '');
+    const slug = metaSlugEl && metaSlugEl.content ? metaSlugEl.content : decodeURIComponent(rawName || '');
 
-    // load posts
+    // load posts.json
     let post = null;
     try {
       dbg('Fetching', POSTS_JSON);
@@ -99,7 +112,7 @@
       dbg('posts.json error', String(err));
     }
 
-    // If post present: build streams array and set default post.stream if not provided
+    // if post found, build streams and default stream selection
     if (post) {
       const streams = buildStreamsFromLinksPlain(post.links || {});
       post._streams = streams;
@@ -119,9 +132,9 @@
       }
       if (postTitle) postTitle.textContent = p.title || 'No title';
       if (postDate) postDate.textContent = p.date || '';
-      // excerpt removed: use p.description if present, otherwise blank
+      // excerpt removed: use description if provided
       if (postDesc) postDesc.innerHTML = (p.description || '').toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
-      if (p.thumb) try { player.poster = safeEncodeUrl(p.thumb); } catch(e){}
+      if (p.thumb && player) try { player.poster = safeEncodeUrl(p.thumb); } catch(e){}
     }
 
     async function setupMedia(p){
@@ -129,10 +142,23 @@
       while (player.firstChild) player.removeChild(player.firstChild);
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); }catch(e){} player._hls = null; }
 
-      let stream = p && (p.stream || p.url || p.source) ? safeEncodeUrl(p.stream || p.url || p.source) : null;
-      if (!stream && p && p.download) stream = safeEncodeUrl(p.download);
+      // p can be object {stream, download} or post object or string
+      let stream = null;
+      let downloadLink = null;
+
+      if (typeof p === 'string') stream = safeEncodeUrl(p);
+      else if (p && typeof p === 'object') {
+        // if object has stream property use that, else try p.stream/p.url/p.source
+        stream = p.stream ? safeEncodeUrl(p.stream) : (p.url ? safeEncodeUrl(p.url) : (p.source ? safeEncodeUrl(p.source) : null));
+        if (!stream && p.download) stream = safeEncodeUrl(p.download);
+        downloadLink = p.download || null;
+      }
+
       if (!stream) {
-        const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type='video/mp4'; player.appendChild(s); try{ player.load(); }catch(e){} if (downloadBtn) downloadBtn.style.display='none'; return;
+        const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type='video/mp4'; player.appendChild(s);
+        try{ player.load(); }catch(e){}
+        if (downloadBtn) downloadBtn.style.display='none';
+        return;
       }
 
       if (stream.toLowerCase().endsWith('.m3u8')) {
@@ -165,14 +191,25 @@
         dbg('mp4 loaded', stream);
       }
 
-      if (p && p.download) { downloadBtn.href = p.download; downloadBtn.style.display='inline-flex'; } else if (downloadBtn) downloadBtn.style.display='none';
+      // download button: only show for direct files or explicit download link
+      if (downloadBtn) {
+        if (downloadLink) {
+          downloadBtn.href = downloadLink;
+          downloadBtn.style.display = 'inline-flex';
+        } else if (isDirectFile(stream)) {
+          downloadBtn.href = stream;
+          downloadBtn.style.display = 'inline-flex';
+        } else {
+          downloadBtn.style.display = 'none';
+        }
+      }
     }
 
-    // initial render + load
+    // initial
     renderPost(post);
     await setupMedia(post);
 
-    // UI helpers
+    // UI helpers & events (kept logic original)
     async function safePlay(){
       try {
         const p = player.play();
@@ -188,10 +225,9 @@
       if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
       else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>';
     }
-    function showOverlay(){ overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); }
-    function hideOverlay(){ overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); }
+    function showOverlay(){ if (overlay) overlay.classList.remove('hidden'); if (overlay) overlay.setAttribute('aria-hidden','false'); }
+    function hideOverlay(){ if (overlay) overlay.classList.add('hidden'); if (overlay) overlay.setAttribute('aria-hidden','true'); }
 
-    // play/pause
     if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) safePlay(); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', ()=> safePlay());
     if (player) player.addEventListener('click', ()=> { if (player.paused) safePlay(); else player.pause(); });
@@ -202,7 +238,6 @@
       player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); });
       player.addEventListener('ended', ()=> { setPlayIcon(true); showOverlay(); });
 
-      // seek/time
       player.addEventListener('loadedmetadata', ()=> { if (timeEl) timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`; });
       player.addEventListener('timeupdate', ()=>{
         const pct = (player.currentTime / Math.max(1, player.duration)) * 100;
@@ -219,10 +254,10 @@
       progress.addEventListener('change', (e)=> { const pct = Number(e.target.value); if (player) player.currentTime = (pct/100) * (player.duration || 0); });
     }
 
-    // mute & visible vol slider
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
-    function updateMuteUI(){ if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
+    function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
     function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
+
     if (muteBtn) muteBtn.addEventListener('click', (ev)=> {
       if (player.muted || player.volume === 0){ player.muted = false; player.volume = prevVolume || 1; }
       else { prevVolume = player.volume; player.muted = true; }
@@ -231,7 +266,6 @@
     });
     if (player) player.addEventListener('volumechange', ()=> { if (!player.muted) prevVolume = player.volume; updateMuteUI(); showVolumeIndicator(Math.round((player.muted?0:player.volume)*100)); if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume)*100); });
 
-    // vol pop positioning & slider control
     function placeVolPop(anchor){
       if(!volPop) return;
       const rect = anchor.getBoundingClientRect();
@@ -253,7 +287,6 @@
       volPop.style.display = 'none';
     });
 
-    // vertical volume gesture zone
     (function enableVerticalVolume(){
       let active=false, startY=0, startVolume=1, pointerId=null;
       const zone = volZone;
@@ -269,7 +302,7 @@
       zone.addEventListener('pointermove', ev => {
         if (!active) return;
         const dy = startY - ev.clientY;
-        const delta = dy/160; // sensitivity
+        const delta = dy/160;
         let newVol = Math.max(0, Math.min(1, startVolume + delta));
         player.volume = newVol;
         player.muted = newVol === 0;
@@ -286,7 +319,6 @@
       zone.addEventListener('lostpointercapture', ()=>{ active=false; });
     })();
 
-    // fullscreen (use playerWrap.requestFullscreen)
     if (fsBtn) fsBtn.addEventListener('click', async ()=> {
       try {
         if (document.fullscreenElement) await document.exitFullscreen();
@@ -294,19 +326,16 @@
       } catch(e){ dbg('fs err', e); }
     });
 
-    // cinema mode (theater)
     if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> {
       const active = playerWrap.classList.toggle('theater');
       document.body.classList.toggle('theater', active);
     });
 
-    // speed
     const speeds = [1,1.25,1.5,2]; let speedIndex = 0;
     if (speedBtn) speedBtn.addEventListener('click', ()=> {
       speedIndex = (speedIndex+1) % speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex] + '×';
     });
 
-    // keyboard shortcuts
     document.addEventListener('keydown', (e)=> {
       if (['INPUT','TEXTAREA'].includes((document.activeElement||{}).tagName)) return;
       if (e.code === 'Space') { e.preventDefault(); if (player.paused) safePlay(); else player.pause(); }
@@ -319,26 +348,22 @@
       if (e.key === 'ArrowDown' && player){ player.volume = Math.max(0, player.volume - 0.05); showVolumeIndicator(Math.round(player.volume*100)); if (volSlider) volSlider.value = Math.round(player.volume*100); }
     });
 
-    // prevent context & drag
     try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
 
-    // init UI states
     try { setPlayIcon(player.paused); } catch(e){}
     updateMuteUI();
     try { if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
 
     dbg('player ready', post ? (post.slug||post.id||post.path) : 'no-post');
 
-    // --- Inject minimal playlist controls (only if multiple streams exist) ---
+    // --- Improved playlist: only call setupMedia for playable URLs ---
     (function attachSimplePlaylist(){
       if (!post) return;
       const streams = Array.isArray(post._streams) ? post._streams : [];
       if (!streams.length) return;
 
-      // remove old if exist
       const old = document.getElementById('playlistControls'); if (old) old.remove();
 
-      // create controls
       const nav = document.createElement('div');
       nav.id = 'playlistControls';
       nav.style.display = 'flex';
@@ -350,7 +375,7 @@
       const idxInput = document.createElement('input'); idxInput.type='number'; idxInput.min='1'; idxInput.value='1'; idxInput.style.width='64px';
       const count = document.createElement('span'); count.textContent = ` / ${streams.length}`;
       const next = document.createElement('button'); next.type='button'; next.className='icon-btn'; next.textContent='Next ›';
-      const open = document.createElement('a'); open.className='download-link'; open.target='_blank'; open.rel='noopener noreferrer'; open.style.padding='6px 10px';
+      const open = document.createElement('a'); open.className='download-link'; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.style.padding='6px 10px';
       open.textContent = 'Buka di tab';
 
       nav.append(prev, idxInput, count, next, open);
@@ -362,10 +387,19 @@
         if (i < 0 || i >= streams.length) return;
         cur = i;
         idxInput.value = i + 1;
-        open.href = streams[i];
-        // use same setupMedia logic: feed object minimal if you want download present
-        await setupMedia({ stream: streams[i], download: /\.(mp4|webm|ogg)(\?.*)?$/i.test(streams[i]) ? streams[i] : undefined });
-        try { await player.play(); } catch(e){}
+        const url = streams[i];
+        open.href = url;
+
+        if (isPlayableURL(url)) {
+          // playable -> load into player, set download only if direct file
+          const download = isDirectFile(url) ? url : undefined;
+          await setupMedia({ stream: url, download });
+          try { await (player && player.play ? player.play() : Promise.resolve()); } catch(e){}
+        } else {
+          // non-playable (host page) -> open in new tab + set downloadBtn to host page (user can download from there)
+          try { window.open(url, '_blank', 'noopener'); } catch(e){ dbg('open failed', e); }
+          if (downloadBtn) { downloadBtn.href = url; downloadBtn.style.display = 'inline-flex'; }
+        }
       }
 
       prev.addEventListener('click', ()=> playAt(cur - 1));
@@ -376,7 +410,6 @@
         else idxInput.value = cur + 1;
       });
 
-      // set initial index based on post.stream
       const initial = streams.findIndex(s => s === (post.stream || ''));
       cur = initial >= 0 ? initial : 0;
       idxInput.value = cur + 1;
