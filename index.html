@@ -1,312 +1,225 @@
 <!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Lokal - Indonesia - nikepoi universe</title>
-  <meta name="description" content="Daftar posting Lokal - Indonesia" />
-  <link rel="icon" href="/favicon/favicon.ico" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" crossorigin="anonymous" />
-  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
-  <style>
-    /* ===== Reset & dasar ===== */
-    :root{
-      --bg: #fbfbfd;
-      --card: #ffffff;
-      --muted: #6b7280;
-      --accent: #111827;
-      --glass: rgba(255,255,255,0.6);
-      --radius: 12px;
-      --shadow: 0 6px 18px rgba(17,24,39,0.06);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--accent);-webkit-font-smoothing:antialiased}
-    a{color:inherit}
-    img{max-width:100%;display:block}
 
-    /* ===== Layout ===== */
-    .site-main{min-height:calc(100vh - 120px);display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;}
-    .container-inner{width:100%;max-width:980px;margin:0 auto;}
+<html lang="en">  
+<head>  
+  <meta charset="utf-8" />  
+  <meta name="viewport" content="width=device-width,initial-scale=1" />  
+  <title>Lokal - Indonesia - nikepoi universe</title>  
+  <meta name="description" content="Daftar posting Lokal - Indonesia" />  
+  <link rel="icon" href="/favicon/favicon.ico" />  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" crossorigin="anonymous" />  
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />  
+  <link rel="stylesheet" href="/assets/list.css" />  
+  <style>  
+    .pagination { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:18px 0; }  
+    .pagination a, .pagination button { padding:8px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); text-decoration:none; background:#fff; cursor:pointer; }  
+    .pagination a.active, .pagination button.active { background:#111; color:#fff; border-color:transparent; }  
+    .grid-item { width:100%; max-width:320px; margin:8px; display:inline-block; vertical-align:top; }  
+    .card img { width:100%; height:auto; display:block; border-radius:8px; }  
+  </style>  
+</head>  
+<body>  
+  <main class="site-main">  
+    <div class="container-inner">  
+      <header class="header" data-aos="fade-down">  
+        <h1 class="page-title animate__animated animate__fadeIn">Lokal - Indonesia - nikepoi universe</h1>  
+        <div id="pageDate" class="sub" aria-live="polite">Memuat tanggal…</div>  
+      </header>  <section id="grid" class="grid" role="list" aria-live="polite">  
+    <div class="col-12 text-center text-muted">Memuat daftar posting lokal…</div>  
+  </section>  
 
-    header.header{display:flex;flex-direction:column;gap:14px;align-items:center;margin-bottom:18px}
-    .page-title{font-size:clamp(20px,5vw,36px);line-height:1.05;margin:0;text-align:center;font-weight:800}
-    .sub{color:var(--muted);font-size:14px}
+  <div id="debug" class="debug" aria-hidden="true"></div>  
+</div>
 
-    /* ===== Iklan banner ===== */
-    .ad-banner{width:100%;display:flex;justify-content:center;margin:6px 0 18px;}
-    .ad-card{
-      width:100%;max-width:880px;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(250,250,252,0.6));
-      transition:transform .25s ease, box-shadow .25s ease;
-      display:block;
-    }
-    .ad-card:hover{transform:translateY(-6px);box-shadow:0 12px 30px rgba(17,24,39,0.12)}
-    .ad-card img{display:block;width:100%;height:clamp(100px,12vw,180px);object-fit:cover;object-position:center;vertical-align:middle;background-color:#f3f4f6}
-
-    /* ===== Grid ===== */
-    .grid{display:grid;grid-template-columns:repeat(1,1fr);gap:14px;align-items:start}
-    @media(min-width:640px){ .grid{grid-template-columns:repeat(2,1fr)} }
-    @media(min-width:980px){ .grid{grid-template-columns:repeat(3,1fr)} }
-
-    .grid-item{background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--shadow);transition:transform .18s ease, box-shadow .18s ease;display:flex;flex-direction:column;gap:10px}
-    .grid-item:hover{transform:translateY(-6px);box-shadow:0 14px 30px rgba(17,24,39,0.08)}
-    /* Thumbnail kartu: responsive, crop rapi, tinggi adaptif */
-    .card img {
-      width: 100%;
-      height: clamp(140px, 18vw, 220px);
-      object-fit: cover;
-      object-position: center;
-      border-radius: 8px;
-      display: block;
-      background-color: #f3f4f6;
-      aspect-ratio: 16 / 9;
-    }
-    @media (min-width: 980px) {
-      .card img { height: clamp(160px, 16vw, 260px); }
-    }
-
-    .card h2{font-size:16px;margin:8px 0 0;font-weight:700}
-    .excerpt{color:var(--muted);font-size:13px;margin:6px 0}
-    time{font-size:12px;color:var(--muted)}
-
-    /* ===== Pagination ===== */
-    .pagination { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:18px 0; align-items:center; }
-    .pagination a, .pagination button { padding:8px 12px; border-radius:8px; border:1px solid rgba(0,0,0,0.06); text-decoration:none; background:#fff; cursor:pointer; font-weight:600; font-size:14px; color:var(--accent); }
-    .pagination a.active, .pagination button.active { background:var(--accent); color:#fff; border-color:transparent; }
-    .pagination span{color:var(--muted);padding:0 6px;font-weight:600}
-
-    /* ===== Footer ===== */
-    .site-footer{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 12px;background:transparent;color:var(--muted);gap:6px}
-    .footer-clock{font-family:monospace;font-weight:700;color:var(--accent)}
-    .footer-sub{font-size:13px;color:var(--muted)}
-
-    /* ===== Misc ===== */
-    .text-center{text-align:center}
-    .text-muted{color:var(--muted)}
-    .debug{display:none}
-    /* small accessibility focus */
-    a:focus, button:focus{outline:3px solid rgba(59,130,246,0.18);outline-offset:3px}
-  </style>
-</head>
-<body>
-  <main class="site-main">
-    <div class="container-inner">
-      <header class="header" data-aos="fade-down">
-        <h1 class="page-title animate__animated animate__fadeIn">Lokal - Indonesia - nikepoi universe</h1>
-        <div id="pageDate" class="sub" aria-live="polite">Memuat tanggal…</div>
-
-        <!-- IKLAN: gunakan gambar & target yang kamu kirim -->
-        <div class="ad-banner" aria-hidden="false">
-          <a class="ad-card" href="https://qq288zdr.com/Member/StreamlinedRegister?R=B9EB44C6"
-             target="_blank" rel="noopener noreferrer nofollow" aria-label="Iklan - Daftar sekarang">
-            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisoxTHgZPZzG7ZDXAHRDvizvEKNLwv2ws3c2XvOm-uNrcn8WjWv73MvhqxRoTowidMqdzqgkTF0C"
-                 alt="Iklan - klik untuk mendaftar" loading="lazy">
-          </a>
-        </div>
-      </header>
-
-      <section id="grid" class="grid" role="list" aria-live="polite">
-        <div class="col-12 text-center text-muted">Memuat daftar posting lokal…</div>
-      </section>
-
-      <div id="debug" class="debug" aria-hidden="true"></div>
-    </div>
-  </main>
-
-  <footer class="site-footer" aria-label="Footer">
-    <div id="footerClock" class="footer-clock" aria-live="polite">--:--:--</div>
-    <div class="footer-sub">nikepoi universe <span class="footer-emoji">🪐</span></div>
-  </footer>
-
-  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
-  <script src="/assets/list.js" defer></script>
-
-  <script>
-  const POSTS_JSON = '/posts.json';
-  const DEFAULT_PER_PAGE = 12;
-  const POLL_INTERVAL_MS = 60000;
-
-  function getPageFromUrl() {
-    const qp = new URLSearchParams(window.location.search).get('page');
-    if (qp && /^\d+$/.test(qp)) return Math.max(1, Number(qp));
-    const path = window.location.pathname.replace(/\/+$/, '');
-    let m = path.match(/(?:\/page\/)?(\d+)(?:\/index\.html|\.html)?$/i);
-    if (m) return Math.max(1, Number(m[1]));
-    return 1;
-  }
-
-  function formatDateISOToLocal(d){
-    try {
-      const dt = new Date(d);
-      return dt.toLocaleString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    } catch(e){
-      return d;
-    }
-  }
-
-  const GRID = document.getElementById('grid');
-  let postsData = null;
-  let currentUpdatedAt = null;
-
-  function clearGrid(){ GRID.innerHTML = ''; }
-
-  function renderPostsForPage(page) {
-    if (!postsData || !Array.isArray(postsData.posts)) {
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada data.</div>';
-      return;
-    }
-    const perPage = postsData.per_page || DEFAULT_PER_PAGE;
-    const total = postsData.total || postsData.posts.length;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    if (page < 1) page = 1;
-    if (page > totalPages) page = totalPages;
-    const start = (page - 1) * perPage;
-    const slice = postsData.posts.slice(start, start + perPage);
-    clearGrid();
-    if (!slice.length) {
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada posting pada halaman ini.</div>';
-    } else {
-      const frag = document.createDocumentFragment();
-      slice.forEach(p => {
-        const article = document.createElement('article');
-        article.className = 'grid-item';
-        article.innerHTML = `
-          <a class="card" href="${p.url}">
-            ${p.thumb ? `<img src="${p.thumb}" alt="${p.title}" loading="lazy">` : ''}
-            <h2>${p.title}</h2>
-            <p class="excerpt">${p.excerpt || ''}</p>
-            <time datetime="${p.date}">${formatDateISOToLocal(p.date)}</time>
-          </a>`;
-        frag.appendChild(article);
-      });
-      GRID.appendChild(frag);
-    }
-    renderPagination(page, totalPages);
-  }
-
-  function renderPagination(current, totalPages){
-    const old = document.getElementById('paginationControls');
-    if (old) old.remove();
-    const nav = document.createElement('nav');
-    nav.id = 'paginationControls';
-    nav.setAttribute('aria-label','Pagination');
-    const container = document.createElement('div');
-    container.className = 'pagination';
-    function pageHref(pageNum){
-      if (pageNum <= 1) return '/';
-      return `/${pageNum}/`;
-    }
-    function makeLink(label, pageNum, isActive){
-      const a = document.createElement('a');
-      a.href = pageHref(pageNum);
-      a.textContent = label;
-      if (isActive) a.classList.add('active');
-      a.dataset.page = String(pageNum);
-      a.rel = 'nofollow';
-      return a;
-    }
-    container.appendChild(makeLink('‹ Prev', Math.max(1, current - 1), false));
-    const range = 3;
-    const start = Math.max(1, current - range);
-    const end = Math.min(totalPages, current + range);
-    if (start > 1) {
-      container.appendChild(makeLink('1', 1, current === 1));
-      if (start > 2) {
-        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);
-      }
-    }
-    for (let i = start; i <= end; i++){
-      container.appendChild(makeLink(String(i), i, i === current));
-    }
-    if (end < totalPages) {
-      if (end < totalPages - 1) {
-        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);
-      }
-      container.appendChild(makeLink(String(totalPages), totalPages, current === totalPages));
-    }
-    container.appendChild(makeLink('Next ›', Math.min(totalPages, current + 1), false));
-    nav.appendChild(container);
-    GRID.after(nav);
-    const pathRoot = window.location.pathname.replace(/\/+$/,'') === '' || /\/index\.html$/.test(window.location.pathname);
-    if (pathRoot) {
-      container.querySelectorAll('a').forEach(a => {
-        a.addEventListener('click', function(e){
-          const page = Number(this.dataset.page || 1);
-          e.preventDefault();
-          const newUrl = new URL(window.location);
-          if (page <= 1) newUrl.pathname = '/';
-          else newUrl.pathname = `/${page}/`;
-          history.pushState({page}, '', newUrl.toString());
-          renderPostsForPage(page);
-          window.scrollTo({top:0, behavior:'smooth'});
-        });
-      });
-    }
-  }
-
-  async function fetchAndRender(initialPage){
-    try {
-      const res = await fetch(POSTS_JSON, {cache: 'no-store'});
-      if (!res.ok) throw new Error('Fetch error');
-      const data = await res.json();
-      postsData = data;
-      currentUpdatedAt = data.updated_at || null;
-      const perPage = postsData.per_page || DEFAULT_PER_PAGE;
-      const page = initialPage || getPageFromUrl();
-      renderPostsForPage(page);
-    } catch (err) {
-      console.error('fetchAndRender error', err);
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Gagal memuat daftar. Coba refresh.</div>';
-    }
-  }
-
-  async function pollForUpdates(){
-    if (!POLL_INTERVAL_MS) return;
-    try {
-      const res = await fetch(POSTS_JSON, {cache: 'no-store'});
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data) return;
-      if (data.updated_at && data.updated_at !== currentUpdatedAt) {
-        currentUpdatedAt = data.updated_at;
-        postsData = data;
-        const page = getPageFromUrl();
-        renderPostsForPage(page);
-        console.info('posts.json updated -> content refreshed');
-      }
-    } catch(e){
-      console.warn('pollForUpdates error', e);
-    }
-  }
-
-  (function initClock(){
-    const pageDate = document.getElementById('pageDate');
-    const footerClock = document.getElementById('footerClock');
-    function updateDateTime(){
-      const now = new Date();
-      const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
-      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
-      const dateStr = now.toLocaleDateString('id-ID', dateOptions);
-      const timeStr = now.toLocaleTimeString('id-ID', timeOptions);
-      if (pageDate) pageDate.textContent = `${dateStr} • ${timeStr} - nikepoi - Lokal - Indonesia`;
-      if (footerClock) footerClock.textContent = timeStr;
-    }
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-  })();
-
-  document.addEventListener('DOMContentLoaded', function(){
-    if (window.AOS) AOS.init({ once: true, duration: 420 });
-  });
-
-  (function(){
-    const initialPage = getPageFromUrl();
-    fetchAndRender(initialPage);
-    window.addEventListener('popstate', function(e){
-      const page = getPageFromUrl();
-      renderPostsForPage(page);
-    });
-    if (POLL_INTERVAL_MS > 0) setInterval(pollForUpdates, POLL_INTERVAL_MS);
-  })();
-  </script>
-</body>
+  </main>    <footer class="site-footer" aria-label="Footer">  
+    <div id="footerClock" class="footer-clock" aria-live="polite">--:--:--</div>  
+    <div class="footer-sub">nikepoi universe <span class="footer-emoji">🪐</span></div>  
+  </footer>    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>    <script src="/assets/list.js" defer></script>    <script>  
+  const POSTS_JSON = '/posts.json';  
+  const DEFAULT_PER_PAGE = 12;  
+  const POLL_INTERVAL_MS = 60000;  
+  
+  function getPageFromUrl() {  
+    const qp = new URLSearchParams(window.location.search).get('page');  
+    if (qp && /^\d+$/.test(qp)) return Math.max(1, Number(qp));  
+    const path = window.location.pathname.replace(/\/+$/, '');  
+    let m = path.match(/(?:\/page\/)?(\d+)(?:\/index\.html|\.html)?$/i);  
+    if (m) return Math.max(1, Number(m[1]));  
+    return 1;  
+  }  
+  
+  function formatDateISOToLocal(d){  
+    try {  
+      const dt = new Date(d);  
+      return dt.toLocaleString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });  
+    } catch(e){  
+      return d;  
+    }  
+  }  
+  
+  const GRID = document.getElementById('grid');  
+  let postsData = null;  
+  let currentUpdatedAt = null;  
+  
+  function clearGrid(){ GRID.innerHTML = ''; }  
+  
+  function renderPostsForPage(page) {  
+    if (!postsData || !Array.isArray(postsData.posts)) {  
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada data.</div>';  
+      return;  
+    }  
+    const perPage = postsData.per_page || DEFAULT_PER_PAGE;  
+    const total = postsData.total || postsData.posts.length;  
+    const totalPages = Math.max(1, Math.ceil(total / perPage));  
+    if (page < 1) page = 1;  
+    if (page > totalPages) page = totalPages;  
+    const start = (page - 1) * perPage;  
+    const slice = postsData.posts.slice(start, start + perPage);  
+    clearGrid();  
+    if (!slice.length) {  
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada posting pada halaman ini.</div>';  
+    } else {  
+      const frag = document.createDocumentFragment();  
+      slice.forEach(p => {  
+        const article = document.createElement('article');  
+        article.className = 'grid-item';  
+        article.innerHTML = `  
+          <a class="card" href="${p.url}">  
+            ${p.thumb ? `<img src="${p.thumb}" alt="${p.title}" loading="lazy">` : ''}  
+            <h2>${p.title}</h2>  
+            <p class="excerpt">${p.excerpt || ''}</p>  
+            <time datetime="${p.date}">${formatDateISOToLocal(p.date)}</time>  
+          </a>`;  
+        frag.appendChild(article);  
+      });  
+      GRID.appendChild(frag);  
+    }  
+    renderPagination(page, totalPages);  
+  }  
+  
+  function renderPagination(current, totalPages){  
+    const old = document.getElementById('paginationControls');  
+    if (old) old.remove();  
+    const nav = document.createElement('nav');  
+    nav.id = 'paginationControls';  
+    nav.setAttribute('aria-label','Pagination');  
+    const container = document.createElement('div');  
+    container.className = 'pagination';  
+    function pageHref(pageNum){  
+      if (pageNum <= 1) return '/';  
+      return `/${pageNum}/`;  
+    }  
+    function makeLink(label, pageNum, isActive){  
+      const a = document.createElement('a');  
+      a.href = pageHref(pageNum);  
+      a.textContent = label;  
+      if (isActive) a.classList.add('active');  
+      a.dataset.page = String(pageNum);  
+      a.rel = 'nofollow';  
+      return a;  
+    }  
+    container.appendChild(makeLink('‹ Prev', Math.max(1, current - 1), false));  
+    const range = 3;  
+    const start = Math.max(1, current - range);  
+    const end = Math.min(totalPages, current + range);  
+    if (start > 1) {  
+      container.appendChild(makeLink('1', 1, current === 1));  
+      if (start > 2) {  
+        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);  
+      }  
+    }  
+    for (let i = start; i <= end; i++){  
+      container.appendChild(makeLink(String(i), i, i === current));  
+    }  
+    if (end < totalPages) {  
+      if (end < totalPages - 1) {  
+        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);  
+      }  
+      container.appendChild(makeLink(String(totalPages), totalPages, current === totalPages));  
+    }  
+    container.appendChild(makeLink('Next ›', Math.min(totalPages, current + 1), false));  
+    nav.appendChild(container);  
+    GRID.after(nav);  
+    const pathRoot = window.location.pathname.replace(/\/+$/,'') === '' || /\/index\.html$/.test(window.location.pathname);  
+    if (pathRoot) {  
+      container.querySelectorAll('a').forEach(a => {  
+        a.addEventListener('click', function(e){  
+          const page = Number(this.dataset.page || 1);  
+          e.preventDefault();  
+          const newUrl = new URL(window.location);  
+          if (page <= 1) newUrl.pathname = '/';  
+          else newUrl.pathname = `/${page}/`;  
+          history.pushState({page}, '', newUrl.toString());  
+          renderPostsForPage(page);  
+          window.scrollTo({top:0, behavior:'smooth'});  
+        });  
+      });  
+    }  
+  }  
+  
+  async function fetchAndRender(initialPage){  
+    try {  
+      const res = await fetch(POSTS_JSON, {cache: 'no-store'});  
+      if (!res.ok) throw new Error('Fetch error');  
+      const data = await res.json();  
+      postsData = data;  
+      currentUpdatedAt = data.updated_at || null;  
+      const perPage = postsData.per_page || DEFAULT_PER_PAGE;  
+      const page = initialPage || getPageFromUrl();  
+      renderPostsForPage(page);  
+    } catch (err) {  
+      console.error('fetchAndRender error', err);  
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Gagal memuat daftar. Coba refresh.</div>';  
+    }  
+  }  
+  
+  async function pollForUpdates(){  
+    if (!POLL_INTERVAL_MS) return;  
+    try {  
+      const res = await fetch(POSTS_JSON, {cache: 'no-store'});  
+      if (!res.ok) return;  
+      const data = await res.json();  
+      if (!data) return;  
+      if (data.updated_at && data.updated_at !== currentUpdatedAt) {  
+        currentUpdatedAt = data.updated_at;  
+        postsData = data;  
+        const page = getPageFromUrl();  
+        renderPostsForPage(page);  
+        console.info('posts.json updated -> content refreshed');  
+      }  
+    } catch(e){  
+      console.warn('pollForUpdates error', e);  
+    }  
+  }  
+  
+  (function initClock(){  
+    const pageDate = document.getElementById('pageDate');  
+    const footerClock = document.getElementById('footerClock');  
+    function updateDateTime(){  
+      const now = new Date();  
+      const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };  
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };  
+      const dateStr = now.toLocaleDateString('id-ID', dateOptions);  
+      const timeStr = now.toLocaleTimeString('id-ID', timeOptions);  
+      if (pageDate) pageDate.textContent = `${dateStr} • ${timeStr} - nikepoi - Lokal - Indonesia`;  
+      if (footerClock) footerClock.textContent = timeStr;  
+    }  
+    updateDateTime();  
+    setInterval(updateDateTime, 1000);  
+  })();  
+  
+  document.addEventListener('DOMContentLoaded', function(){  
+    if (window.AOS) AOS.init({ once: true, duration: 420 });  
+  });  
+  
+  (function(){  
+    const initialPage = getPageFromUrl();  
+    fetchAndRender(initialPage);  
+    window.addEventListener('popstate', function(e){  
+      const page = getPageFromUrl();  
+      renderPostsForPage(page);  
+    });  
+    if (POLL_INTERVAL_MS > 0) setInterval(pollForUpdates, POLL_INTERVAL_MS);  
+  })();  
+  </script>  </body>  
 </html>
