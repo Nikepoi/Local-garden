@@ -1,6 +1,6 @@
-// assets/player.js
-// Minimal, no HEAD/CORS, playlist from links.videy, download links only for non-videy sources.
-// Robust play attempts: user gesture -> try play -> try muted play -> show debug (no open tab).
+// assets/player.js (REPLACE with this)
+// Uses posts.json (array). videy[] -> playlist (player only). other links -> download area.
+// No open-in-new-tab for .mp4 streams. Robust play (user gesture -> try play -> muted fallback -> debug).
 
 (() => {
   const POSTS_JSON = '/data/posts.json';
@@ -9,9 +9,7 @@
     console.log(...args);
     const el = document.getElementById('debug');
     if (!el) return;
-    try {
-      el.textContent = (new Date()).toLocaleTimeString() + ' — ' + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' | ');
-    } catch(e){}
+    try { el.textContent = (new Date()).toLocaleTimeString() + ' — ' + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' | '); } catch(e){}
   }
 
   function safeUrl(u){ return u ? String(u).trim() : u; }
@@ -27,6 +25,7 @@
   }
 
   async function init(){
+    // DOM refs
     const player = document.getElementById('player');
     const playerWrap = document.getElementById('playerWrap');
     const wrap = document.getElementById('videoWrap');
@@ -44,17 +43,28 @@
     const postTitle = document.getElementById('postTitle');
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
-    const downloadArea = document.getElementById('downloadArea') || (function(){ const d=document.createElement('div'); d.id='downloadArea'; document.querySelector('.container')?.appendChild(d); return d; })();
 
-    // ensure volZone and volPop
+    // ensure download area exists (insert under .post-actions if present)
+    let downloadArea = document.getElementById('downloadArea');
+    if (!downloadArea) {
+      const pa = document.querySelector('.post-actions') || document.querySelector('.meta-box') || document.querySelector('.container') || document.body;
+      downloadArea = document.createElement('div');
+      downloadArea.id = 'downloadArea';
+      downloadArea.style.marginTop = '8px';
+      pa.appendChild(downloadArea);
+    }
+
+    // ensure volZone & volPop
     let volZone = document.getElementById('volZone');
     if (!volZone && wrap){ volZone = document.createElement('div'); volZone.id='volZone'; volZone.className='vol-zone'; wrap.appendChild(volZone); }
+
     let volPop = document.getElementById('volPop');
     if (!volPop){ volPop = document.createElement('div'); volPop.id='volPop'; volPop.className='vol-pop'; volPop.innerHTML = '<input id="volSlider" type="range" min="0" max="100" step="1" value="100" aria-label="Volume">'; document.body.appendChild(volPop); }
     const volSlider = document.getElementById('volSlider');
+
     const volumeIndicator = document.getElementById('volumeIndicator') || (function(){ const el=document.createElement('div'); el.id='volumeIndicator'; el.className='volume-indicator'; el.style.display='none'; document.body.appendChild(el); return el; })();
 
-    // slug detection
+    // slug detection (meta / query / filename)
     const metaSlugEl = document.querySelector('meta[name="slug"]');
     const urlParams = new URLSearchParams(window.location.search);
     const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
@@ -97,7 +107,7 @@
       return;
     }
 
-    // build streams (videy) and downloads (others)
+    // build streams and downloads
     const links = post.links || {};
     const streams = Array.isArray(links.videy) ? links.videy.map(x => safeUrl(x)).filter(Boolean) : [];
     const downloads = [];
@@ -108,13 +118,13 @@
     post._streams = streams.filter(s => isPlayableURL(s));
     post._downloadLinks = downloads;
 
-    // render metadata & poster
+    // render meta & poster
     if (postTitle) postTitle.textContent = post.title || '';
     if (postDate) postDate.textContent = post.date || '';
     if (postDesc) postDesc.innerHTML = (post.description || post.excerpt || '') .toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
     if (post.thumb && player) try { player.poster = safeUrl(post.thumb); } catch(e){}
 
-    // render download links (only non-videy)
+    // render download links area (non-videy links). Put below playlist area so it doesn't block controls.
     function renderDownloadArea(){
       if (!downloadArea) return;
       downloadArea.innerHTML = '';
@@ -140,7 +150,7 @@
     }
     renderDownloadArea();
 
-    // wait for canplay helper (no network probing)
+    // wait for canplay helper
     function waitForCanPlay(el, timeout = 4000){
       return new Promise(resolve => {
         let done = false;
@@ -152,29 +162,28 @@
       });
     }
 
-    // setup media (simple: set <source> and load). Remove crossorigin attribute to avoid CORS preflight concerns.
+    // setup media: set player.src (simpler & reliable)
     async function setupMediaForUrl(u){
       try {
-        // remove previous
-        while (player.firstChild) player.removeChild(player.firstChild);
+        // destroy previous hls if present
         if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
       } catch(e){}
+
       if (!u){
-        const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type = 'video/mp4'; player.appendChild(s); try{ player.load(); } catch(e){}
+        player.removeAttribute('src');
+        while (player.firstChild) player.removeChild(player.firstChild);
+        const fallback = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+        player.src = fallback;
+        try{ player.load(); } catch(e){}
+        dbg('no stream supplied, fallback loaded');
         return;
       }
 
-      // remove crossorigin attribute to avoid crossOrigin request differences
-      try { player.removeAttribute && player.removeAttribute('crossorigin'); } catch(e){}
-
       const src = safeUrl(u);
-      if (!src) return;
-
+      // m3u8: use hls.js if supported; otherwise set src and rely on native
       if (src.toLowerCase().endsWith('.m3u8')) {
-        // try HLS if available
         try {
           if (!window.Hls){
-            // dynamic load hls.js (only when needed)
             await new Promise((resolve,reject)=>{
               const scr = document.createElement('script');
               scr.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.0/dist/hls.min.js';
@@ -186,70 +195,73 @@
           if (window.Hls && Hls.isSupported()){
             const hls = new Hls({capLevelToPlayerSize:true});
             hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
+            // no player.src set; hls.js handles it
           } else {
-            const s = document.createElement('source'); s.src = src; s.type = 'application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); } catch(e){}
+            player.src = src;
+            try{ player.load(); } catch(e){}
+            dbg('native hls fallback', src);
           }
         } catch(err){
           dbg('hls error', err);
-          const s = document.createElement('source'); s.src = src; s.type = 'application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); } catch(e){}
+          player.src = src;
+          try{ player.load(); } catch(e){}
         }
       } else {
-        const s = document.createElement('source');
-        s.src = src;
-        s.type = src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/unknown';
-        player.appendChild(s);
+        // mp4/webm direct file
+        player.src = src;
         try{ player.load(); } catch(e){}
-        dbg('mp4 set to source', src);
+        dbg('mp4/webm set', src);
       }
 
-      // try to wait a bit to let browser parse metadata (no network probing)
+      // attempt to let browser parse metadata
       await waitForCanPlay(player, 3500);
     }
 
     // UI helpers
-    function setPlayIcon(paused){ if (!iconPlay) return; if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>'; else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>'; }
+    function setPlayIcon(paused){ if (!iconPlay) return; try {
+      if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
+      else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>';
+    } catch(e){} }
     function showOverlay(){ if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
     function hideOverlay(){ if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
-    // robust play attempt: try play -> muted fallback -> report error (no open tab).
+    // robust play attempt (no open tab). Uses current player.src set earlier.
     async function attemptPlayWithFallback(){
-      const currentSrc = player.currentSrc || '';
-      dbg('attemptPlayWithFallback currentSrc=' + currentSrc);
+      const currentSrc = player.currentSrc || player.src || '';
+      dbg('attemptPlayWithFallback src=' + currentSrc);
       try {
         await player.play();
         setPlayIcon(false); hideOverlay();
-        dbg('play started');
+        dbg('play OK');
         return { ok:true };
       } catch(e1){
-        dbg('play rejected, trying muted play', e1);
+        dbg('play() rejected, trying muted', e1);
         const wasMuted = player.muted;
         try {
           player.muted = true;
           await player.play();
           setPlayIcon(false); hideOverlay();
           player.muted = wasMuted;
-          dbg('muted play succeeded');
+          dbg('muted play OK');
           return { ok:true, mutedFallback:true };
         } catch(e2){
           player.muted = wasMuted;
-          // show detailed debug info (no open tab)
-          const errCode = (player.error && player.error.code) || 'no-media-error';
-          const ns = player.networkState;
-          const rs = player.readyState;
-          dbg('muted play rejected', e2, 'mediaErrorCode=' + errCode, 'networkState=' + ns, 'readyState=' + rs);
+          dbg('muted play rejected', e2);
           const debugEl = document.getElementById('debug');
           if (debugEl) {
-            debugEl.textContent = [
+            const errCode = (player.error && player.error.code) || 'no-media-error';
+            const msg = [
               (new Date()).toLocaleTimeString(),
-              ' — Playback blocked.',
+              '— Playback blocked.',
               'src:' + (currentSrc || '[empty]'),
               'mediaError=' + (player.error ? JSON.stringify(player.error) : 'null'),
-              'readyState=' + rs,
-              'networkState=' + ns,
-              'Check server: must return raw video (200/206) with Content-Type: video/mp4 and not an HTML redirect or attachment.'
+              'readyState=' + player.readyState,
+              'networkState=' + player.networkState,
+              'Server must return raw video (200/206) with Content-Type: video/mp4 and not HTML/attachment.'
             ].join(' | ');
+            debugEl.textContent = msg;
           }
-          return { ok:false, error: e2 };
+          return { ok:false, error:e2 };
         }
       }
     }
@@ -257,7 +269,7 @@
     // wire controls
     if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
-      // ensure a stream is loaded
+      // if no src loaded, load first stream
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
         await setupMediaForUrl(post._streams[0]);
       }
@@ -278,9 +290,12 @@
       player.addEventListener('error', (e) => { dbg('media element error event', e, player.error && player.error.code); });
     }
 
-    // volume UI (kept simple)
+    // volume UI
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
-    function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
+    function updateMuteUI(){ if (!iconMute || !player) return; try {
+      if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>';
+      else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>';
+    } catch(e){} }
     function showVolumeIndicator(perc){ if (!volumeIndicator) return; volumeIndicator.style.display='inline-flex'; volumeIndicator.textContent = `Volume ${perc}%`; if (window._volTimeout) clearTimeout(window._volTimeout); window._volTimeout = setTimeout(()=> volumeIndicator.style.display = 'none', 900); }
 
     if (muteBtn) muteBtn.addEventListener('click', (ev)=> {
@@ -293,10 +308,23 @@
 
     document.addEventListener('click', (ev)=> { if (!volPop) return; if (volPop.contains(ev.target) || (muteBtn && muteBtn.contains(ev.target))) return; volPop.style.display='none'; });
 
-    // prevent context & drag
+    // vertical volume gesture
+    (function enableVerticalVolume(){
+      let active=false, startY=0, startVolume=1, pointerId=null; const zone = volZone; if (!zone) return;
+      zone.addEventListener('pointerdown', ev => { ev.preventDefault(); active=true; pointerId=ev.pointerId; startY=ev.clientY; startVolume = player.muted ? (prevVolume||1) : (player.volume||1); player.muted = false; try{ zone.setPointerCapture(pointerId); }catch(e){} showVolumeIndicator(Math.round(startVolume*100)); });
+      zone.addEventListener('pointermove', ev => { if (!active) return; const dy = startY - ev.clientY; const delta = dy/160; let newVol = Math.max(0, Math.min(1, startVolume + delta)); player.volume = newVol; player.muted = newVol === 0; showVolumeIndicator(Math.round(newVol*100)); if (volSlider) volSlider.value = Math.round(newVol*100); });
+      function endGesture(ev){ if (!active) return; active=false; try{ zone.releasePointerCapture(ev.pointerId||pointerId); }catch(e){} pointerId=null; }
+      zone.addEventListener('pointerup', endGesture); zone.addEventListener('pointercancel', endGesture); zone.addEventListener('lostpointercapture', ()=>{ active=false; });
+    })();
+
+    // fs / cinema / speed
+    if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
+    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
+    const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
+
     try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
 
-    // Playlist (videy streams only)
+    // Playlist controls
     (function attachPlaylist(){
       if (!Array.isArray(post._streams) || post._streams.length === 0) return;
       const streams = post._streams.slice();
@@ -308,7 +336,7 @@
       const nextBtn = document.createElement('button'); nextBtn.className='icon-btn'; nextBtn.textContent='Next ›';
       plc.append(prevBtn, idxInput, countSpan, nextBtn);
       const pa = document.querySelector('.post-actions') || document.body;
-      pa.appendChild(plc);
+      pa.insertBefore(plc, pa.firstChild); // ensure playlist above downloads
 
       let cur = 0;
       let userInteracted = false;
@@ -340,7 +368,7 @@
         } else { dbg('playlist ended'); showOverlay(); }
       });
 
-      // initial load (do not autoplay)
+      // initial load (do not autoplay) - ensure first stream loaded into player.src
       cur = 0; idxInput.value = cur+1;
       setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
     })();
@@ -351,6 +379,5 @@
     dbg('player ready for post', post.slug || post.id || post.path || post.title);
   } // init
 
-  // run
   init().catch(err => { console.error(err); try { const el=document.getElementById('debug'); if (el) el.textContent = 'init error: '+String(err); } catch(e){} });
 })();
