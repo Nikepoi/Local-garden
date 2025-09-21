@@ -3,91 +3,47 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — Banner Fixed</title>
-
+<title>Player — Clean</title>
 <link rel="icon" href="favicon.ico">
-
-<!-- preload banner to help it show fast -->
-<link rel="preload" as="image" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisoxTHgZPZzG7ZDXAHRDvizvEKNLwv2ws3c2XvOm-uNrcn8WjWv73MvhqxRoTowidMqdzqgkTF0CjDCPCMiYx8VuPy_CZo">
-
-<!-- Bootstrap 5 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Bootstrap Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
 <style>
   :root{
-    --bg:#071022; --card:#0b1220; --muted:#98a8b3; --accent:#3b82f6;
+    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6;
   }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
   .wrap{max-width:980px;margin:18px auto;padding:16px}
   .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
-  /* banner as background, no visible fallback text */
-  .banner {
-    display:block;
-    overflow:hidden;
-    background-color:#000;
-    background-image:
-      url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisoxTHgZPZzG7ZDXAHRDvizvEKNLwv2ws3c2XvOm-uNrcn8WjWv73MvhqxRoTowidMqdzqgkTF0CjDCPCMiYx8VuPy_CZo'),
-      url('/foto/b6dpqr.jpg');
-    background-size:cover;
-    background-position:center;
-    border-radius:12px 12px 0 0;
-    min-height:140px;
-  }
-  @media (max-width:575px){ .banner{min-height:140px} }
-  @media (min-width:576px) and (max-width:991px){ .banner{min-height:220px} }
-  @media (min-width:992px){ .banner{min-height:320px} }
-
-  .video-area{background:#000;display:block}
+  .video-area{background:#000}
   video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
   .top-meta{padding:12px 16px 0 16px}
   .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
   .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
-  .btn-small { min-width:84px; padding:8px 12px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
-  .btn-play { min-width:98px; padding:10px 14px; font-size:1rem; }
+  .btn-small { min-width:72px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
   .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
   .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
   .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
   .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
-  .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; }
+  .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; }
   .download-btn .bi { font-size:1.05rem; }
   .download-btn:hover{background:rgba(255,255,255,0.02)}
-  @media(max-width:520px){ .btn-small{min-width:72px;padding:8px 10px;font-size:0.9rem} .btn-play{min-width:84px} .title{font-size:18px} }
+  @media(max-width:520px){ .btn-small{min-width:64px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card card-player">
-
-      <!-- BANNER: background-first approach + hidden image detector to remove element if remote load fails -->
-      <a id="bannerLink"
-         class="banner"
-         href="https://qq288zdr.com/Member/StreamlinedRegister?R=B9EB44C6"
-         target="_blank"
-         rel="noopener noreferrer nofollow"
-         aria-label="Banner Link">
-        <!-- hidden img only to detect load error; if it errors we remove the banner to avoid any fallback text -->
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisoxTHgZPZzG7ZDXAHRDvizvEKNLwv2ws3c2XvOm-uNrcn8WjWv73MvhqxRoTowidMqdzqgkTF0CjDCPCMiYx8VuPy_CZo"
-             alt=""
-             loading="eager"
-             style="width:1px;height:1px;opacity:0;position:absolute;left:-9999px;"
-             onerror="document.getElementById('bannerLink')?.remove();" />
-      </a>
-
-      <!-- video -->
       <div class="video-area">
         <video id="video" playsinline webkit-playsinline preload="metadata"></video>
       </div>
 
-      <!-- metadata (title) -->
       <div class="top-meta">
         <div class="title" id="title">TALENT FLOIYRINE ACAA</div>
         <div class="date" id="date">10 Agustus 2025</div>
       </div>
 
-      <!-- controls (completely separate block) -->
       <div class="controls">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <button id="prev" class="btn btn-outline-light btn-small">
@@ -125,7 +81,6 @@
         </div>
       </div>
 
-      <!-- downloads area -->
       <div class="downloads">
         <div class="heading">
           <div>Full konten</div>
@@ -136,11 +91,8 @@
     </div>
   </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-  // Minimal data
   const videos = [
     "https://cdn.videy.co/fq3vnyai1.mp4",
     "https://cdn.videy.co/z8B3jMxB1.mp4",
@@ -161,7 +113,6 @@
     terabox: "https://1024terabox.com/s/1GCjCnKE2oqBLCjpEa4egCA"
   };
 
-  // Refs
   const video = document.getElementById('video');
   const playBtn = document.getElementById('play');
   const prevBtn = document.getElementById('prev');
@@ -177,7 +128,6 @@
   let idx = 0;
   let isSeeking = false;
 
-  // Setup
   titleEl.textContent = "TALENT FLOIYRINE ACAA";
   video.poster = thumbnail;
   video.preload = "metadata";
@@ -185,12 +135,11 @@
   video.playbackRate = 1;
   speedSel.value = "1";
 
-  // Build download buttons (icon + label only)
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
     if(downloads.mediafire){
       const a = document.createElement('a');
-      a.className = "download-btn d-flex align-items-center gap-2";
+      a.className = "download-btn";
       a.href = downloads.mediafire;
       a.target = "_blank";
       a.rel = "noopener noreferrer nofollow";
@@ -199,7 +148,7 @@
     }
     if(downloads.terabox){
       const b = document.createElement('a');
-      b.className = "download-btn d-flex align-items-center gap-2";
+      b.className = "download-btn";
       b.href = downloads.terabox;
       b.target = "_blank";
       b.rel = "noopener noreferrer nofollow";
@@ -215,7 +164,6 @@
     return `${min}:${sec}`;
   }
 
-  // Events
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -250,10 +198,8 @@
 
   window.addEventListener('keydown', (e)=> { if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === 'm'){ video.muted = !video.muted; } });
 
-  // block right-click
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // init
   buildDownloadButtons();
 </script>
 </body>
