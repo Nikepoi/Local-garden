@@ -14,8 +14,26 @@
     .pagination { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:18px 0; }  
     .pagination a, .pagination button { padding:8px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); text-decoration:none; background:#fff; cursor:pointer; }  
     .pagination a.active, .pagination button.active { background:#111; color:#fff; border-color:transparent; }  
-    .grid-item { width:100%; max-width:320px; margin:8px; display:inline-block; vertical-align:top; }  
-    .card img { width:100%; height:auto; display:block; border-radius:8px; }  
+    .grid-item { width:100%; max-width:320px; margin:8px; display:inline-block; vertical-align:top; }
+
+    /* ===== GANTI: ukuran foto supaya konsisten & tidak aneh ===== */
+    .card img {
+      width: 100%;
+      height: 180px;            /* tinggi default yang rapi di mobile */
+      object-fit: cover;       /* crop center — gambar tidak melar */
+      object-position: center;
+      display: block;
+      border-radius: 8px;
+      background-color: #f3f4f6; /* fallback saat gambar belum load */
+    }
+    @media (min-width: 980px) {
+      .card img {
+        height: 220px;         /* sedikit lebih tinggi di desktop */
+      }
+    }
+
+    /* jika kamu mau thumbnail kotak (1:1) ubah height ke width dengan JS/CSS khusus,
+       tapi ini versi rapi & aman tanpa ubah struktur HTML */
   </style>  
 </head>  
 <body>  
@@ -24,17 +42,25 @@
       <header class="header" data-aos="fade-down">  
         <h1 class="page-title animate__animated animate__fadeIn">Lokal - Indonesia - nikepoi universe</h1>  
         <div id="pageDate" class="sub" aria-live="polite">Memuat tanggal…</div>  
-      </header>  <section id="grid" class="grid" role="list" aria-live="polite">  
-    <div class="col-12 text-center text-muted">Memuat daftar posting lokal…</div>  
-  </section>  
+      </header>  
 
-  <div id="debug" class="debug" aria-hidden="true"></div>  
-</div>
+      <section id="grid" class="grid" role="list" aria-live="polite">  
+        <div class="col-12 text-center text-muted">Memuat daftar posting lokal…</div>  
+      </section>  
 
-  </main>    <footer class="site-footer" aria-label="Footer">  
+      <div id="debug" class="debug" aria-hidden="true"></div>  
+    </div>
+  </main>    
+
+  <footer class="site-footer" aria-label="Footer">  
     <div id="footerClock" class="footer-clock" aria-live="polite">--:--:--</div>  
     <div class="footer-sub">nikepoi universe <span class="footer-emoji">🪐</span></div>  
-  </footer>    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>    <script src="/assets/list.js" defer></script>    <script>  
+  </footer>    
+
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>    
+  <script src="/assets/list.js" defer></script>    
+
+  <script>  
   const POSTS_JSON = '/posts.json';  
   const DEFAULT_PER_PAGE = 12;  
   const POLL_INTERVAL_MS = 60000;  
@@ -221,5 +247,6 @@
     });  
     if (POLL_INTERVAL_MS > 0) setInterval(pollForUpdates, POLL_INTERVAL_MS);  
   })();  
-  </script>  </body>  
+  </script>  
+  </body>  
 </html>
