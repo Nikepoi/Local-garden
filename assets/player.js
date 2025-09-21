@@ -278,6 +278,19 @@
       player.addEventListener('error', (e) => { dbg('media element error event', e, player.error && player.error.code); });
     }
 
+    // progress / seek
+    if (progress) {
+      progress.addEventListener('input', (e) => {
+        const pct = Number(e.target.value || 0);
+        const t = (pct/100) * (player.duration || 0);
+        if (timeEl) timeEl.textContent = `${formatTime(t)} / ${formatTime(player.duration)}`;
+      });
+      progress.addEventListener('change', (e) => {
+        const pct = Number(e.target.value || 0);
+        player.currentTime = (pct/100) * (player.duration || 0);
+      });
+    }
+
     // volume UI (kept simple)
     let prevVolume = typeof player.volume === 'number' ? player.volume : 1;
     function updateMuteUI(){ if (!iconMute || !player) return; if (player.muted || player.volume === 0) iconMute.innerHTML = '<path d="M16.5 12c0-1.77-.77-3.36-1.99-4.44L13 9.07A3.01 3.01 0 0 1 15 12a3 3 0 0 1-2 2.83V17l4 2V7.17L16.5 8.56A6.98 6.98 0 0 1 18 12z" fill="currentColor"/>'; else iconMute.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5z" fill="currentColor"/>'; }
@@ -295,6 +308,24 @@
 
     // prevent context & drag
     try { wrap.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('contextmenu', ev => ev.preventDefault(), false); player.addEventListener('dragstart', ev => ev.preventDefault()); } catch(e){}
+
+    // fs / cinema / speed
+    if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
+    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
+    const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
+
+    // keyboard shortcuts
+    document.addEventListener('keydown', (e)=> {
+      if (['INPUT','TEXTAREA'].includes((document.activeElement||{}).tagName)) return;
+      if (e.code === 'Space') { e.preventDefault(); if (player.paused) attemptPlayWithFallback(); else player.pause(); }
+      if (e.key === 'f') fsBtn && fsBtn.click();
+      if (e.key === 't') cinemaBtn && cinemaBtn.click();
+      if (e.key === 'm') muteBtn && muteBtn.click();
+      if (e.key === 'ArrowRight') player.currentTime = Math.min(player.duration||0, player.currentTime + 10);
+      if (e.key === 'ArrowLeft') player.currentTime = Math.max(0, player.currentTime - 10);
+      if (e.key === 'ArrowUp'){ player.volume = Math.min(1, player.volume + 0.05); showVolumeIndicator(Math.round(player.volume*100)); volSlider && (volSlider.value = Math.round(player.volume*100)); }
+      if (e.key === 'ArrowDown'){ player.volume = Math.max(0, player.volume - 0.05); showVolumeIndicator(Math.round(player.volume*100)); volSlider && (volSlider.value = Math.round(player.volume*100)); }
+    });
 
     // Playlist (videy streams only)
     (function attachPlaylist(){
