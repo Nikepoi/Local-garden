@@ -57,13 +57,19 @@
       object-position: center;
       border-radius: 8px;
       outline: none;
+      transition: all .18s ease;
     }
-    /* When user prefers cover, we add .vp-cover on the element and adjust */
+    /* When user prefers cover, add .vp-cover on the element and adjust */
     video.vp-video.vp-cover {
       width: 100% !important;
       height: 220px !important; /* thumbnail-like height for list pages */
       object-fit: cover !important;
     }
+
+    /* Theater / cinema mode styles: enlarge player, center, dark background */
+    .theater { max-width: 1200px; margin: 18px auto !important; padding: 18px; z-index: 9999; position: relative; }
+    body.theater { background: #000; }
+    .theater video.vp-video { max-height: 88vh !important; height: auto !important; object-fit: contain !important; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
 
     /* small UI for fit/quality options (non-intrusive) */
     .vp-controls-extra { display:flex; gap:8px; align-items:center; margin-top:8px; }
@@ -242,7 +248,6 @@
     }
 
     /* --- setupMediaForUrl: set <source> and load ----------------------------- */
-    // returns object with { hlsInstance (if any) }
     async function setupMediaForUrl(u, preferHighestQuality = false){
       try { while (player.firstChild) player.removeChild(player.firstChild); } catch(e){}
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
@@ -324,6 +329,30 @@
     function showOverlay(){ const overlay = document.getElementById('overlay'); if (overlay) { overlay.classList.remove('hidden'); overlay.setAttribute('aria-hidden','false'); } }
     function hideOverlay(){ const overlay = document.getElementById('overlay'); if (overlay) { overlay.classList.add('hidden'); overlay.setAttribute('aria-hidden','true'); } }
 
+    /* --- Cinema / Theater mode helpers ------------------------------------ */
+    function enterCinemaMode(){
+      try {
+        if (playerWrap) playerWrap.classList.add('theater');
+        document.body.classList.add('theater');
+        // ensure full-frame view (no crop)
+        player.dataset.vpfit = 'contain';
+        player.classList.remove('vp-cover');
+        player.style.objectFit = 'contain';
+        dbg('entered cinema mode');
+      } catch(e){ dbg('enterCinemaMode err', e); }
+    }
+    function exitCinemaMode(){
+      try {
+        if (playerWrap) playerWrap.classList.remove('theater');
+        document.body.classList.remove('theater');
+        // restore default (contain)
+        player.dataset.vpfit = 'contain';
+        player.classList.remove('vp-cover');
+        player.style.objectFit = 'contain';
+        dbg('exited cinema mode');
+      } catch(e){ dbg('exitCinemaMode err', e); }
+    }
+
     /* --- robust play attempt ----------------------------------------------- */
     async function attemptPlayWithFallback(){
       const currentSrc = player.currentSrc || '';
@@ -332,6 +361,8 @@
         await player.play();
         setPlayIcon(false); hideOverlay();
         dbg('play started');
+        // ensure cinema mode on successful play
+        enterCinemaMode();
         return { ok:true };
       } catch(e1){
         dbg('play rejected, trying muted play', e1);
@@ -342,6 +373,8 @@
           setPlayIcon(false); hideOverlay();
           player.muted = wasMuted;
           dbg('muted play succeeded');
+          // ensure cinema mode on successful muted play too
+          enterCinemaMode();
           return { ok:true, mutedFallback:true };
         } catch(e2){
           player.muted = wasMuted;
@@ -367,25 +400,39 @@
     }
 
     /* --- wire controls ---------------------------------------------------- */
-    if (playBtn) playBtn.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
+    if (playBtn) playBtn.addEventListener('click', async ()=> {
+      // enter cinema mode immediately on user click
+      enterCinemaMode();
+      if (player.paused) await attemptPlayWithFallback(); else player.pause();
+    });
     if (bigPlay) bigPlay.addEventListener('click', async ()=> {
+      // if no source loaded, load first stream
       if ((!player.currentSrc || player.currentSrc === '') && Array.isArray(post._streams) && post._streams.length) {
         await setupMediaForUrl(post._streams[0]);
       }
+      // mark user interaction
       window._userInteracted = true;
+      // enter cinema mode immediately on bigPlay
+      enterCinemaMode();
       await attemptPlayWithFallback();
     });
 
     if (player){
-      player.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
-      player.addEventListener('play', ()=> { setPlayIcon(false); hideOverlay(); });
-      player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); });
+      player.addEventListener('click', async ()=> {
+        // clicking the player toggles play/pause. If playing, stay; if starting, enter cinema
+        if (player.paused) {
+          enterCinemaMode();
+          await attemptPlayWithFallback();
+        } else {
+          player.pause();
+        }
+      });
+      player.addEventListener('play', ()=> { setPlayIcon(false); hideOverlay(); enterCinemaMode(); });
+      player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); /* keep cinema mode until user toggles off */ });
       player.addEventListener('loadedmetadata', ()=> {
         // when metadata available, choose fit to avoid crop (contain)
         try {
-          // set default to 'contain' so the whole frame is visible (no crop)
           player.style.objectFit = 'contain';
-          // However, if user toggled to 'cover' earlier, keep cover
           if (player.dataset.vpfit === 'cover') {
             player.classList.add('vp-cover');
             player.style.objectFit = 'cover';
@@ -443,7 +490,18 @@
 
     /* --- fs / cinema / speed ---------------------------------------------- */
     if (fsBtn) fsBtn.addEventListener('click', async ()=> { try { if (document.fullscreenElement) await document.exitFullscreen(); else await playerWrap.requestFullscreen(); } catch(e){ dbg('fs err', e); } });
-    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> { const active = playerWrap.classList.toggle('theater'); document.body.classList.toggle('theater', active); });
+    if (cinemaBtn) cinemaBtn.addEventListener('click', ()=> {
+      // toggle cinema manually
+      const is = playerWrap.classList.toggle('theater');
+      document.body.classList.toggle('theater', is);
+      if (is) {
+        player.dataset.vpfit = 'contain';
+        player.style.objectFit = 'contain';
+      } else {
+        player.dataset.vpfit = 'contain';
+        player.style.objectFit = 'contain';
+      }
+    });
     const speeds = [1,1.25,1.5,2]; let speedIndex=0; if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex=(speedIndex+1)%speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex]+'×'; });
 
     /* --- keyboard shortcuts ------------------------------------------------ */
@@ -546,7 +604,6 @@
       // initial load (do not autoplay)
       cur = 0; idxInput.value = cur+1;
       setupMediaForUrl(streams[cur], !!qualityCheckbox.checked).then(()=> {
-        // after setup, ensure player fit default: contain (no crop)
         try { player.style.objectFit = 'contain'; player.dataset.vpfit = 'contain'; fitBtn.textContent = 'Fit: contain'; } catch(e){}
         showOverlay();
       }).catch(e => { dbg('initial setup err', e); showOverlay(); });
