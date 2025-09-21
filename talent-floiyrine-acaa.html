@@ -1,261 +1,389 @@
 <!doctype html>
-
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Video Player dari JSON</title>
-  <style>
-    :root{--bg:#0f1720;--card:#0b1220;--muted:#9aa6b2;--accent:#3b82f6}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071022 0%,#081129 60%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-    .app{width:100%;max-width:1100px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,0.6);display:grid;grid-template-columns:1fr 360px;gap:0}
-    .player-area{padding:18px;display:flex;flex-direction:column;gap:12px}
-    video{width:100%;height:560px;background:#000;border-radius:10px;outline:none}
-    .meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .title{font-weight:700;font-size:18px}
-    .date{color:var(--muted);font-size:13px}
-    .controls{display:flex;gap:8px;align-items:center}
-    .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
-    .btn:hover{border-color:rgba(255,255,255,0.12)}
-    .playlist{background:linear-gradient(180deg,#041127,#081328);padding:12px;display:flex;flex-direction:column;gap:12px}
-    .plist-title{font-weight:700;margin-bottom:6px}
-    .item-list{overflow:auto;max-height:640px;padding-right:6px}
-    .item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;cursor:pointer}
-    .item:hover{background:rgba(255,255,255,0.02)}
-    .item.active{background:linear-gradient(90deg,rgba(59,130,246,0.12),rgba(59,130,246,0.08));border-left:3px solid var(--accent)}
-    .thumb{width:96px;height:56px;background:#031024;border-radius:6px;object-fit:cover;display:block}
-    .meta-item{flex:1}
-    .meta-item .name{font-weight:600}
-    .meta-item .sub{font-size:12px;color:var(--muted)}
-    .links{display:flex;flex-direction:column;gap:6px;margin-top:6px}
-    a.link{font-size:13px;color:var(--accent);text-decoration:none}
-    footer.note{padding:10px 18px;color:var(--muted);font-size:13px}
-    @media (max-width:920px){.app{grid-template-columns:1fr;}.playlist{order:2}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Custom Responsive Video Player</title>
+<style>
+  :root{
+    --bg:#071022; --panel:#07152a; --muted:#98a8b3; --accent:#3b82f6;
+    --glass: rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:1100px;margin:18px auto;padding:16px;display:grid;grid-template-columns:1fr;gap:16px}
+  /* PLAYER CARD */
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+  .player{
+    position:relative;
+    background:#000;
+    aspect-ratio:16/9;
+    min-height:220px;
+  }
+  video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+  /* BIG PLAY OVERLAY */
+  .overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  }
+  .big-play{
+    pointer-events:auto;
+    width:72px;height:72px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center;font-size:30px;border:2px solid rgba(255,255,255,0.06);cursor:pointer;opacity:0.98;
+    transition:transform .12s ease;
+  }
+  .big-play:active{transform:scale(.96)}
+  /* CONTROLS BAR (custom) */
+  .controls{
+    position:absolute;left:12px;right:12px;bottom:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(3,6,12,0.55), rgba(3,6,12,0.3));backdrop-filter: blur(6px);
+    display:flex;flex-direction:column;gap:8px;pointer-events:auto;
+  }
+  .row{display:flex;align-items:center;gap:10px}
+  .btn{background:transparent;border:0;color:var(--muted);padding:8px;border-radius:8px;font-weight:600;cursor:pointer;min-width:36px}
+  .btn.icon{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:transparent}
+  .btn:hover{color:var(--accent)}
+  .time{font-size:13px;color:var(--muted);min-width:72px;text-align:right}
+  /* progress */
+  .progress{display:flex;align-items:center;gap:8px}
+  input[type=range]{-webkit-appearance:none;width:100%;height:8px;border-radius:999px;background:transparent;outline:none}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;background:rgba(255,255,255,0.08)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 2px 6px rgba(59,130,246,0.3)}
+  /* volume small */
+  .vol{display:flex;align-items:center;gap:6px}
+  select, .small{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px 8px;border-radius:8px;color:var(--muted)}
+  /* meta + playlist */
+  .meta-wrap{display:grid;grid-template-columns:1fr;gap:12px;padding:16px}
+  h1{margin:0;font-size:20px;letter-spacing:0.5px}
+  .date{color:var(--muted);font-size:13px}
+  .playlist{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding:12px;border-top:1px solid rgba(255,255,255,0.02)}
+  .plist-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
+  .plist-item img{width:96px;height:56px;border-radius:8px;object-fit:cover}
+  .plist-item .txt{flex:1}
+  .plist-item .title{font-weight:700}
+  .plist-item .sub{font-size:13px;color:var(--muted)}
+  .plist-item.active{background:linear-gradient(90deg, rgba(59,130,246,0.09), rgba(59,130,246,0.04));border-left:4px solid var(--accent)}
+  /* layout responsive */
+  @media(min-width:920px){
+    .wrap{grid-template-columns: 1fr 360px;padding:22px}
+    .meta-wrap{padding:18px}
+    .playlist{height:calc(100% - 32px);overflow:auto;padding:16px}
+    .card{display:flex;flex-direction:column;height:100%}
+  }
+  /* mobile tweaks */
+  @media (max-width:520px){
+    .big-play{width:64px;height:64px;font-size:26px}
+    .controls{left:8px;right:8px;bottom:8px;padding:8px}
+    .plist-item img{width:84px;height:52px}
+  }
+</style>
 </head>
 <body>
-  <div class="app">
-    <div class="player-area">
-      <video id="video" controls preload="metadata">
-        Sorry, your browser doesn't support embedded videos.
-      </video><div class="meta">
-    <div>
-      <div class="title" id="title">-</div>
-      <div class="date" id="date">-</div>
-    </div>
-    <div class="controls">
-      <button class="btn" id="prev">⟨ Prev</button>
-      <button class="btn" id="next">Next ⟩</button>
-      <button class="btn" id="toggleLoop" title="Toggle loop">Loop: off</button>
-      <button class="btn" id="pip">PiP</button>
-    </div>
-  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="player" id="playerCard">
+        <video id="video" preload="metadata" playsinline webkit-playsinline></video>
 
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <label style="font-size:13px;color:var(--muted)">Speed:</label>
-    <select id="speed" class="btn" style="padding:6px 8px">
-      <option value="0.5">0.5x</option>
-      <option value="0.75">0.75x</option>
-      <option value="1" selected>1x</option>
-      <option value="1.25">1.25x</option>
-      <option value="1.5">1.5x</option>
-      <option value="2">2x</option>
-    </select>
-  </div>
+        <div class="overlay" id="overlay">
+          <button class="big-play" id="bigPlay" aria-label="Play">▶</button>
+        </div>
 
-  <footer class="note">Tips: tekan Space untuk play/pause, ←/→ untuk seek 5s. Klik item di playlist untuk ganti video.</footer>
-</div>
-
-<aside class="playlist">
-  <div>
-    <div class="plist-title">Playlist</div>
-    <div class="item-list" id="list"></div>
-  </div>
-
-  <div>
-    <div style="font-weight:700">Download / Links</div>
-    <div class="links" id="links"></div>
-  </div>
-
-  <div style="margin-top:auto;font-size:13px;color:var(--muted)">Generated from provided JSON. Preview or save as <code>player.html</code>.</div>
-</aside>
-
-  </div>  <script>
-    // ==== DATA (langsung dari JSON yang user kasih) ====
-    const data = [
-      {
-        "id": 4000,
-        "slug": "talent-floiyrine-acaa",
-        "title": "TALENT FLOIYRINE ACAA",
-        "thumb": "/foto/b6dpqr.jpg",
-        "path": "/talent-floiyrine-acaa.html",
-        "date": "2025-08-10T00:00:00Z",
-        "links": {
-          "videy": [
-            "https://cdn.videy.co/fq3vnyai1.mp4",
-            "https://cdn.videy.co/z8B3jMxB1.mp4",
-            "https://cdn.videy.co/mSDArJW71.mp4",
-            "https://cdn.videy.co/fdMXlrr61.mp4",
-            "https://cdn.videy.co/6I2IFand1.mp4",
-            "https://cdn.videy.co/NXwqxz4Y1.mp4",
-            "https://cdn.videy.co/GgQBnCVH1.mp4",
-            "https://cdn.videy.co/HlsDYou11.mp4",
-            "https://cdn.videy.co/MsfyAux01.mp4",
-            "https://cdn.videy.co/gB1vHJC71.mp4",
-            "https://cdn.videy.co/5ete3cTl1.mp4",
-            "https://cdn.videy.co/nX5DmjcN1.mp4"
-          ],
-          "mediafire": [
-            "https://www.mediafire.com/file/9q8yw3qmym5mkz7/TALENT_FLOIYRINE_ACAA.zip/file"
-          ],
-          "terabox": [
-            "https://1024terabox.com/s/1GCjCnKE2oqBLCjpEa4egCA"
-          ],
-          "pixeldrain": [],
-          "bonus": []
-        }
-      }
-    ];
-
-    // We'll render the first (and only) item
-    const item = data[0];
-    const videoEl = document.getElementById('video');
-    const titleEl = document.getElementById('title');
-    const dateEl = document.getElementById('date');
-    const listEl = document.getElementById('list');
-    const linksEl = document.getElementById('links');
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    const toggleLoopBtn = document.getElementById('toggleLoop');
-    const pipBtn = document.getElementById('pip');
-    const speedSel = document.getElementById('speed');
-
-    let currentIndex = 0;
-
-    // format date (local)
-    function formatDate(iso){
-      try{const d=new Date(iso); return d.toLocaleString('id-ID', {year:'numeric',month:'long',day:'numeric'});}catch(e){return iso}
-    }
-
-    titleEl.textContent = item.title;
-    dateEl.textContent = formatDate(item.date);
-
-    function createList(){
-      listEl.innerHTML = '';
-      const arr = item.links.videy || [];
-      if(!arr.length){ listEl.innerHTML = '<div style="color:var(--muted)">Tidak ada video di playlist.</div>'; return; }
-      arr.forEach((src, i)=>{
-        const el = document.createElement('div');
-        el.className = 'item';
-        el.dataset.index = i;
-        el.innerHTML = `
-          <img class="thumb" loading="lazy" src="${item.thumb}" onerror="this.style.opacity=0.35" alt="thumb-${i}"/>
-          <div class="meta-item">
-            <div class="name">Bagian ${i+1}</div>
-            <div class="sub">${new URL(src).hostname} • ${src.split('/').pop()}</div>
+        <div class="controls" id="controls">
+          <div class="row progress">
+            <span class="time" id="current">0:00</span>
+            <input type="range" id="seek" min="0" max="100" value="0" step="0.01" />
+            <span class="time" id="duration">0:00</span>
           </div>
-        `;
-        el.addEventListener('click', ()=>{ playIndex(i); });
-        listEl.appendChild(el);
-      });
-    }
 
-    function updateActive(){
-      [...listEl.children].forEach(node=>{
-        node.classList.toggle('active', Number(node.dataset.index)===currentIndex);
-      });
-    }
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn icon" id="prev" title="Previous">⟨</button>
+              <button class="btn icon" id="play" title="Play/Pause">►</button>
+              <button class="btn icon" id="next" title="Next">⟩</button>
+              <button class="btn icon" id="loop" title="Loop">↻</button>
+              <div class="vol" title="Volume">
+                <button class="btn icon" id="mute">🔊</button>
+                <input id="vol" type="range" min="0" max="1" step="0.01" value="1" style="width:96px" />
+              </div>
+            </div>
 
-    function playIndex(i){
-      const arr = item.links.videy || [];
-      if(!arr[i]) return;
-      currentIndex = i;
-      videoEl.src = arr[i];
-      videoEl.play().catch(()=>{});
-      updateActive();
-    }
+            <div style="display:flex;gap:8px;align-items:center">
+              <label style="font-size:13px;color:var(--muted)">Speed</label>
+              <select id="speed" class="small" aria-label="Playback speed">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
 
-    // downloads / external links
-    function renderLinks(){
-      linksEl.innerHTML = '';
-      const links = item.links || {};
-      for(const key of ['mediafire','terabox','pixeldrain','bonus']){
-        const arr = links[key] || [];
-        if(arr.length){
-          arr.forEach(u=>{
-            const a = document.createElement('a');
-            a.className = 'link';
-            a.href = u;
-            a.target = '_blank';
-            a.rel = 'noopener';
-            a.textContent = key + ' • ' + (new URL(u).hostname);
-            linksEl.appendChild(a);
-          });
-        }
+              <button class="btn icon" id="pip" title="Picture in Picture">PiP</button>
+              <button class="btn icon" id="fs" title="Fullscreen">⤢</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-wrap">
+        <div>
+          <h1 id="title">-</h1>
+          <div class="date" id="date">-</div>
+        </div>
+
+        <div class="playlist" id="playlist">
+          <!-- playlist items injected here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- right column kept for future info -- left empty on mobile -->
+    <aside id="side" style="display:none"></aside>
+  </div>
+
+<script>
+  // ========== DATA (dari JSON kamu) ==========
+  const data = [
+    {
+      "id": 4000,
+      "slug": "talent-floiyrine-acaa",
+      "title": "TALENT FLOIYRINE ACAA",
+      "thumb": "/foto/b6dpqr.jpg",
+      "path": "/talent-floiyrine-acaa.html",
+      "date": "2025-08-10T00:00:00Z",
+      "links": {
+        "videy": [
+          "https://cdn.videy.co/fq3vnyai1.mp4",
+          "https://cdn.videy.co/z8B3jMxB1.mp4",
+          "https://cdn.videy.co/mSDArJW71.mp4",
+          "https://cdn.videy.co/fdMXlrr61.mp4",
+          "https://cdn.videy.co/6I2IFand1.mp4",
+          "https://cdn.videy.co/NXwqxz4Y1.mp4",
+          "https://cdn.videy.co/GgQBnCVH1.mp4",
+          "https://cdn.videy.co/HlsDYou11.mp4",
+          "https://cdn.videy.co/MsfyAux01.mp4",
+          "https://cdn.videy.co/gB1vHJC71.mp4",
+          "https://cdn.videy.co/5ete3cTl1.mp4",
+          "https://cdn.videy.co/nX5DmjcN1.mp4"
+        ],
+        "mediafire": [
+          "https://www.mediafire.com/file/9q8yw3qmym5mkz7/TALENT_FLOIYRINE_ACAA.zip/file"
+        ],
+        "terabox": [
+          "https://1024terabox.com/s/1GCjCnKE2oqBLCjpEa4egCA"
+        ],
+        "pixeldrain": [],
+        "bonus": []
       }
-      // also add a direct "Download current" link
-      const dl = document.createElement('a');
-      dl.className = 'link';
-      dl.style.marginTop='8px';
-      dl.href = item.links.videy && item.links.videy.length? item.links.videy[currentIndex] : '#';
-      dl.textContent = 'Download current video';
-      dl.target = '_blank';
-      linksEl.appendChild(dl);
     }
+  ];
 
-    // basic navigation
-    prevBtn.addEventListener('click', ()=>{
-      const arr = item.links.videy || [];
-      if(currentIndex>0) playIndex(currentIndex-1);
-      else { playIndex(arr.length-1); }
+  // ========== references ==========
+  const item = data[0];
+  const video = document.getElementById('video');
+  const titleEl = document.getElementById('title');
+  const dateEl = document.getElementById('date');
+  const playlistEl = document.getElementById('playlist');
+  const bigPlay = document.getElementById('bigPlay');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const vol = document.getElementById('vol');
+  const muteBtn = document.getElementById('mute');
+  const speedSel = document.getElementById('speed');
+  const pipBtn = document.getElementById('pip');
+  const fsBtn = document.getElementById('fs');
+  const overlay = document.getElementById('overlay');
+
+  let currentIndex = 0;
+  let isSeeking = false;
+  let lastVolume = 1;
+
+  // setup meta
+  titleEl.textContent = item.title;
+  dateEl.textContent = (new Date(item.date)).toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' });
+
+  // init video attributes
+  video.poster = item.thumb || '';
+  video.preload = 'metadata';
+  video.src = item.links.videy && item.links.videy.length ? item.links.videy[0] : '';
+
+  // build playlist UI
+  function buildPlaylist(){
+    playlistEl.innerHTML = '';
+    const arr = item.links.videy || [];
+    if(!arr.length){ playlistEl.innerHTML = '<div style="color:var(--muted)">Playlist kosong.</div>'; return; }
+    arr.forEach((src,i) => {
+      const d = document.createElement('div');
+      d.className = 'plist-item';
+      d.dataset.idx = i;
+      d.innerHTML = `
+        <img src="${item.thumb}" loading="lazy" alt="thumb-${i}" onerror="this.style.opacity=.45" />
+        <div class="txt">
+          <div class="title">Bagian ${i+1}</div>
+          <div class="sub">${(new URL(src)).hostname} • ${src.split('/').pop()}</div>
+        </div>
+      `;
+      d.addEventListener('click', ()=> playIndex(i));
+      playlistEl.appendChild(d);
     });
-    nextBtn.addEventListener('click', ()=>{
-      const arr = item.links.videy || [];
-      if(currentIndex < arr.length-1) playIndex(currentIndex+1);
-      else { playIndex(0); }
-    });
-
-    // loop toggle
-    toggleLoopBtn.addEventListener('click', ()=>{
-      videoEl.loop = !videoEl.loop;
-      toggleLoopBtn.textContent = 'Loop: ' + (videoEl.loop? 'on' : 'off');
-    });
-
-    // picture-in-picture (if supported)
-    pipBtn.addEventListener('click', async ()=>{
-      try{
-        if (document.pictureInPictureElement) await document.exitPictureInPicture();
-        else await videoEl.requestPictureInPicture();
-      }catch(e){ alert('PiP tidak tersedia di browser ini.'); }
-    });
-
-    // speed
-    speedSel.addEventListener('change', ()=>{ videoEl.playbackRate = Number(speedSel.value); });
-
-    // auto next on ended
-    videoEl.addEventListener('ended', ()=>{
-      const arr = item.links.videy || [];
-      if(currentIndex < arr.length-1) playIndex(currentIndex+1);
-    });
-
-    // keyboard shortcuts
-    window.addEventListener('keydown', (e)=>{
-      if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
-      if(e.code === 'Space'){ e.preventDefault(); if(videoEl.paused) videoEl.play(); else videoEl.pause(); }
-      if(e.code === 'ArrowLeft'){ videoEl.currentTime = Math.max(0, videoEl.currentTime - 5); }
-      if(e.code === 'ArrowRight'){ videoEl.currentTime = Math.min(videoEl.duration||0, videoEl.currentTime + 5); }
-      if(e.key === 'm'){ videoEl.muted = !videoEl.muted; }
-    });
-
-    // on load
-    createList();
     updateActive();
-    renderLinks();
-    // set initial src if any
-    if(item.links.videy && item.links.videy.length){
-      videoEl.src = item.links.videy[0];
-    }
+  }
 
-  </script></body>
+  function updateActive(){
+    const nodes = playlistEl.querySelectorAll('.plist-item');
+    nodes.forEach(n => n.classList.toggle('active', Number(n.dataset.idx) === currentIndex));
+  }
+
+  function playIndex(i){
+    const arr = item.links.videy || [];
+    if(!arr[i]) return;
+    currentIndex = i;
+    video.src = arr[i];
+    video.play().catch(()=>{});
+    updateActive();
+    hideOverlay();
+  }
+
+  // time formatting
+  function fmt(s){
+    if(!isFinite(s)) return '0:00';
+    const sec = Math.floor(s%60).toString().padStart(2,'0');
+    const min = Math.floor(s/60);
+    return `${min}:${sec}`;
+  }
+
+  // event wiring
+  video.addEventListener('loadedmetadata', () => {
+    durationT.textContent = fmt(video.duration);
+    seek.max = video.duration || 100;
+  });
+
+  video.addEventListener('timeupdate', ()=>{
+    if(!isSeeking){
+      seek.value = video.currentTime;
+      currentT.textContent = fmt(video.currentTime);
+    }
+  });
+
+  seek.addEventListener('input', ()=> {
+    isSeeking = true;
+    currentT.textContent = fmt(seek.value);
+  });
+  seek.addEventListener('change', ()=> {
+    video.currentTime = Number(seek.value);
+    isSeeking = false;
+  });
+
+  // play / pause
+  function togglePlay(){
+    if(video.paused){ video.play(); }
+    else { video.pause(); }
+  }
+  playBtn.addEventListener('click', togglePlay);
+  bigPlay.addEventListener('click', togglePlay);
+  overlay.addEventListener('click',(e)=>{ /* prevent overlay click pass-through */ e.stopPropagation() });
+
+  video.addEventListener('play', ()=> {
+    playBtn.textContent = '❚❚';
+    bigPlay.style.display = 'none';
+  });
+  video.addEventListener('pause', ()=> {
+    playBtn.textContent = '►';
+    bigPlay.style.display = '';
+  });
+
+  // prev / next
+  prevBtn.addEventListener('click', ()=>{
+    const arr = item.links.videy || [];
+    if(currentIndex > 0) playIndex(currentIndex - 1);
+    else playIndex(arr.length - 1);
+  });
+  nextBtn.addEventListener('click', ()=>{
+    const arr = item.links.videy || [];
+    if(currentIndex < arr.length - 1) playIndex(currentIndex + 1);
+    else playIndex(0);
+  });
+
+  // loop
+  loopBtn.addEventListener('click', ()=>{
+    video.loop = !video.loop;
+    loopBtn.style.color = video.loop ? 'var(--accent)' : '';
+  });
+
+  // volume
+  vol.addEventListener('input', ()=> {
+    video.volume = Number(vol.value);
+    lastVolume = video.volume;
+    muteBtn.textContent = video.volume > 0 ? '🔊' : '🔈';
+  });
+  muteBtn.addEventListener('click', ()=> {
+    if(video.volume > 0){
+      lastVolume = video.volume;
+      video.volume = 0;
+      vol.value = 0;
+      muteBtn.textContent = '🔈';
+    } else {
+      video.volume = lastVolume || 1;
+      vol.value = video.volume;
+      muteBtn.textContent = '🔊';
+    }
+  });
+
+  // speed
+  speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.value));
+
+  // PiP (if available)
+  pipBtn.addEventListener('click', async () => {
+    try{
+      if(document.pictureInPictureElement) await document.exitPictureInPicture();
+      else await video.requestPictureInPicture();
+    }catch(e){ alert('PiP tidak didukung di browser ini.'); }
+  });
+
+  // fullscreen
+  fsBtn.addEventListener('click', ()=> {
+    const el = document.getElementById('playerCard');
+    if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  // keyboard shortcuts (mobile will ignore)
+  window.addEventListener('keydown', (e)=>{
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ muteBtn.click(); }
+  });
+
+  // auto-next when ended
+  video.addEventListener('ended', ()=>{
+    const arr = item.links.videy || [];
+    if(currentIndex < arr.length - 1) playIndex(currentIndex + 1);
+    else { /* ended - leave paused */ }
+  });
+
+  // hide overlay once user interacts
+  function hideOverlay(){ overlay.style.display = 'none'; }
+  function showOverlay(){ if(video.paused) overlay.style.display = ''; }
+  video.addEventListener('play', hideOverlay);
+  video.addEventListener('pause', showOverlay);
+
+  // tap video toggles play on mobile
+  video.addEventListener('click', ()=> togglePlay());
+
+  // init UI
+  buildPlaylist();
+  updateActive();
+  durationT.textContent = '0:00';
+  currentT.textContent = '0:00';
+  vol.value = video.volume = 1;
+  // initial visibility tidy
+  if(!item.links.videy || !item.links.videy.length) {
+    document.getElementById('controls').style.display = 'none';
+  }
+</script>
+</body>
 </html>
