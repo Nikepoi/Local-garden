@@ -1,9 +1,3 @@
-// assets/player.js (full)
-// Minimal, no HEAD/CORS, playlist from links.videy, download links only for non-videy sources.
-// Robust play attempts: user gesture -> try play -> try muted play -> show debug (no open tab).
-//
-// This file includes a small CSS injection so the download links are styled automatically.
-
 (() => {
   const POSTS_JSON = '/data/posts.json';
 
@@ -27,8 +21,8 @@
     return res.json();
   }
 
-  /* --- Inject small CSS for download list (keeps file self-contained) --- */
-  (function injectDownloadCss(){
+  /* --- Inject small CSS for download list + video styling (self-contained) --- */
+  (function injectCss(){
     const css = `
     /* Download list styles injected by assets/player.js */
     .download-list { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
@@ -51,6 +45,30 @@
     .download-link.item .dl-right { flex:0 0 auto; color:#fff; opacity:0.95; font-weight:700; }
     .download-hint { color:var(--muted,#6b7280); font-size:13px; padding:8px 4px; }
     .playlist-controls { margin-top:8px; gap:8px; display:flex; align-items:center; }
+
+    /* Video element & controls tweaks to avoid cropping and keep full resolution */
+    video.vp-video {
+      width: 100% !important;
+      height: auto !important;
+      max-height: calc(100vh - 160px) !important;
+      background: #000;
+      display: block;
+      object-fit: contain; /* default: show whole frame */
+      object-position: center;
+      border-radius: 8px;
+      outline: none;
+    }
+    /* When user prefers cover, we add .vp-cover on the element and adjust */
+    video.vp-video.vp-cover {
+      width: 100% !important;
+      height: 220px !important; /* thumbnail-like height for list pages */
+      object-fit: cover !important;
+    }
+
+    /* small UI for fit/quality options (non-intrusive) */
+    .vp-controls-extra { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    .vp-controls-extra .btn { background:#111; color:#fff; padding:6px 10px; border-radius:8px; font-weight:700; cursor:pointer; border:none; }
+    .vp-controls-extra label { font-size:13px; color:var(--muted,#6b7280); display:flex; align-items:center; gap:6px; }
     `;
     try {
       const s = document.createElement('style'); s.setAttribute('data-origin','assets/player.js'); s.appendChild(document.createTextNode(css));
@@ -63,6 +81,9 @@
     // elements (graceful fallback if some ids are missing)
     const player = document.getElementById('player');
     if (!player) { dbg('no <video id="player"> element found'); return; }
+    // ensure class for styling
+    player.classList.add('vp-video');
+
     const playerWrap = document.getElementById('playerWrap') || player.parentElement;
     const wrap = document.getElementById('videoWrap') || player.parentElement;
     const progress = document.getElementById('progress') || (function(){ const el=document.createElement('input'); el.type='range'; el.id='progress'; el.min=0; el.max=100; el.value=0; el.className='vp-progress'; if (playerWrap) playerWrap.appendChild(el); return el; })();
@@ -71,7 +92,6 @@
     const bigPlay = document.getElementById('bigPlay') || (function(){ const b=document.createElement('button'); b.id='bigPlay'; b.className='big-play-btn'; b.textContent='Play'; (playerWrap || document.body).appendChild(b); return b; })();
     let iconPlay = document.getElementById('iconPlay');
     if (!iconPlay) {
-      // try to create an svg inside playBtn
       iconPlay = document.createElementNS('http://www.w3.org/2000/svg','svg');
       iconPlay.setAttribute('id','iconPlay'); iconPlay.setAttribute('viewBox','0 0 24 24'); iconPlay.setAttribute('width','18'); iconPlay.setAttribute('height','18');
       iconPlay.innerHTML = '<path d="M8 5v14l11-7z"/>';
@@ -171,7 +191,6 @@
       const list = document.createElement('div');
       list.className = 'download-list';
 
-      // map sumber -> label yang rapi (tanpa emot/emoji)
       const SOURCE_LABELS = {
         mediafire: 'Mediafire',
         terabox: 'Terabox',
@@ -192,7 +211,6 @@
           a.href = url;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
-          // Struktur: [Source] — filename — full
           a.innerHTML = `
             <span class="dl-left"><span class="dl-source">${sourceLabel}</span></span>
             <span class="dl-center" title="${fn || ''}"> — ${shortFn || fn || 'file'}</span>
@@ -224,17 +242,23 @@
     }
 
     /* --- setupMediaForUrl: set <source> and load ----------------------------- */
-    async function setupMediaForUrl(u){
+    // returns object with { hlsInstance (if any) }
+    async function setupMediaForUrl(u, preferHighestQuality = false){
       try { while (player.firstChild) player.removeChild(player.firstChild); } catch(e){}
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); } catch(e){} player._hls = null; }
+      // ensure player has default styling class
+      player.classList.add('vp-video');
+      player.classList.remove('vp-cover'); // default: contain
+
       if (!u){
         const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type = 'video/mp4'; player.appendChild(s); try{ player.load(); } catch(e){}
-        return;
+        return { hls: null };
       }
       try { player.removeAttribute && player.removeAttribute('crossorigin'); } catch(e){}
       const src = safeUrl(u);
-      if (!src) return;
+      if (!src) return { hls: null };
 
+      // if HLS
       if (src.toLowerCase().endsWith('.m3u8')) {
         try {
           if (!window.Hls){
@@ -247,22 +271,36 @@
             });
           }
           if (window.Hls && Hls.isSupported()){
-            const hls = new Hls({capLevelToPlayerSize:true});
+            const hls = new Hls({ capLevelToPlayerSize: true, maxBufferLength: 30 });
+            // manifest parse handler to optionally pick highest level
+            hls.on(Hls.Events.MANIFEST_PARSED, function(event, data){
+              dbg('HLS manifest parsed', data);
+              try {
+                if (preferHighestQuality && Array.isArray(hls.levels) && hls.levels.length) {
+                  const highest = hls.levels.length - 1;
+                  hls.currentLevel = highest; // jump to highest
+                  dbg('HLS: set currentLevel to highest', highest);
+                }
+              } catch(e){ dbg('hls setlevel err', e); }
+            });
             hls.loadSource(src); hls.attachMedia(player); player._hls = hls; dbg('HLS attached', src);
+            return { hls: player._hls };
           } else {
             const s = document.createElement('source'); s.src = src; s.type = 'application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); } catch(e){}
+            return { hls: null };
           }
         } catch(err){
           dbg('hls error', err);
           const s = document.createElement('source'); s.src = src; s.type = 'application/vnd.apple.mpegurl'; player.appendChild(s); try{ player.load(); } catch(e){}
+          return { hls: null };
         }
       } else {
+        // normal MP4/WebM
         const s = document.createElement('source'); s.src = src; s.type = src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/unknown'; player.appendChild(s);
         try{ player.load(); } catch(e){}
         dbg('mp4 set to source', src);
+        return { hls: null };
       }
-
-      await waitForCanPlay(player, 3500);
     }
 
     /* --- UI helpers -------------------------------------------------------- */
@@ -342,7 +380,21 @@
       player.addEventListener('click', ()=> { if (player.paused) attemptPlayWithFallback(); else player.pause(); });
       player.addEventListener('play', ()=> { setPlayIcon(false); hideOverlay(); });
       player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); });
-      player.addEventListener('loadedmetadata', ()=> { if (timeEl) timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`; });
+      player.addEventListener('loadedmetadata', ()=> {
+        // when metadata available, choose fit to avoid crop (contain)
+        try {
+          // set default to 'contain' so the whole frame is visible (no crop)
+          player.style.objectFit = 'contain';
+          // However, if user toggled to 'cover' earlier, keep cover
+          if (player.dataset.vpfit === 'cover') {
+            player.classList.add('vp-cover');
+            player.style.objectFit = 'cover';
+          } else {
+            player.classList.remove('vp-cover');
+          }
+        } catch(e){}
+        if (timeEl) timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`;
+      });
       player.addEventListener('timeupdate', ()=> {
         const pct = (player.currentTime / Math.max(1, player.duration)) * 100;
         try{ if (!Number.isNaN(pct) && progress) progress.value = pct; } catch(e){}
@@ -418,6 +470,17 @@
       const countSpan = document.createElement('span'); countSpan.textContent=` / ${streams.length}`;
       const nextBtn = document.createElement('button'); nextBtn.className='icon-btn'; nextBtn.textContent='Next ›';
       plc.append(prevBtn, idxInput, countSpan, nextBtn);
+
+      // append extra controls (fit toggle + quality checkbox)
+      const extra = document.createElement('div'); extra.className = 'vp-controls-extra';
+      const fitBtn = document.createElement('button'); fitBtn.className='btn'; fitBtn.textContent = 'Fit: contain'; fitBtn.title = 'Toggle video fit (contain / cover)';
+      const qualityLabel = document.createElement('label');
+      const qualityCheckbox = document.createElement('input'); qualityCheckbox.type = 'checkbox'; qualityCheckbox.style.margin = '0';
+      qualityLabel.appendChild(qualityCheckbox);
+      qualityLabel.appendChild(document.createTextNode('Highest quality (HLS)'));
+      extra.appendChild(fitBtn); extra.appendChild(qualityLabel);
+
+      plc.appendChild(extra);
       const pa = document.querySelector('.post-actions') || document.body;
       pa.appendChild(plc);
 
@@ -427,10 +490,39 @@
       if (bigPlay) bigPlay.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
       if (playBtn) playBtn.addEventListener('click', ()=> { userInteracted = true; window._userInteracted = true; });
 
+      // fit toggle logic
+      fitBtn.addEventListener('click', () => {
+        const current = player.dataset.vpfit === 'cover' ? 'cover' : 'contain';
+        const next = current === 'cover' ? 'contain' : 'cover';
+        player.dataset.vpfit = next;
+        if (next === 'cover') {
+          player.classList.add('vp-cover');
+          player.style.objectFit = 'cover';
+          fitBtn.textContent = 'Fit: cover';
+        } else {
+          player.classList.remove('vp-cover');
+          player.style.objectFit = 'contain';
+          fitBtn.textContent = 'Fit: contain';
+        }
+      });
+
       async function playAt(i, autoplayIfInteracted=true){
         i = Math.max(0, Math.min(streams.length-1, i));
         cur = i; idxInput.value = cur+1;
-        await setupMediaForUrl(streams[cur]);
+        // pass quality preference
+        const preferHQ = !!qualityCheckbox.checked;
+        const result = await setupMediaForUrl(streams[cur], preferHQ);
+        // if HLS instance returned and preferHQ=true, we set highest level if manifest already parsed
+        if (result && result.hls && preferHQ) {
+          try {
+            const hls = result.hls;
+            if (hls.levels && hls.levels.length) {
+              hls.currentLevel = hls.levels.length - 1;
+              dbg('Set HLS to highest after setup', hls.levels.length - 1);
+            }
+          } catch(e){ dbg('set HQ fail', e); }
+        }
+
         if (autoplayIfInteracted && (userInteracted || window._userInteracted)) {
           const res = await attemptPlayWithFallback();
           if (!res.ok) dbg('playAt failed', res.error);
@@ -444,7 +536,7 @@
       player.addEventListener('ended', async ()=> {
         if (cur < streams.length-1) {
           cur++; idxInput.value = cur+1;
-          await setupMediaForUrl(streams[cur]);
+          await setupMediaForUrl(streams[cur], !!qualityCheckbox.checked);
           if (userInteracted || window._userInteracted) {
             try { await player.play(); } catch(e){ dbg('auto-next blocked', e); showOverlay(); }
           } else showOverlay();
@@ -453,7 +545,11 @@
 
       // initial load (do not autoplay)
       cur = 0; idxInput.value = cur+1;
-      setupMediaForUrl(streams[cur]).then(()=> showOverlay()).catch(e => { dbg('initial setup err', e); showOverlay(); });
+      setupMediaForUrl(streams[cur], !!qualityCheckbox.checked).then(()=> {
+        // after setup, ensure player fit default: contain (no crop)
+        try { player.style.objectFit = 'contain'; player.dataset.vpfit = 'contain'; fitBtn.textContent = 'Fit: contain'; } catch(e){}
+        showOverlay();
+      }).catch(e => { dbg('initial setup err', e); showOverlay(); });
     })();
 
     /* --- final UI init ---------------------------------------------------- */
