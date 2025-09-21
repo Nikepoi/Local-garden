@@ -14,26 +14,37 @@
     .pagination { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:18px 0; }  
     .pagination a, .pagination button { padding:8px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); text-decoration:none; background:#fff; cursor:pointer; }  
     .pagination a.active, .pagination button.active { background:#111; color:#fff; border-color:transparent; }  
-    .grid-item { width:100%; max-width:320px; margin:8px; display:inline-block; vertical-align:top; }
+    .grid-item { width:100%; max-width:320px; margin:8px; display:inline-block; vertical-align:top; }  
 
-    /* ===== GANTI: ukuran foto supaya konsisten & tidak aneh ===== */
+    /* ===== Opsi B: otomatis pilih cover/contain berdasarkan orientasi gambar ===== */
     .card img {
       width: 100%;
-      height: 180px;            /* tinggi default yang rapi di mobile */
-      object-fit: cover;       /* crop center — gambar tidak melar */
-      object-position: center;
       display: block;
       border-radius: 8px;
-      background-color: #f3f4f6; /* fallback saat gambar belum load */
-    }
-    @media (min-width: 980px) {
-      .card img {
-        height: 220px;         /* sedikit lebih tinggi di desktop */
-      }
+      background-color: #f3f4f6;
+      object-position: center;
+      transition: height .18s ease;
     }
 
-    /* jika kamu mau thumbnail kotak (1:1) ubah height ke width dengan JS/CSS khusus,
-       tapi ini versi rapi & aman tanpa ubah struktur HTML */
+    /* landscape: crop rapi */
+    .card img.landscape {
+      height: 180px;
+      object-fit: cover;
+    }
+
+    /* portrait: tampil utuh, batasi tinggi */
+    .card img.portrait {
+      height: auto;
+      max-height: 420px;
+      object-fit: contain;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (min-width: 980px) {
+      .card img.landscape { height: 220px; }
+      .card img.portrait { max-height: 520px; }
+    }
   </style>  
 </head>  
 <body>  
@@ -60,193 +71,253 @@
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>    
   <script src="/assets/list.js" defer></script>    
 
-  <script>  
-  const POSTS_JSON = '/posts.json';  
-  const DEFAULT_PER_PAGE = 12;  
-  const POLL_INTERVAL_MS = 60000;  
-  
-  function getPageFromUrl() {  
-    const qp = new URLSearchParams(window.location.search).get('page');  
-    if (qp && /^\d+$/.test(qp)) return Math.max(1, Number(qp));  
-    const path = window.location.pathname.replace(/\/+$/, '');  
-    let m = path.match(/(?:\/page\/)?(\d+)(?:\/index\.html|\.html)?$/i);  
-    if (m) return Math.max(1, Number(m[1]));  
-    return 1;  
-  }  
-  
-  function formatDateISOToLocal(d){  
-    try {  
-      const dt = new Date(d);  
-      return dt.toLocaleString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });  
-    } catch(e){  
-      return d;  
-    }  
-  }  
-  
-  const GRID = document.getElementById('grid');  
-  let postsData = null;  
-  let currentUpdatedAt = null;  
-  
-  function clearGrid(){ GRID.innerHTML = ''; }  
-  
-  function renderPostsForPage(page) {  
-    if (!postsData || !Array.isArray(postsData.posts)) {  
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada data.</div>';  
-      return;  
-    }  
-    const perPage = postsData.per_page || DEFAULT_PER_PAGE;  
-    const total = postsData.total || postsData.posts.length;  
-    const totalPages = Math.max(1, Math.ceil(total / perPage));  
-    if (page < 1) page = 1;  
-    if (page > totalPages) page = totalPages;  
-    const start = (page - 1) * perPage;  
-    const slice = postsData.posts.slice(start, start + perPage);  
-    clearGrid();  
-    if (!slice.length) {  
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada posting pada halaman ini.</div>';  
-    } else {  
-      const frag = document.createDocumentFragment();  
-      slice.forEach(p => {  
-        const article = document.createElement('article');  
-        article.className = 'grid-item';  
-        article.innerHTML = `  
-          <a class="card" href="${p.url}">  
-            ${p.thumb ? `<img src="${p.thumb}" alt="${p.title}" loading="lazy">` : ''}  
-            <h2>${p.title}</h2>  
-            <p class="excerpt">${p.excerpt || ''}</p>  
-            <time datetime="${p.date}">${formatDateISOToLocal(p.date)}</time>  
-          </a>`;  
-        frag.appendChild(article);  
-      });  
-      GRID.appendChild(frag);  
-    }  
-    renderPagination(page, totalPages);  
-  }  
-  
-  function renderPagination(current, totalPages){  
-    const old = document.getElementById('paginationControls');  
-    if (old) old.remove();  
-    const nav = document.createElement('nav');  
-    nav.id = 'paginationControls';  
-    nav.setAttribute('aria-label','Pagination');  
-    const container = document.createElement('div');  
-    container.className = 'pagination';  
-    function pageHref(pageNum){  
-      if (pageNum <= 1) return '/';  
-      return `/${pageNum}/`;  
-    }  
-    function makeLink(label, pageNum, isActive){  
-      const a = document.createElement('a');  
-      a.href = pageHref(pageNum);  
-      a.textContent = label;  
-      if (isActive) a.classList.add('active');  
-      a.dataset.page = String(pageNum);  
-      a.rel = 'nofollow';  
-      return a;  
-    }  
-    container.appendChild(makeLink('‹ Prev', Math.max(1, current - 1), false));  
-    const range = 3;  
-    const start = Math.max(1, current - range);  
-    const end = Math.min(totalPages, current + range);  
-    if (start > 1) {  
-      container.appendChild(makeLink('1', 1, current === 1));  
-      if (start > 2) {  
-        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);  
-      }  
-    }  
-    for (let i = start; i <= end; i++){  
-      container.appendChild(makeLink(String(i), i, i === current));  
-    }  
-    if (end < totalPages) {  
-      if (end < totalPages - 1) {  
-        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);  
-      }  
-      container.appendChild(makeLink(String(totalPages), totalPages, current === totalPages));  
-    }  
-    container.appendChild(makeLink('Next ›', Math.min(totalPages, current + 1), false));  
-    nav.appendChild(container);  
-    GRID.after(nav);  
-    const pathRoot = window.location.pathname.replace(/\/+$/,'') === '' || /\/index\.html$/.test(window.location.pathname);  
-    if (pathRoot) {  
-      container.querySelectorAll('a').forEach(a => {  
-        a.addEventListener('click', function(e){  
-          const page = Number(this.dataset.page || 1);  
-          e.preventDefault();  
-          const newUrl = new URL(window.location);  
-          if (page <= 1) newUrl.pathname = '/';  
-          else newUrl.pathname = `/${page}/`;  
-          history.pushState({page}, '', newUrl.toString());  
-          renderPostsForPage(page);  
-          window.scrollTo({top:0, behavior:'smooth'});  
-        });  
-      });  
-    }  
-  }  
-  
-  async function fetchAndRender(initialPage){  
-    try {  
-      const res = await fetch(POSTS_JSON, {cache: 'no-store'});  
-      if (!res.ok) throw new Error('Fetch error');  
-      const data = await res.json();  
-      postsData = data;  
-      currentUpdatedAt = data.updated_at || null;  
-      const perPage = postsData.per_page || DEFAULT_PER_PAGE;  
-      const page = initialPage || getPageFromUrl();  
-      renderPostsForPage(page);  
-    } catch (err) {  
-      console.error('fetchAndRender error', err);  
-      GRID.innerHTML = '<div class="col-12 text-center text-muted">Gagal memuat daftar. Coba refresh.</div>';  
-    }  
-  }  
-  
-  async function pollForUpdates(){  
-    if (!POLL_INTERVAL_MS) return;  
-    try {  
-      const res = await fetch(POSTS_JSON, {cache: 'no-store'});  
-      if (!res.ok) return;  
-      const data = await res.json();  
-      if (!data) return;  
-      if (data.updated_at && data.updated_at !== currentUpdatedAt) {  
-        currentUpdatedAt = data.updated_at;  
-        postsData = data;  
-        const page = getPageFromUrl();  
-        renderPostsForPage(page);  
-        console.info('posts.json updated -> content refreshed');  
-      }  
-    } catch(e){  
-      console.warn('pollForUpdates error', e);  
-    }  
-  }  
-  
-  (function initClock(){  
-    const pageDate = document.getElementById('pageDate');  
-    const footerClock = document.getElementById('footerClock');  
-    function updateDateTime(){  
-      const now = new Date();  
-      const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };  
-      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };  
-      const dateStr = now.toLocaleDateString('id-ID', dateOptions);  
-      const timeStr = now.toLocaleTimeString('id-ID', timeOptions);  
-      if (pageDate) pageDate.textContent = `${dateStr} • ${timeStr} - nikepoi - Lokal - Indonesia`;  
-      if (footerClock) footerClock.textContent = timeStr;  
-    }  
-    updateDateTime();  
-    setInterval(updateDateTime, 1000);  
-  })();  
-  
-  document.addEventListener('DOMContentLoaded', function(){  
-    if (window.AOS) AOS.init({ once: true, duration: 420 });  
-  });  
-  
-  (function(){  
-    const initialPage = getPageFromUrl();  
-    fetchAndRender(initialPage);  
-    window.addEventListener('popstate', function(e){  
-      const page = getPageFromUrl();  
-      renderPostsForPage(page);  
-    });  
-    if (POLL_INTERVAL_MS > 0) setInterval(pollForUpdates, POLL_INTERVAL_MS);  
-  })();  
-  </script>  
-  </body>  
+  <script>
+  const POSTS_JSON = '/posts.json';
+  const DEFAULT_PER_PAGE = 12;
+  const POLL_INTERVAL_MS = 60000;
+
+  function getPageFromUrl() {
+    const qp = new URLSearchParams(window.location.search).get('page');
+    if (qp && /^\d+$/.test(qp)) return Math.max(1, Number(qp));
+    const path = window.location.pathname.replace(/\/+$/, '');
+    let m = path.match(/(?:\/page\/)?(\d+)(?:\/index\.html|\.html)?$/i);
+    if (m) return Math.max(1, Number(m[1]));
+    return 1;
+  }
+
+  function formatDateISOToLocal(d){
+    try {
+      const dt = new Date(d);
+      return dt.toLocaleString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    } catch(e){
+      return d;
+    }
+  }
+
+  const GRID = document.getElementById('grid');
+  let postsData = null;
+  let currentUpdatedAt = null;
+
+  function clearGrid(){ GRID.innerHTML = ''; }
+
+  function renderPostsForPage(page) {
+    if (!postsData || !Array.isArray(postsData.posts)) {
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada data.</div>';
+      return;
+    }
+    const perPage = postsData.per_page || DEFAULT_PER_PAGE;
+    const total = postsData.total || postsData.posts.length;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    const start = (page - 1) * perPage;
+    const slice = postsData.posts.slice(start, start + perPage);
+    clearGrid();
+    if (!slice.length) {
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Tidak ada posting pada halaman ini.</div>';
+    } else {
+      const frag = document.createDocumentFragment();
+      slice.forEach(p => {
+        const article = document.createElement('article');
+        article.className = 'grid-item';
+        article.innerHTML = `
+          <a class="card" href="${p.url}">
+            ${p.thumb ? `<img src="${p.thumb}" alt="${p.title}" loading="lazy">` : ''}
+            <h2>${p.title}</h2>
+            <p class="excerpt">${p.excerpt || ''}</p>
+            <time datetime="${p.date}">${formatDateISOToLocal(p.date)}</time>
+          </a>`;
+        frag.appendChild(article);
+      });
+      GRID.appendChild(frag);
+    }
+    renderPagination(page, totalPages);
+  }
+
+  function renderPagination(current, totalPages){
+    const old = document.getElementById('paginationControls');
+    if (old) old.remove();
+    const nav = document.createElement('nav');
+    nav.id = 'paginationControls';
+    nav.setAttribute('aria-label','Pagination');
+    const container = document.createElement('div');
+    container.className = 'pagination';
+    function pageHref(pageNum){
+      if (pageNum <= 1) return '/';
+      return `/${pageNum}/`;
+    }
+    function makeLink(label, pageNum, isActive){
+      const a = document.createElement('a');
+      a.href = pageHref(pageNum);
+      a.textContent = label;
+      if (isActive) a.classList.add('active');
+      a.dataset.page = String(pageNum);
+      a.rel = 'nofollow';
+      return a;
+    }
+    container.appendChild(makeLink('‹ Prev', Math.max(1, current - 1), false));
+    const range = 3;
+    const start = Math.max(1, current - range);
+    const end = Math.min(totalPages, current + range);
+    if (start > 1) {
+      container.appendChild(makeLink('1', 1, current === 1));
+      if (start > 2) {
+        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);
+      }
+    }
+    for (let i = start; i <= end; i++){
+      container.appendChild(makeLink(String(i), i, i === current));
+    }
+    if (end < totalPages) {
+      if (end < totalPages - 1) {
+        const dots = document.createElement('span'); dots.textContent = '…'; container.appendChild(dots);
+      }
+      container.appendChild(makeLink(String(totalPages), totalPages, current === totalPages));
+    }
+    container.appendChild(makeLink('Next ›', Math.min(totalPages, current + 1), false));
+    nav.appendChild(container);
+    GRID.after(nav);
+    const pathRoot = window.location.pathname.replace(/\/+$/,'') === '' || /\/index\.html$/.test(window.location.pathname);
+    if (pathRoot) {
+      container.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', function(e){
+          const page = Number(this.dataset.page || 1);
+          e.preventDefault();
+          const newUrl = new URL(window.location);
+          if (page <= 1) newUrl.pathname = '/';
+          else newUrl.pathname = `/${page}/`;
+          history.pushState({page}, '', newUrl.toString());
+          renderPostsForPage(page);
+          window.scrollTo({top:0, behavior:'smooth'});
+        });
+      });
+    }
+  }
+
+  async function fetchAndRender(initialPage){
+    try {
+      const res = await fetch(POSTS_JSON, {cache: 'no-store'});
+      if (!res.ok) throw new Error('Fetch error');
+      const data = await res.json();
+      postsData = data;
+      currentUpdatedAt = data.updated_at || null;
+      const perPage = postsData.per_page || DEFAULT_PER_PAGE;
+      const page = initialPage || getPageFromUrl();
+      renderPostsForPage(page);
+    } catch (err) {
+      console.error('fetchAndRender error', err);
+      GRID.innerHTML = '<div class="col-12 text-center text-muted">Gagal memuat daftar. Coba refresh.</div>';
+    }
+  }
+
+  async function pollForUpdates(){
+    if (!POLL_INTERVAL_MS) return;
+    try {
+      const res = await fetch(POSTS_JSON, {cache: 'no-store'});
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data) return;
+      if (data.updated_at && data.updated_at !== currentUpdatedAt) {
+        currentUpdatedAt = data.updated_at;
+        postsData = data;
+        const page = getPageFromUrl();
+        renderPostsForPage(page);
+        console.info('posts.json updated -> content refreshed');
+      }
+    } catch(e){
+      console.warn('pollForUpdates error', e);
+    }
+  }
+
+  (function initClock(){
+    const pageDate = document.getElementById('pageDate');
+    const footerClock = document.getElementById('footerClock');
+    function updateDateTime(){
+      const now = new Date();
+      const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+      const dateStr = now.toLocaleDateString('id-ID', dateOptions);
+      const timeStr = now.toLocaleTimeString('id-ID', timeOptions);
+      if (pageDate) pageDate.textContent = `${dateStr} • ${timeStr} - nikepoi - Lokal - Indonesia`;
+      if (footerClock) footerClock.textContent = timeStr;
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+  })();
+
+  document.addEventListener('DOMContentLoaded', function(){
+    if (window.AOS) AOS.init({ once: true, duration: 420 });
+  });
+
+  (function(){
+    const initialPage = getPageFromUrl();
+    fetchAndRender(initialPage);
+    window.addEventListener('popstate', function(e){
+      const page = getPageFromUrl();
+      renderPostsForPage(page);
+    });
+    if (POLL_INTERVAL_MS > 0) setInterval(pollForUpdates, POLL_INTERVAL_MS);
+  })();
+  </script>
+
+  <!-- === Opsi B script: deteksi orientasi gambar & tambahkan kelas portrait/landscape === -->
+  <script>
+  (function fixCardImages(){
+    function setClass(img){
+      try {
+        const w = img.naturalWidth || 1;
+        const h = img.naturalHeight || 1;
+        // threshold to decide portrait vs landscape. 1.1 toleransi.
+        if (h / w > 1.1) {
+          img.classList.remove('landscape');
+          img.classList.add('portrait');
+        } else {
+          img.classList.remove('portrait');
+          img.classList.add('landscape');
+        }
+      } catch(e){ /* ignore */ }
+    }
+
+    function processImg(img){
+      if (!img) return;
+      if (!img.complete) {
+        img.addEventListener('load', () => setClass(img), { once: true });
+        img.addEventListener('error', () => { /* ignore broken images */ }, { once: true });
+      } else {
+        setClass(img);
+      }
+    }
+
+    function handleExisting(){
+      document.querySelectorAll('.card img').forEach(processImg);
+    }
+
+    // run after DOM ready (and also when list.js injects content via fetch)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', handleExisting);
+    } else {
+      handleExisting();
+    }
+
+    // observe mutations inside the grid to process images added dynamically
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+    const obs = new MutationObserver(muts => {
+      muts.forEach(m => {
+        m.addedNodes.forEach(n => {
+          if (n.nodeType !== 1) return;
+          // if a new article with images was added
+          if (n.matches && n.matches('.grid-item')) {
+            n.querySelectorAll('.card img').forEach(processImg);
+          } else {
+            // might be fragment; find images inside
+            n.querySelectorAll && n.querySelectorAll('.card img').forEach(processImg);
+          }
+        });
+      });
+    });
+    obs.observe(grid, { childList: true, subtree: true });
+  })();
+  </script>
+</body>  
 </html>
