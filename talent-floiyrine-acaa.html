@@ -3,103 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Video Player — Controls Outside + Downloads</title>
+<title>Player — Clean Responsive</title>
 
-<!-- Bootstrap 5 CSS CDN -->
+<!-- Bootstrap 5 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<!-- AOS (optional lightweight animations) -->
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
 <style>
   :root{
-    --bg:#071022; --card:#0b1220; --muted:#98a8b3; --accent:#3b82f6;
+    --bg:#071022; --panel:#0b1220; --muted:#98a8b3; --accent:#3b82f6;
   }
-  body{background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb;font-family:Inter,system-ui,Arial;margin:0;padding:18px}
-  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
-  .video-box{background:#000;display:block}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .container-player{max-width:1100px;margin:20px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-wrap{background:#000;display:block}
   video{width:100%;height:auto;max-height:65vh;object-fit:contain;display:block;background:#000}
-  .controls-area{padding:12px;border-top:1px solid rgba(255,255,255,0.02)}
-  .btn-text{min-width:72px}
-  .playlist .item{cursor:pointer;padding:10px;border-radius:10px}
-  .playlist .item.active{border-left:4px solid var(--accent);background:rgba(59,130,246,0.04)}
-  .meta{padding:16px}
-  a.link-download{color:#9fc5ff;word-break:break-all}
-  @media(min-width:920px){
-    .layout-wide{display:grid;grid-template-columns:1fr 320px;gap:18px}
-    .right-col{padding-left:12px}
+  /* controls below video */
+  .controls{padding:14px;border-top:1px solid rgba(255,255,255,0.03)}
+  .btn-lg-custom{min-width:110px}
+  .range-wrapper{display:flex;align-items:center;gap:12px}
+  .time{width:48px;text-align:center;color:var(--muted);font-size:14px}
+  .meta{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.02)}
+  .title{font-weight:700;font-size:20px;margin:0}
+  .date{color:var(--muted);font-size:13px;margin-top:6px}
+  .playlist-col{border-left:1px solid rgba(255,255,255,0.02);padding:16px;height:100%}
+  .plist-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
+  .plist-item img{width:84px;height:52px;object-fit:cover;border-radius:8px}
+  .plist-item.active{background:rgba(59,130,246,0.06);border-left:4px solid var(--accent)}
+  /* small screens tweaks */
+  @media(max-width:767px){
+    .btn-lg-custom{min-width:86px}
   }
 </style>
 </head>
 <body>
+<div class="container-player">
+  <div class="card card-player row g-0">
+    <div class="col-12 col-lg-8">
+      <div class="video-wrap" data-aos="fade-up">
+        <video id="video" playsinline webkit-playsinline preload="metadata" controlslist="nodownload"></video>
+      </div>
 
-<div class="container-fluid">
-  <div class="card card-player mx-auto" style="max-width:1100px;">
-    <div class="row g-0">
-      <div class="col-12 col-lg-8">
-        <div class="video-box">
-          <video id="video" playsinline webkit-playsinline preload="metadata"></video>
-        </div>
+      <!-- CONTROLS (below video, separate) -->
+      <div class="controls" data-aos="fade-up" data-aos-delay="80">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <button id="prev" class="btn btn-outline-light btn-lg btn-lg-custom"><i class="bi bi-skip-start-fill"></i> Prev</button>
+          <button id="play" class="btn btn-primary btn-lg btn-lg-custom"><i class="bi bi-play-fill"></i> Play</button>
+          <button id="next" class="btn btn-outline-light btn-lg btn-lg-custom"><i class="bi bi-skip-end-fill"></i> Next</button>
 
-        <!-- Controls (separate from the video element) -->
-        <div class="controls-area">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <button id="prev" class="btn btn-outline-light btn-sm btn-text">Prev</button>
-            <button id="play" class="btn btn-primary btn-sm btn-text">Play</button>
-            <button id="next" class="btn btn-outline-light btn-sm btn-text">Next</button>
-            <button id="loop" class="btn btn-outline-light btn-sm">Loop</button>
+          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
-            <div class="ms-3 d-flex align-items-center gap-2">
-              <label for="speed" class="mb-0" style="color:var(--muted)">Speed</label>
-              <select id="speed" class="form-select form-select-sm" style="width:90px">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1" selected>1x</option>
-                <option value="1.25">1.25x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2">2x</option>
-              </select>
-            </div>
-
-            <div class="ms-auto d-flex align-items-center gap-2">
-              <button id="fs" class="btn btn-outline-light btn-sm">Fullscreen</button>
-              <button id="togglePlaylist" class="btn btn-outline-light btn-sm">Show playlist</button>
-            </div>
-          </div>
-
-          <div class="mt-3 d-flex align-items-center gap-3">
-            <div class="small text-muted" id="current">0:00</div>
-            <input id="seek" type="range" class="form-range" min="0" max="100" step="0.01" value="0">
-            <div class="small text-muted" id="duration">0:00</div>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+            <select id="speed" class="form-select form-select-sm" style="width:88px">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="fs" class="btn btn-outline-light">Fullscreen</button>
           </div>
         </div>
 
-        <div class="meta">
-          <h4 id="title">-</h4>
-          <div id="date" class="text-muted small">-</div>
-        </div>
-
-        <div class="p-3 border-top">
-          <!-- DOWNLOAD LINKS (visible) -->
-          <h6 class="mb-2">Download (full files)</h6>
-          <div id="downloads" class="mb-2"></div>
-          <div class="text-muted small">Link full ada dari sumber yang tersedia.</div>
+        <div class="mt-3">
+          <div class="range-wrapper">
+            <div class="time" id="current">0:00</div>
+            <input id="seek" type="range" min="0" max="100" step="0.01" class="form-range" value="0" style="flex:1">
+            <div class="time" id="duration">0:00</div>
+          </div>
         </div>
       </div>
 
-      <!-- Playlist column -->
-      <div class="col-12 col-lg-4 right-col" style="display:none" id="playlistColumn">
-        <div class="p-3">
-          <h6>Playlist</h6>
-          <div id="playlist" class="playlist"></div>
+      <!-- meta -->
+      <div class="meta" data-aos="fade-up" data-aos-delay="120">
+        <div class="title" id="title">-</div>
+        <div class="date" id="date">-</div>
+      </div>
+
+      <!-- downloads (collapsed by default) -->
+      <div class="p-3 border-top" data-aos="fade-up" data-aos-delay="160">
+        <div class="accordion" id="downloadsAcc">
+          <div class="accordion-item bg-transparent" style="border:none">
+            <h2 class="accordion-header" id="headingDownloads">
+              <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDownloads" aria-expanded="false" aria-controls="collapseDownloads">
+                Download (full files)
+              </button>
+            </h2>
+            <div id="collapseDownloads" class="accordion-collapse collapse" aria-labelledby="headingDownloads" data-bs-parent="#downloadsAcc">
+              <div class="accordion-body" style="background:transparent">
+                <div id="downloads" class="small"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+    </div>
+
+    <!-- Playlist column (visible on large screens only) -->
+    <div class="col-12 col-lg-4 d-none d-lg-block playlist-col" data-aos="fade-left">
+      <h6>Playlist</h6>
+      <div id="playlist" class="mt-3"></div>
     </div>
   </div>
 </div>
 
-<!-- Bootstrap JS (for responsive utilities only) -->
+<!-- JS: Bootstrap, AOS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script>
-  // ===== DATA (dari JSON) =====
+  AOS.init({duration:300, once:true});
+
+  // ===== DATA =====
   const data = [
     {
       "id": 4000,
@@ -148,50 +168,45 @@
   const durationT = document.getElementById('duration');
   const titleEl = document.getElementById('title');
   const dateEl = document.getElementById('date');
-  const playlistEl = document.getElementById('playlist');
-  const togglePlaylistBtn = document.getElementById('togglePlaylist');
-  const playlistColumn = document.getElementById('playlistColumn');
   const downloadsEl = document.getElementById('downloads');
+  const playlistEl = document.getElementById('playlist');
   const fsBtn = document.getElementById('fs');
 
   let currentIndex = 0;
   let isSeeking = false;
 
-  // ===== init UI =====
+  // init
   titleEl.textContent = item.title;
   dateEl.textContent = (new Date(item.date)).toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' });
 
   const videos = item.links.videy || [];
   video.src = videos.length ? videos[0] : '';
-  // default playback to 1x as requested
-  video.playbackRate = 1;
+  video.playbackRate = 1; // default 1x
   speedSel.value = '1';
 
-  // build playlist (hidden by default on small screens)
+  // build playlist (for large screens)
   function buildPlaylist(){
     playlistEl.innerHTML = '';
     if(!videos.length){ playlistEl.innerHTML = '<div class="text-muted small">Playlist kosong.</div>'; return; }
     videos.forEach((src,i) => {
-      const el = document.createElement('div');
-      el.className = 'item d-flex align-items-center gap-3';
-      el.dataset.idx = i;
-      el.innerHTML = `
-        <img src="${item.thumb}" alt="thumb-${i}" style="width:84px;height:52px;object-fit:cover;border-radius:8px">
+      const node = document.createElement('div');
+      node.className = 'plist-item mb-2';
+      node.dataset.idx = i;
+      node.innerHTML = `
+        <img src="${item.thumb}" alt="thumb-${i}">
         <div>
           <div style="font-weight:700">Bagian ${i+1}</div>
           <div class="text-muted small">${(new URL(src)).hostname} • ${src.split('/').pop()}</div>
         </div>
       `;
-      el.addEventListener('click', ()=> {
-        playIndex(i);
-      });
-      playlistEl.appendChild(el);
+      node.addEventListener('click', ()=> playIndex(i));
+      playlistEl.appendChild(node);
     });
     updateActive();
   }
 
   function updateActive(){
-    const nodes = playlistEl.querySelectorAll('.item');
+    const nodes = playlistEl.querySelectorAll('.plist-item');
     nodes.forEach(n => n.classList.toggle('active', Number(n.dataset.idx) === currentIndex));
   }
 
@@ -201,12 +216,15 @@
     video.src = videos[i];
     video.play().catch(()=>{});
     updateActive();
-    // scroll playlist item into view on wide screens
-    const node = playlistEl.querySelector('.item[data-idx="'+i+'"]');
-    if(node) node.scrollIntoView({behavior:'smooth',block:'nearest'});
+    // ensure collapsible downloads closed (no UI overlap)
+    const downloadsCollapse = document.getElementById('collapseDownloads');
+    if (downloadsCollapse && downloadsCollapse.classList.contains('show')) {
+      const bs = bootstrap.Collapse.getInstance(downloadsCollapse);
+      if(bs) bs.hide();
+    }
   }
 
-  // time formatting
+  // time & seek
   function fmt(s){
     if(!isFinite(s)) return '0:00';
     const sec = Math.floor(s%60).toString().padStart(2,'0');
@@ -214,7 +232,6 @@
     return `${min}:${sec}`;
   }
 
-  // video events
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -243,38 +260,49 @@
   }
   playBtn.addEventListener('click', togglePlay);
   video.addEventListener('click', togglePlay);
-  video.addEventListener('play', ()=> playBtn.textContent = 'Pause');
-  video.addEventListener('pause', ()=> playBtn.textContent = 'Play');
+  video.addEventListener('play', ()=> {
+    playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+  });
+  video.addEventListener('pause', ()=> {
+    playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play';
+  });
 
-  // prev/next
-  prevBtn.addEventListener('click', ()=>{
+  // prev / next
+  prevBtn.addEventListener('click', ()=> {
     if(currentIndex > 0) playIndex(currentIndex - 1);
     else playIndex(videos.length - 1);
   });
-  nextBtn.addEventListener('click', ()=>{
+  nextBtn.addEventListener('click', ()=> {
     if(currentIndex < videos.length - 1) playIndex(currentIndex + 1);
     else playIndex(0);
   });
 
-  // loop
-  loopBtn.addEventListener('click', ()=>{
+  // loop toggle
+  loopBtn.addEventListener('click', ()=> {
     video.loop = !video.loop;
     loopBtn.classList.toggle('btn-primary', video.loop);
     loopBtn.classList.toggle('btn-outline-light', !video.loop);
   });
 
   // speed
-  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+  speedSel.addEventListener('change', ()=> {
+    video.playbackRate = Number(speedSel.value);
+  });
 
   // fullscreen
-  fsBtn.addEventListener('click', ()=> {
-    const el = document.querySelector('.video-box');
+  fsBtn && fsBtn.addEventListener('click', ()=> {
+    const el = document.querySelector('.video-wrap');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
+  // auto-next
+  video.addEventListener('ended', ()=> {
+    if(currentIndex < videos.length - 1) playIndex(currentIndex + 1);
+  });
+
   // keyboard shortcuts
-  window.addEventListener('keydown', (e)=>{
+  window.addEventListener('keydown', (e)=> {
     if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
     if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
@@ -282,60 +310,42 @@
     if(e.key === 'm'){ video.muted = !video.muted; }
   });
 
-  // auto-next
-  video.addEventListener('ended', ()=>{
-    if(currentIndex < videos.length - 1) playIndex(currentIndex + 1);
-  });
-
-  // toggle playlist panel
-  togglePlaylistBtn.addEventListener('click', ()=>{
-    if(playlistColumn.style.display === 'block'){
-      playlistColumn.style.display = 'none';
-      togglePlaylistBtn.textContent = 'Show playlist';
-    } else {
-      playlistColumn.style.display = 'block';
-      togglePlaylistBtn.textContent = 'Hide playlist';
-    }
-  });
-
-  // render downloads (mediafire + terabox) -- visible, full URLs
+  // render downloads collapsed by default
   function renderDownloads(){
     downloadsEl.innerHTML = '';
     const links = item.links || {};
-    const addList = (label, arr) => {
+    function add(title, arr){
       if(!arr || !arr.length) return;
       const h = document.createElement('div');
-      h.innerHTML = '<strong>' + label + '</strong>';
+      h.innerHTML = '<strong>' + title + '</strong>';
       downloadsEl.appendChild(h);
-      arr.forEach(u => {
+      arr.forEach(u=>{
         const a = document.createElement('a');
         a.href = u;
         a.target = '_blank';
         a.rel = 'noopener';
-        a.className = 'link-download d-block mb-1';
+        a.className = 'd-block text-break mb-1';
         a.textContent = u;
         downloadsEl.appendChild(a);
       });
-    };
-    addList('Mediafire', links.mediafire);
-    addList('Terabox', links.terabox);
-    addList('Pixeldrain', links.pixeldrain);
-    addList('Bonus', links.bonus);
+    }
+    add('Mediafire', links.mediafire);
+    add('Terabox', links.terabox);
+    add('Pixeldrain', links.pixeldrain);
+    add('Bonus', links.bonus);
   }
 
-  // initialize
+  // block right-click
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+  });
+
+  // init
   buildPlaylist();
   renderDownloads();
-  // hide playlist on small screens initially
-  if(window.innerWidth < 920){
-    playlistColumn.style.display = 'none';
-    togglePlaylistBtn.textContent = 'Show playlist';
-  } else {
-    playlistColumn.style.display = 'block';
-    togglePlaylistBtn.textContent = 'Hide playlist';
-  }
   updateActive();
 
+  // hide playlist on small screens already handled via d-none d-lg-block
 </script>
 </body>
 </html>
