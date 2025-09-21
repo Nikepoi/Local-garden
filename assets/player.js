@@ -1,7 +1,4 @@
-// assets/player.js
-// Player logic: HLS, overlay, seek/time, volume gesture + slider, fullscreen, cinema
-// Preserves original behavior; added minimal playlist/download fixes for local links
-
+// assets/player.js — UPDATED: disallow downloading videy streams; show non-videy links in Download area
 (() => {
   const POSTS_JSON = '/data/posts.json';
 
@@ -17,7 +14,6 @@
     const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error('HTTP ' + res.status); return res.json();
   }
 
-  // ------------------ helper: build streams from post.links ------------------
   function buildStreamsFromLinksPlain(linksObj){
     if (!linksObj || typeof linksObj !== 'object') return [];
     const order = ['videy','mediafire','terabox','pixeldrain','bonus'];
@@ -27,22 +23,20 @@
       arr.forEach(u=>{
         if (typeof u === 'string') {
           const url = u.trim();
-          if (url) out.push(url);
+          if (url) out.push({ url, source: k });
         }
       });
     });
     return out;
   }
 
-  // small helpers
   function isPlayableURL(u){
-    return /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(String(u || ''));
+    return /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(String(u||''));
   }
   function isDirectFile(u){
-    return /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(u || ''));
+    return /\.(zip|rar|7z|mp4|webm|ogg)(\?.*)?$/i.test(String(u||''));
   }
 
-  // ------------------ main init ------------------
   async function init(){
     const player = document.getElementById('player');
     const playerWrap = document.getElementById('playerWrap');
@@ -58,12 +52,12 @@
     const fsBtn = document.getElementById('fs');
     const cinemaBtn = document.getElementById('cinema');
     const speedBtn = document.getElementById('speedBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadBtn = document.getElementById('downloadBtn'); // we'll hide this (no video downloads)
     const postTitle = document.getElementById('postTitle');
     const postDate = document.getElementById('postDate');
     const postDesc = document.getElementById('postDesc');
 
-    // ensure volZone exists
+    // ensure volZone
     let volZone = document.getElementById('volZone');
     if (!volZone) {
       volZone = document.createElement('div');
@@ -72,7 +66,7 @@
       wrap.appendChild(volZone);
     }
 
-    // vol pop slider
+    // vol pop
     let volPop = document.getElementById('volPop');
     if (!volPop) {
       volPop = document.createElement('div');
@@ -88,12 +82,12 @@
       document.body.appendChild(el); return el;
     })();
 
-    // slug from path or meta (meta preferred)
+    // slug detection
     const metaSlugEl = document.querySelector('meta[name="slug"]');
     const rawName = (location.pathname.split('/').pop() || '').replace('.html','');
     const slug = metaSlugEl && metaSlugEl.content ? metaSlugEl.content : decodeURIComponent(rawName || '');
 
-    // load posts.json
+    // load posts
     let post = null;
     try {
       dbg('Fetching', POSTS_JSON);
@@ -112,14 +106,14 @@
       dbg('posts.json error', String(err));
     }
 
-    // if post found, build streams and default stream selection
+    // build streams (with source tag) and separate playable vs downloadLinks (non-videy)
     if (post) {
-      const streams = buildStreamsFromLinksPlain(post.links || {});
-      post._streams = streams;
-      if (!post.stream && streams && streams.length) {
-        const pick = streams.find(u => /\.(mp4|m3u8|webm|ogg)(\?.*)?$/i.test(u)) || streams[0];
-        if (pick) post.stream = pick;
-      }
+      const all = buildStreamsFromLinksPlain(post.links || {});
+      post._streams_all = all; // array of {url, source}
+      // playable streams only (mp4/m3u8/webm/ogg)
+      post._streams = all.filter(x => isPlayableURL(x.url)).map(x => x.url);
+      // download links: all non-videy sources (mediafire/terabox/pixeldrain/bonus)
+      post._downloadLinks = all.filter(x => x.source !== 'videy').map(x => ({ url: x.url, source: x.source }));
     }
 
     function renderPost(p){
@@ -132,33 +126,76 @@
       }
       if (postTitle) postTitle.textContent = p.title || 'No title';
       if (postDate) postDate.textContent = p.date || '';
-      // excerpt removed: use description if provided
       if (postDesc) postDesc.innerHTML = (p.description || '').toString().replace(/<img\b[^>]*>/gi,'').replace(/\n/g,'<br>');
       if (p.thumb && player) try { player.poster = safeEncodeUrl(p.thumb); } catch(e){}
     }
 
+    // render download list (non-video links)
+    function renderDownloadLinks(p){
+      // remove old area
+      const old = document.getElementById('downloadLinks');
+      if (old) old.remove();
+
+      const container = document.createElement('div');
+      container.id = 'downloadLinks';
+      container.style.display = 'flex';
+      container.style.gap = '8px';
+      container.style.marginTop = '10px';
+      container.style.flexWrap = 'wrap';
+
+      const list = (p && Array.isArray(p._downloadLinks)) ? p._downloadLinks : [];
+      if (!list.length) {
+        // hide original downloadBtn to avoid confusion
+        if (downloadBtn) downloadBtn.style.display = 'none';
+        return;
+      }
+
+      // create labeled buttons for each host link (mediafire/terabox/pixeldrain/bonus)
+      list.forEach((item, idx) => {
+        const a = document.createElement('a');
+        a.className = 'download-link';
+        a.style.display = 'inline-flex';
+        a.style.alignItems = 'center';
+        a.style.gap = '8px';
+        a.style.padding = '10px 14px';
+        a.style.borderRadius = '12px';
+        a.style.textDecoration = 'none';
+        a.style.fontWeight = '700';
+        a.style.background = '#000';
+        a.style.color = '#fff';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.href = item.url;
+
+        // add download hint only if the URL looks like a direct file (e.g., .zip)
+        if (isDirectFile(item.url)) {
+          a.setAttribute('download', '');
+        }
+
+        // label: Source name (capitalize) and optional index
+        const label = (item.source || 'link').replace(/^\w/, c => c.toUpperCase());
+        a.textContent = label + ((list.length>1) ? ` ${idx+1}` : '');
+
+        container.appendChild(a);
+      });
+
+      // append after existing .post-actions
+      const target = document.querySelector('.post-actions') || document.querySelector('.meta-box') || document.body;
+      target.appendChild(container);
+
+      // hide old single downloadBtn (we now provide explicit host download links)
+      if (downloadBtn) downloadBtn.style.display = 'none';
+    }
+
     async function setupMedia(p){
-      // clear previous
+      // same as original but we DO NOT set downloadBtn to point to stream
       while (player.firstChild) player.removeChild(player.firstChild);
       if (player._hls && typeof player._hls.destroy === 'function'){ try{ player._hls.destroy(); }catch(e){} player._hls = null; }
 
-      // p can be object {stream, download} or post object or string
-      let stream = null;
-      let downloadLink = null;
-
-      if (typeof p === 'string') stream = safeEncodeUrl(p);
-      else if (p && typeof p === 'object') {
-        // if object has stream property use that, else try p.stream/p.url/p.source
-        stream = p.stream ? safeEncodeUrl(p.stream) : (p.url ? safeEncodeUrl(p.url) : (p.source ? safeEncodeUrl(p.source) : null));
-        if (!stream && p.download) stream = safeEncodeUrl(p.download);
-        downloadLink = p.download || null;
-      }
-
+      let stream = p && (p.stream || p.url || p.source) ? safeEncodeUrl(p.stream || p.url || p.source) : null;
+      if (!stream && p && p.download) stream = safeEncodeUrl(p.download);
       if (!stream) {
-        const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type='video/mp4'; player.appendChild(s);
-        try{ player.load(); }catch(e){}
-        if (downloadBtn) downloadBtn.style.display='none';
-        return;
+        const s = document.createElement('source'); s.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'; s.type='video/mp4'; player.appendChild(s); try{ player.load(); }catch(e){} if (downloadBtn) downloadBtn.style.display='none'; return;
       }
 
       if (stream.toLowerCase().endsWith('.m3u8')) {
@@ -191,25 +228,16 @@
         dbg('mp4 loaded', stream);
       }
 
-      // download button: only show for direct files or explicit download link
-      if (downloadBtn) {
-        if (downloadLink) {
-          downloadBtn.href = downloadLink;
-          downloadBtn.style.display = 'inline-flex';
-        } else if (isDirectFile(stream)) {
-          downloadBtn.href = stream;
-          downloadBtn.style.display = 'inline-flex';
-        } else {
-          downloadBtn.style.display = 'none';
-        }
-      }
+      // IMPORTANT: do NOT expose download for the stream (videy). HIDE single download button.
+      if (downloadBtn) downloadBtn.style.display = 'none';
     }
 
-    // initial
+    // initial render + load
     renderPost(post);
+    renderDownloadLinks(post); // show non-videy host links (mediafire/terabox/pixeldrain/bonus)
     await setupMedia(post);
 
-    // UI helpers & events (kept logic original)
+    // rest of UI behavior preserved (play/pause, seek, volume, fullscreen, theater, keyboard)
     async function safePlay(){
       try {
         const p = player.play();
@@ -220,11 +248,7 @@
         showOverlay();
       }
     }
-    function setPlayIcon(paused){
-      if (!iconPlay) return;
-      if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>';
-      else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>';
-    }
+    function setPlayIcon(paused){ if (!iconPlay) return; if (paused) iconPlay.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"/>'; else iconPlay.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/>'; }
     function showOverlay(){ if (overlay) overlay.classList.remove('hidden'); if (overlay) overlay.setAttribute('aria-hidden','false'); }
     function hideOverlay(){ if (overlay) overlay.classList.add('hidden'); if (overlay) overlay.setAttribute('aria-hidden','true'); }
 
@@ -237,7 +261,6 @@
       player.addEventListener('playing', ()=> { setPlayIcon(false); hideOverlay(); });
       player.addEventListener('pause', ()=> { setPlayIcon(true); showOverlay(); });
       player.addEventListener('ended', ()=> { setPlayIcon(true); showOverlay(); });
-
       player.addEventListener('loadedmetadata', ()=> { if (timeEl) timeEl.textContent = `${formatTime(0)} / ${formatTime(player.duration)}`; });
       player.addEventListener('timeupdate', ()=>{
         const pct = (player.currentTime / Math.max(1, player.duration)) * 100;
@@ -332,9 +355,7 @@
     });
 
     const speeds = [1,1.25,1.5,2]; let speedIndex = 0;
-    if (speedBtn) speedBtn.addEventListener('click', ()=> {
-      speedIndex = (speedIndex+1) % speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex] + '×';
-    });
+    if (speedBtn) speedBtn.addEventListener('click', ()=> { speedIndex = (speedIndex+1) % speeds.length; if (player) player.playbackRate = speeds[speedIndex]; speedBtn.textContent = speeds[speedIndex] + '×'; });
 
     document.addEventListener('keydown', (e)=> {
       if (['INPUT','TEXTAREA'].includes((document.activeElement||{}).tagName)) return;
@@ -355,67 +376,6 @@
     try { if (volSlider) volSlider.value = Math.round((player.muted?0:player.volume||1)*100); } catch(e){}
 
     dbg('player ready', post ? (post.slug||post.id||post.path) : 'no-post');
-
-    // --- Improved playlist: only call setupMedia for playable URLs ---
-    (function attachSimplePlaylist(){
-      if (!post) return;
-      const streams = Array.isArray(post._streams) ? post._streams : [];
-      if (!streams.length) return;
-
-      const old = document.getElementById('playlistControls'); if (old) old.remove();
-
-      const nav = document.createElement('div');
-      nav.id = 'playlistControls';
-      nav.style.display = 'flex';
-      nav.style.gap = '8px';
-      nav.style.alignItems = 'center';
-      nav.style.marginTop = '10px';
-
-      const prev = document.createElement('button'); prev.type='button'; prev.className='icon-btn'; prev.textContent='‹ Prev';
-      const idxInput = document.createElement('input'); idxInput.type='number'; idxInput.min='1'; idxInput.value='1'; idxInput.style.width='64px';
-      const count = document.createElement('span'); count.textContent = ` / ${streams.length}`;
-      const next = document.createElement('button'); next.type='button'; next.className='icon-btn'; next.textContent='Next ›';
-      const open = document.createElement('a'); open.className='download-link'; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.style.padding='6px 10px';
-      open.textContent = 'Buka di tab';
-
-      nav.append(prev, idxInput, count, next, open);
-      const container = document.querySelector('.post-actions') || document.querySelector('.meta-box') || document.body;
-      container.appendChild(nav);
-
-      let cur = 0;
-      async function playAt(i){
-        if (i < 0 || i >= streams.length) return;
-        cur = i;
-        idxInput.value = i + 1;
-        const url = streams[i];
-        open.href = url;
-
-        if (isPlayableURL(url)) {
-          // playable -> load into player, set download only if direct file
-          const download = isDirectFile(url) ? url : undefined;
-          await setupMedia({ stream: url, download });
-          try { await (player && player.play ? player.play() : Promise.resolve()); } catch(e){}
-        } else {
-          // non-playable (host page) -> open in new tab + set downloadBtn to host page (user can download from there)
-          try { window.open(url, '_blank', 'noopener'); } catch(e){ dbg('open failed', e); }
-          if (downloadBtn) { downloadBtn.href = url; downloadBtn.style.display = 'inline-flex'; }
-        }
-      }
-
-      prev.addEventListener('click', ()=> playAt(cur - 1));
-      next.addEventListener('click', ()=> playAt(cur + 1));
-      idxInput.addEventListener('change', ()=> {
-        const v = Number(idxInput.value) - 1;
-        if (Number.isInteger(v) && v >= 0 && v < streams.length) playAt(v);
-        else idxInput.value = cur + 1;
-      });
-
-      const initial = streams.findIndex(s => s === (post.stream || ''));
-      cur = initial >= 0 ? initial : 0;
-      idxInput.value = cur + 1;
-      open.href = streams[cur];
-    })();
-
   }
 
   // run
