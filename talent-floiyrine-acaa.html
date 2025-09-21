@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Local Player - NIKEPOI UNIVERSE</title>
   <meta name="description" content="Local Player" id="metaDescription" />
-  <meta name="slug" content="" id="metaSlug" />
+  <meta name="slug" content="talent-floiyrine-acaa" id="metaSlug" />
   <link rel="stylesheet" href="/assets/player.css">
   <style>
-    #playlistControls { margin-top:10px; display:flex; gap:8px; align-items:center; }
+    /* small inline tweaks */
+    #playlistControls { margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     #playlistControls .icon-btn { padding:6px 10px; min-width:40px; }
-    #playlistControls input[type=number] { padding:6px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); }
-    /* small spacing for download area */
+    #playlistControls input[type=number] { padding:6px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); width:72px; text-align:center; }
     #downloadArea { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+    .download-link.small { padding:8px 12px; border-radius:10px; background:#000; color:#fff; text-decoration:none; display:inline-block; font-weight:700; }
   </style>
 </head>
 <body>
@@ -54,10 +55,8 @@
       </div>
     </div>
 
-    <div class="post-actions">
-      <!-- kept for UI but download links moved below metaBox -->
-      <!-- playlist controls injected here -->
-    </div>
+    <!-- playlist & prev/next (injected by player.js) -->
+    <div class="post-actions"></div>
 
     <div id="metaBox" class="meta-box">
       <h2 id="postTitle"></h2>
@@ -65,7 +64,7 @@
       <p id="postDesc" class="excerpt" style="display:block;margin-top:8px;"></p>
     </div>
 
-    <!-- DOWNLOAD AREA moved HERE per request (below meta) -->
+    <!-- download area (non-videy links only) -->
     <div id="downloadArea" aria-label="Download links (non-videy)"></div>
 
     <div id="debug" class="debug" aria-hidden="false">Debug output will appear here.</div>
