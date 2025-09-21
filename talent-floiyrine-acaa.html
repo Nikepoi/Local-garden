@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Player — Clean</title>
 
-<!-- favicon: aku refer ke favicon.ico di root (sesuaikan path jika beda) -->
+<!-- favicon -->
 <link rel="icon" href="favicon.ico">
 
 <!-- Bootstrap 5 CSS -->
@@ -20,34 +20,59 @@
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
   .wrap{max-width:980px;margin:18px auto;padding:16px}
   .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .banner{display:block;overflow:hidden;border-radius:12px 12px 0 0;background:#000}
+  .banner img{width:100%;height:auto;display:block;object-fit:cover}
+  /* set responsive max-heights for banner (optimizes visual across devices) */
+  @media (max-width:575px){
+    .banner img{max-height:140px}
+  }
+  @media (min-width:576px) and (max-width:991px){
+    .banner img{max-height:220px}
+  }
+  @media (min-width:992px){
+    .banner img{max-height:320px}
+  }
+
   .video-area{background:#000;display:block}
   video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
-  .controls { padding:18px; border-top:1px solid rgba(255,255,255,0.03); }
-  .top-meta{padding:16px 18px 0 18px}
+  .top-meta{padding:12px 16px 0 16px}
   .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
-  .btn-large { min-width:110px; }
-  /* NEW: extra-large buttons for Prev/Play/Next */
-  .btn-xxl{
-    min-width:150px;
-    padding:14px 20px;
-    font-size:1.05rem;
-    border-radius:12px;
+  /* Controls block (completely separated) */
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
+  .btn-small {
+    min-width:84px;
+    padding:8px 12px;
+    font-size:0.95rem;
+    border-radius:10px;
     display:inline-flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
   }
-  .btn-xxl .bi{font-size:1.25rem}
+  .btn-play {
+    min-width:98px;
+    padding:10px 14px;
+    font-size:1rem;
+  }
   .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
   .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
-  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background:transparent }
+  /* Downloads: improved contrast and label visible */
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
   .download-btn { min-width:150px; text-align:left; }
-  @media(max-width:520px){ .btn-xxl{min-width:110px;padding:10px 14px;font-size:0.98rem} .title{font-size:18px} }
+  .download-btn .bi { font-size:1.05rem; }
+  @media(max-width:520px){ .btn-small{min-width:72px;padding:8px 10px;font-size:0.9rem} .btn-play{min-width:84px} .title{font-size:18px} }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card card-player">
+
+      <!-- Responsive banner (clickable) -->
+      <a class="banner" href="https://qq288zdr.com/Member/StreamlinedRegister?R=B9EB44C6" target="_blank" rel="noopener">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisoxTHgZPZzG7ZDXAHRDvizvEKNLwv2ws3c2XvOm-uNrcn8WjWv73MvhqxRoTowidMqdzqgkTF0CjDCPCMiYx8VuPy_CZo" alt="Banner" loading="lazy">
+      </a>
+
       <!-- video -->
       <div class="video-area">
         <video id="video" playsinline webkit-playsinline preload="metadata"></video>
@@ -62,20 +87,20 @@
       <!-- controls (completely separate block) -->
       <div class="controls">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <!-- Prev bigger -->
-          <button id="prev" class="btn btn-outline-light btn-xxl">
+          <!-- Prev smaller -->
+          <button id="prev" class="btn btn-outline-light btn-small">
             <i class="bi bi-skip-start-fill"></i>
             Prev
           </button>
 
-          <!-- Play biggest / prominent -->
-          <button id="play" class="btn btn-primary btn-xxl">
+          <!-- Play slightly larger but not huge -->
+          <button id="play" class="btn btn-primary btn-play">
             <i class="bi bi-play-fill"></i>
             Play
           </button>
 
-          <!-- Next bigger -->
-          <button id="next" class="btn btn-outline-light btn-xxl">
+          <!-- Next smaller -->
+          <button id="next" class="btn btn-outline-light btn-small">
             <i class="bi bi-skip-end-fill"></i>
             Next
           </button>
@@ -105,9 +130,9 @@
 
       <!-- downloads area: show as labeled buttons with icons, not raw URLs -->
       <div class="downloads">
-        <div class="d-flex align-items-center justify-content-between">
-          <strong>Full konten</strong>
-          <small class="text-muted">klik tombol untuk buka</small>
+        <div class="heading">
+          <div>Full konten</div>
+          <div class="text-muted small">klik tombol untuk buka</div>
         </div>
         <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
       </div>
@@ -169,20 +194,20 @@
     downloadsWrap.innerHTML = "";
     if(downloads.mediafire){
       const a = document.createElement('a');
-      a.className = "btn btn-outline-light download-btn d-flex align-items-center gap-2";
+      a.className = "btn btn-dark download-btn d-flex align-items-center gap-2";
       a.href = downloads.mediafire;
       a.target = "_blank";
       a.rel = "noopener";
-      a.innerHTML = '<i class="bi bi-cloud-arrow-down"></i><span>Mediafire — Full konten</span>';
+      a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Mediafire — Full konten</span>';
       downloadsWrap.appendChild(a);
     }
     if(downloads.terabox){
       const b = document.createElement('a');
-      b.className = "btn btn-outline-light download-btn d-flex align-items-center gap-2";
+      b.className = "btn btn-dark download-btn d-flex align-items-center gap-2";
       b.href = downloads.terabox;
       b.target = "_blank";
       b.rel = "noopener";
-      b.innerHTML = '<i class="bi bi-cloud-arrow-down"></i><span>Terabox — Full konten</span>';
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
       downloadsWrap.appendChild(b);
     }
   }
@@ -194,7 +219,7 @@
     return `${min}:${sec}`;
   }
 
-  // time/seek
+  // Events: time/seek
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -214,7 +239,7 @@
     isSeeking = false;
   });
 
-  // play/pause
+  // Play/pause
   function togglePlay(){
     if(video.paused) video.play();
     else video.pause();
@@ -224,7 +249,7 @@
   video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
 
-  // Prev/Next (larger buttons)
+  // Prev/Next (smaller)
   prevBtn.addEventListener('click', ()=> {
     if(idx > 0) idx--;
     else idx = videos.length - 1;
