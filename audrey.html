@@ -60,6 +60,11 @@
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
+          <!-- DOWNLOAD BUTTON (matches model: small, inline) -->
+          <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
+            <i class="bi bi-download"></i> Download
+          </button>
+
           <div class="ms-auto d-flex align-items-center gap-2">
             <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
             <select id="speed" class="form-select form-select-sm" style="width:90px">
@@ -93,6 +98,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  // same model data (Audrey Exclusive)
   const videos = [
     "https://cdn.videy.co/Eo9ch1hT1.mp4",
     "https://cdn.videy.co/eeFdezZx1.mp4",
@@ -108,11 +114,13 @@
     terabox: "https://1024terabox.com/s/1N3DkFKJF82-xqy5d6H6lJQ"
   };
 
+  // elements
   const video = document.getElementById('video');
   const playBtn = document.getElementById('play');
   const prevBtn = document.getElementById('prev');
   const nextBtn = document.getElementById('next');
   const loopBtn = document.getElementById('loop');
+  const dlBtn = document.getElementById('dl');
   const speedSel = document.getElementById('speed');
   const seek = document.getElementById('seek');
   const currentT = document.getElementById('current');
@@ -128,7 +136,7 @@
   titleEl.textContent = "Audrey Exclusive";
   dateEl.textContent = ""; // no date provided
 
-  // video init
+  // init video
   video.poster = thumbnail;
   video.preload = "metadata";
   video.src = videos.length ? videos[0] : "";
@@ -148,6 +156,7 @@
     }
   }
 
+  // Format time
   function fmt(s){
     if(!isFinite(s)) return "0:00";
     const sec = Math.floor(s % 60).toString().padStart(2,'0');
@@ -155,6 +164,49 @@
     return `${min}:${sec}`;
   }
 
+  // Download current video: try anchor download, then fetch+blob, then open in new tab as fallback
+  async function downloadCurrentVideo(){
+    const src = video.currentSrc || video.src;
+    if(!src){ alert('Tidak ada video untuk diunduh.'); return; }
+
+    const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+    const filename = `${safeTitle}_bagian${idx+1}.mp4`;
+
+    // 1) try anchor download (may be blocked by CORS)
+    try {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    } catch(e){ /* ignore and fallback */ }
+
+    // 2) try fetch -> blob (may fail due to CORS)
+    try {
+      const res = await fetch(src, { mode: 'cors' });
+      if(!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a2 = document.createElement('a');
+      a2.href = url;
+      a2.download = filename;
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      setTimeout(()=> URL.revokeObjectURL(url), 60000);
+      return;
+    } catch(e){ /* ignore and fallback */ }
+
+    // 3) final fallback: open in new tab
+    window.open(src, '_blank', 'noopener');
+  }
+
+  // wire download button
+  dlBtn.addEventListener('click', downloadCurrentVideo);
+
+  // video events
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -165,32 +217,48 @@
   seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
   seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
+  // play toggle
   function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
   playBtn.addEventListener('click', togglePlay);
   video.addEventListener('click', togglePlay);
   video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
 
+  // prev/next (keep model behavior)
   prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
   nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
 
-  function loadAndPlay(i){ video.src = videos[i]; video.play().catch(()=>{}); }
+  function loadAndPlay(i){ idx = i; video.src = videos[i]; video.play().catch(()=>{}); }
 
+  // loop toggle
   loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+
+  // speed sel
   speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
+  // fullscreen
   document.getElementById('fs')?.addEventListener('click', ()=> {
     const el = document.querySelector('.video-area');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
+  // auto next
   video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });
 
-  window.addEventListener('keydown', (e)=> { if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === 'm'){ video.muted = !video.muted; } });
+  // keyboard shortcuts
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
 
+  // block right-click (as requested in earlier messages)
   document.addEventListener('contextmenu', e => e.preventDefault());
 
+  // init download area
   buildDownloadButtons();
 </script>
 
