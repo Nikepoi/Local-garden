@@ -20,8 +20,8 @@
   .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
   .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
-  .btn-small { min-width:64px; padding:6px 8px; font-size:0.92rem; border-radius:8px; display:inline-flex; align-items:center; gap:8px; }
-  .btn-play { min-width:78px; padding:8px 12px; font-size:0.98rem; }
+  .btn-small { min-width:72px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
   .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
   .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
   .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
@@ -29,15 +29,14 @@
   .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
   .download-btn .bi { font-size:1.05rem; }
   .download-btn:hover{background:rgba(255,255,255,0.02)}
-  .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-  @media(max-width:520px){ .btn-small{min-width:52px;padding:6px 6px;font-size:0.9rem} .btn-play{min-width:64px} .title{font-size:18px} }
+  @media(max-width:520px){ .btn-small{min-width:64px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card card-player">
       <div class="video-area">
-        <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/sch8jw5.jpg"></video>
+        <video id="video" playsinline webkit-playsinline preload="metadata"></video>
       </div>
 
       <div class="top-meta">
@@ -61,7 +60,7 @@
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
-          <!-- inline download button (downloads current playing videy file) -->
+          <!-- DOWNLOAD BUTTON (inline, matches model) -->
           <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
             <i class="bi bi-download"></i> Download
           </button>
@@ -92,7 +91,7 @@
           <div>Full konten</div>
           <div class="text-muted small">klik tombol untuk buka / download</div>
         </div>
-        <div id="downloadButtons" class="downloads-grid mt-2"></div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
       </div>
     </div>
   </div>
@@ -148,21 +147,6 @@
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
 
-    // Videy - per bagan (show as non-raw link buttons)
-    videos.forEach((src, i) => {
-      const a = document.createElement('a');
-      a.className = "download-btn";
-      a.href = src;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer nofollow";
-      // filename hint
-      const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
-      const filename = `${safeTitle}_bagian${i+1}.mp4`;
-      a.setAttribute('download', filename);
-      a.innerHTML = `<i class="bi bi-chevron-bar-down"></i><span>Videy — Bagian ${i+1}</span>`;
-      downloadsWrap.appendChild(a);
-    });
-
     // Terabox
     if(downloads.terabox){
       const b = document.createElement('a');
@@ -202,7 +186,7 @@
     const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
     const filename = `${safeTitle}_bagian${idx+1}.mp4`;
 
-    // 1) attempt anchor download (may be blocked by CORS)
+    // 1) attempt anchor download
     try {
       const a = document.createElement('a');
       a.href = src;
@@ -228,7 +212,7 @@
       setTimeout(()=> URL.revokeObjectURL(url), 60000);
       return;
     } catch(err){
-      // final fallback: open in new tab for user to save
+      // final fallback: open in new tab
       window.open(src, '_blank', 'noopener');
     }
   }
@@ -236,7 +220,7 @@
   // wire download button
   dlBtn.addEventListener('click', downloadCurrentVideo);
 
-  // video events: metadata, timeupdate, seeking
+  // video events
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -254,7 +238,7 @@
   video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
 
-  // prev / next behavior (model)
+  // prev/next
   prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
   nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
 
@@ -294,4 +278,4 @@
 
 <script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
-  </html>
+</html>
