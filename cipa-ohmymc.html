@@ -29,7 +29,6 @@
   .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
   .download-btn .bi { font-size:1.05rem; }
   .download-btn:hover{background:rgba(255,255,255,0.02)}
-  .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
   @media(max-width:520px){ .btn-small{min-width:64px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
 </style>
 </head>
@@ -37,7 +36,7 @@
   <div class="wrap">
     <div class="card card-player">
       <div class="video-area">
-        <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/55r37a.jpg"></video>
+        <video id="video" playsinline webkit-playsinline preload="metadata"></video>
       </div>
 
       <div class="top-meta">
@@ -61,6 +60,7 @@
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
+          <!-- DOWNLOAD BUTTON (inline, matches model) -->
           <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
             <i class="bi bi-download"></i> Download
           </button>
@@ -91,14 +91,14 @@
           <div>Full konten</div>
           <div class="text-muted small">klik tombol untuk buka / download</div>
         </div>
-        <div id="downloadButtons" class="downloads-grid mt-2"></div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
       </div>
     </div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Cipa ohmymec data (as provided)
+  // Cipa ohmymec data
   const videos = [
     "https://cdn.videy.co/8i18ZUo61.mp4",
     "https://cdn.videy.co/8KApIRTr1.mp4",
@@ -108,7 +108,6 @@
     "https://cdn.videy.co/DQcy0d0z1.mp4"
   ];
   const thumbnail = "foto/55r37a.jpg";
-  // terabox string included exactly as you sent it (note: may be malformed)
   const downloads = {
     terabox: "https://1024terabox.com.com/s/s/1_IG5_b/1_IG5_bKjKjTSTSdVYdVYgJlgJlSOSOzozo7Q7Q"
   };
@@ -159,14 +158,14 @@
       downloadsWrap.appendChild(a);
     });
 
-    // Terabox (included raw — may be malformed)
+    // Terabox (included raw as provided)
     if(downloads.terabox){
       const b = document.createElement('a');
       b.className = "download-btn";
       b.href = downloads.terabox;
       b.target = "_blank";
       b.rel = "noopener noreferrer nofollow";
-      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten (raw)</span>';
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
       downloadsWrap.appendChild(b);
     }
   }
