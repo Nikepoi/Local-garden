@@ -98,7 +98,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Cipa ohmymec data (as provided)
+  // DATA (only change these fields per page)
   const videos = [
     "https://cdn.videy.co/8i18ZUo61.mp4",
     "https://cdn.videy.co/8KApIRTr1.mp4",
@@ -108,9 +108,11 @@
     "https://cdn.videy.co/DQcy0d0z1.mp4"
   ];
   const thumbnail = "foto/55r37a.jpg";
-  // terabox string included exactly as you sent it (note: may be malformed)
+  // ONLY full links here — these will appear in "Full konten" area.
   const downloads = {
-    terabox: "https://1024terabox.com.com/s/s/1_IG5_b/1_IG5_bKjKjTSTSdVYdVYgJlgJlSOSOzozo7Q7Q"
+    terabox: "https://1024terabox.com.com/s/s/1_IG5_b/1_IG5_bKjKjTSTSdVYdVYgJlgJlSOSOzozo7Q7Q",
+    mediafire: "",    // keep empty if none
+    pixeldrain: ""    // keep empty if none
   };
 
   // DOM refs
@@ -142,32 +144,31 @@
   video.playbackRate = 1;
   speedSel.value = "1";
 
+  // Build FULL-CONTENT buttons (ONLY full links, NOT per-Videy)
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
 
-    // Videy per-bagian
-    videos.forEach((src, i) => {
-      const a = document.createElement('a');
-      a.className = "download-btn";
-      a.href = src;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer nofollow";
-      const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
-      const filename = `${safeTitle}_bagian${i+1}.mp4`;
-      a.setAttribute('download', filename);
-      a.innerHTML = `<i class="bi bi-chevron-bar-down"></i><span>Videy — Bagian ${i+1}</span>`;
-      downloadsWrap.appendChild(a);
+    const sources = [
+      { key: 'terabox', label: 'Terabox', icon: 'bi-cloud-arrow-down-fill' },
+      { key: 'mediafire', label: 'Mediafire', icon: 'bi-box-arrow-down' },
+      { key: 'pixeldrain', label: 'Pixeldrain', icon: 'bi-cloud-arrow-down' }
+    ];
+
+    sources.forEach(s => {
+      const url = (downloads && downloads[s.key]) || "";
+      if(url){
+        const a = document.createElement('a');
+        a.className = "download-btn";
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer nofollow";
+        a.innerHTML = `<i class="bi ${s.icon}"></i><span>${s.label} — Full konten</span>`;
+        downloadsWrap.appendChild(a);
+      }
     });
 
-    // Terabox (included raw — may be malformed)
-    if(downloads.terabox){
-      const b = document.createElement('a');
-      b.className = "download-btn";
-      b.href = downloads.terabox;
-      b.target = "_blank";
-      b.rel = "noopener noreferrer nofollow";
-      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten (raw)</span>';
-      downloadsWrap.appendChild(b);
+    if(!downloadsWrap.children.length){
+      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
     }
   }
 
@@ -187,7 +188,7 @@
     const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
     const filename = `${safeTitle}_bagian${idx+1}.mp4`;
 
-    // 1) try anchor download
+    // 1) try anchor download (may be blocked by CORS)
     try {
       const a = document.createElement('a');
       a.href = src;
@@ -273,7 +274,7 @@
   // block right-click
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // init download area
+  // init download area (only full links)
   buildDownloadButtons();
 </script>
 
