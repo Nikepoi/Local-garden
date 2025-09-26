@@ -9,74 +9,58 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
   :root{
-    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6; --glass: rgba(255,255,255,0.03);
+    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6;
   }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
   .wrap{max-width:980px;margin:18px auto;padding:16px}
-  .card-player{
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));
-    border-radius:14px;overflow:hidden;
-    box-shadow:0 18px 40px rgba(2,6,23,0.65);
-    transform: translateZ(0);
-    transition: transform .25s ease, box-shadow .25s ease;
-    position:relative;
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000;position:relative;}
+  video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
+  /* play icon on thumbnail */
+  .thumb-play{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:72px;
+    height:72px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06));
+    border:2px solid rgba(255,255,255,0.06);
+    cursor:pointer;
+    z-index:22;
+    box-shadow: 0 8px 30px rgba(2,6,23,0.6);
   }
-  .card-player:hover{ transform: translateY(-6px); box-shadow:0 30px 60px rgba(2,6,23,0.75) }
-  .video-area{background:#000; position:relative; overflow:hidden;}
-  .video-area::after{
-    content:""; position:absolute; inset:0; pointer-events:none;
-    box-shadow: 0 0 40px rgba(59,130,246,0.06) inset, 0 0 28px rgba(59,130,246,0.02);
-    mix-blend-mode:screen;
-  }
-  video{width:100%;height:auto;max-height:72vh;object-fit:contain;display:block;background:#000}
-  .top-meta{padding:14px 16px 6px 16px}
-  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0; text-shadow:0 2px 12px rgba(0,0,0,0.6)}
+  .thumb-play svg{ width:28px;height:28px; fill:#eaf4ff; opacity:0.98; }
+  .thumb-play.hidden{ display:none; }
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
-  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); display:block; }
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
   .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
   .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
   .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
-  .time { width:58px; text-align:center; color:var(--muted); font-size:14px; }
-  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.32); }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
   .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
   .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
   .download-btn .bi { font-size:1.05rem; }
   .download-btn:hover{background:rgba(255,255,255,0.02)}
-  .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-  .loading-overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:30; }
-  .loader{ pointer-events:auto; display:flex; gap:14px; align-items:center; background:linear-gradient(180deg, rgba(3,6,12,0.72), rgba(3,6,12,0.45)); padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); box-shadow:0 8px 30px rgba(3,6,12,0.6); backdrop-filter: blur(6px); transform: translateY(0); animation: float 3s ease-in-out infinite; }
-  @keyframes float{ 0%{ transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)} }
-  .spinner{ width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.06); border-top-color: var(--accent); animation: spin .9s linear infinite; box-shadow: 0 6px 18px rgba(59,130,246,0.12), 0 0 10px rgba(59,130,246,0.04); }
-  @keyframes spin{ to { transform: rotate(360deg); } }
-  .big-play { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:20; width:80px; height:80px; border-radius:50%; display:flex;align-items:center;justify-content:center; background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06)); border:2px solid rgba(59,130,246,0.14); box-shadow:0 8px 30px rgba(59,130,246,0.12), 0 0 40px rgba(59,130,246,0.06); cursor:pointer; transition:transform .12s ease, opacity .12s; }
-  .big-play:active{ transform:translate(-50%,-50%) scale(.96); }
-  .card-player.loading{ box-shadow:0 30px 70px rgba(59,130,246,0.12), 0 6px 20px rgba(2,6,23,0.6); outline:2px solid rgba(59,130,246,0.02); }
-  .card-player.loading .video-area::after{ box-shadow: 0 0 80px rgba(59,130,246,0.12) inset, 0 0 60px rgba(59,130,246,0.04); }
-  @media(max-width:520px){ .big-play{ width:64px; height:64px } .spinner{ width:36px; height:36px; border-width:3px } .loader{ padding:10px 12px } .time{ width:48px } }
+  @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} .thumb-play{width:60px;height:60px} .thumb-play svg{width:22px;height:22px} }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card card-player" id="card">
-      <div class="video-area" id="videoArea">
-        <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/zpl4db.jpg" crossorigin="anonymous">
-          <source id="vsource" src="" type="video/mp4">
-          Your browser does not support HTML5 video.
-        </video>
-
-        <button id="bigPlay" class="big-play" aria-label="Play/Pause" title="Play/Pause">
+    <div class="card card-player">
+      <div class="video-area">
+        <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/zpl4db.jpg"></video>
+        <!-- overlay play icon on thumbnail (separate from video controls) -->
+        <button id="thumbPlay" class="thumb-play" aria-label="Play">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l18-10L4 2z"/></svg>
         </button>
-
-        <div class="loading-overlay" id="loading" aria-hidden="true" style="display:none">
-          <div class="loader" role="status" aria-live="polite">
-            <div class="spinner" aria-hidden="true"></div>
-            <div class="meta">
-              <div class="title">Memuat video…</div>
-              <div class="sub">Sedang menyiapkan playback — tunggu sebentar</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="top-meta">
@@ -86,20 +70,21 @@
 
       <div class="controls">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <button id="prev" class="btn btn-outline-light btn-small" title="Previous">
+          <button id="prev" class="btn btn-outline-light btn-small">
             <i class="bi bi-skip-start-fill"></i> Prev
           </button>
 
-          <button id="play" class="btn btn-primary btn-play" title="Play/Pause" disabled>
+          <button id="play" class="btn btn-primary btn-play">
             <i class="bi bi-play-fill"></i> Play
           </button>
 
-          <button id="next" class="btn btn-outline-light btn-small" title="Next">
+          <button id="next" class="btn btn-outline-light btn-small">
             <i class="bi bi-skip-end-fill"></i> Next
           </button>
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
+          <!-- download current video button -->
           <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
             <i class="bi bi-download"></i> Download
           </button>
@@ -128,18 +113,18 @@
       <div class="downloads">
         <div class="heading">
           <div>Full konten</div>
-          <div class="text-muted small">klik tombol untuk buka / download</div>
+          <div class="text-muted small">klik tombol untuk buka</div>
         </div>
-        <div id="downloadButtons" class="downloads-grid mt-2"></div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
       </div>
     </div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // === DATAs ===
-  // NOTE: pertama dihapus — array dimulai dari link kedua sebelumnya
+  // DATA: Ociel Hannah (as provided)
   const videos = [
+    "https://cdn.videy.co/mCNXWfbT1.mp4",
     "https://cdn.videy.co/odVKQ3il1.mp4",
     "https://cdn.videy.co/LJ6012Dz1.mp4",
     "https://cdn.videy.co/1SmTmZwg1.mp4",
@@ -163,164 +148,132 @@
     "https://cdn.videy.co/2ZZwptIh1.mp4"
   ];
   const thumbnail = "foto/zpl4db.jpg";
-  const downloads = { terabox: "https://1024terabox.com/s/1hkszUyzpAnf6y7cuGYjF1g", mediafire: "", pixeldrain: "" };
+  const downloads = {
+    terabox: "https://1024terabox.com/s/1hkszUyzpAnf6y7cuGYjF1g"
+  };
 
-  // === elements refs ===
-  const card = document.getElementById('card');
+  // DOM refs
   const video = document.getElementById('video');
-  const vsource = document.getElementById('vsource');
-  const bigPlay = document.getElementById('bigPlay');
-  const loading = document.getElementById('loading');
   const playBtn = document.getElementById('play');
   const prevBtn = document.getElementById('prev');
   const nextBtn = document.getElementById('next');
   const loopBtn = document.getElementById('loop');
-  const dlBtn = document.getElementById('dl');
   const speedSel = document.getElementById('speed');
   const seek = document.getElementById('seek');
   const currentT = document.getElementById('current');
   const durationT = document.getElementById('duration');
   const titleEl = document.getElementById('title');
+  const dateEl = document.getElementById('date');
   const downloadsWrap = document.getElementById('downloadButtons');
+  const thumbPlay = document.getElementById('thumbPlay');
+  const dlBtn = document.getElementById('dl');
 
   let idx = 0;
   let isSeeking = false;
-  let triedSkipOnError = false;
 
   titleEl.textContent = "Ociel Hannah";
+  dateEl.textContent = "";
   video.poster = thumbnail;
+  video.preload = "metadata";
+  video.src = videos.length ? videos[0] : "";
+  video.playbackRate = 1;
   speedSel.value = "1";
-
-  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
-    const sources = [{key:'terabox',label:'Terabox',icon:'bi-cloud-arrow-down-fill'},{key:'mediafire',label:'Mediafire',icon:'bi-box-arrow-down'},{key:'pixeldrain',label:'Pixeldrain',icon:'bi-cloud-arrow-down'}];
-    sources.forEach(s => {
-      const url = (downloads && downloads[s.key]) || "";
-      if(url){
-        const a = document.createElement('a');
-        a.className = "download-btn";
-        a.href = url;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer nofollow";
-        a.innerHTML = `<i class="bi ${s.icon}"></i><span>${s.label} — Full konten</span>`;
-        downloadsWrap.appendChild(a);
-      }
-    });
-    if(!downloadsWrap.children.length) downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
-  }
-
-  // set source and show loader
-  function setSourceAndLoad(src){
-    showLoading();
-    triedSkipOnError = false;
-    vsource.src = src;
-    video.pause();
-    video.crossOrigin = 'anonymous';
-    try{ video.load(); }catch(e){}
-  }
-
-  function showLoading(){ loading.style.display=''; loading.setAttribute('aria-hidden','false'); card.classList.add('loading'); playBtn.disabled = true; bigPlay.style.display = 'none'; }
-  function hideLoading(){ loading.style.display='none'; loading.setAttribute('aria-hidden','true'); card.classList.remove('loading'); playBtn.disabled = false; if(video.paused) bigPlay.style.display = ''; else bigPlay.style.display = 'none'; }
-
-  // initialize first playable source (we already removed first bad link)
-  if(videos.length) setSourceAndLoad(videos[0]);
-
-  video.addEventListener('canplay', () => {
-    durationT.textContent = fmt(video.duration || 0);
-    seek.max = video.duration || 100;
-    hideLoading();
-  });
-
-  video.addEventListener('loadedmetadata', () => {
-    durationT.textContent = fmt(video.duration || 0);
-    seek.max = video.duration || 100;
-  });
-
-  video.addEventListener('timeupdate', () => {
-    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
-  });
-
-  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
-  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
-
-  // robust toggle play
-  async function togglePlay(){
-    try {
-      if(video.paused){
-        await video.play();
-      } else {
-        video.pause();
-      }
-    } catch(err) {
-      // recovery: reload -> try muted play -> if still fail, skip to next
-      try {
-        showLoading();
-        video.load();
-        video.muted = true;
-        await video.play();
-      } catch(e){
-        hideLoading();
-        // try skip to next automatically (user won't be forced into opening CDN)
-        attemptSkipOnError();
-      }
+    if(downloads.terabox){
+      const b = document.createElement('a');
+      b.className = "download-btn";
+      b.href = downloads.terabox;
+      b.target = "_blank";
+      b.rel = "noopener noreferrer nofollow";
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
+      downloadsWrap.appendChild(b);
+    } else {
+      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
     }
   }
 
-  playBtn.addEventListener('click', togglePlay);
-  bigPlay.addEventListener('click', togglePlay);
-  video.addEventListener('click', togglePlay);
-
-  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; hideLoading(); });
-  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; bigPlay.style.display = ''; });
-
-  // prev / next
-  prevBtn.addEventListener('click', ()=> {
-    if(!videos.length) return;
-    idx = idx > 0 ? idx - 1 : videos.length - 1;
-    setSourceAndLoad(videos[idx]);
-    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
-  });
-  nextBtn.addEventListener('click', ()=> {
-    if(!videos.length) return;
-    idx = idx < videos.length - 1 ? idx + 1 : 0;
-    setSourceAndLoad(videos[idx]);
-    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
-  });
-
-  function loadAndPlay(i){
-    if(!videos[i]) return;
-    idx = i;
-    setSourceAndLoad(videos[idx]);
-    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
+  function fmt(s){
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
+    return `${min}:${sec}`;
   }
 
-  // auto-next on ended
-  video.addEventListener('ended', ()=> {
-    if(idx < videos.length - 1){ loadAndPlay(idx + 1); }
+  video.addEventListener('loadedmetadata', () => {
+    durationT.textContent = fmt(video.duration);
+    seek.max = video.duration || 100;
   });
+  video.addEventListener('timeupdate', () => {
+    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  });
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
-  // loop
+  function togglePlay(){
+    if(video.paused){
+      video.play().catch(()=>{});
+    } else {
+      video.pause();
+    }
+  }
+  playBtn.addEventListener('click', togglePlay);
+  video.addEventListener('click', togglePlay);
+
+  // thumb overlay logic (show on pause/when poster visible)
+  function updateThumb(){
+    if(video.paused){
+      thumbPlay.classList.remove('hidden');
+    } else {
+      thumbPlay.classList.add('hidden');
+    }
+  }
+  // click overlay -> play
+  thumbPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
+
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; updateThumb(); });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; updateThumb(); });
+
+  prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
+  nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
+
+  function loadAndPlay(i){
+    idx = i;
+    video.src = videos[i];
+    try { video.load(); } catch(e){}
+    video.play().catch(()=>{});
+  }
+
   loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
-
-  // speed
   speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
-  // fullscreen -> only player element (no external open)
   document.getElementById('fs')?.addEventListener('click', ()=> {
     const el = document.querySelector('.video-area');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
-  // download current playing (this one may open CDN or download)
+  video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });
+
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
+
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Download current playing video (standard behavior)
   async function downloadCurrentVideo(){
-    const src = video.currentSrc || vsource.src || '';
+    const src = video.currentSrc || video.src;
     if(!src){ alert('Tidak ada video untuk diunduh.'); return; }
+
     const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
     const filename = `${safeTitle}_bagian${idx+1}.mp4`;
-    // 1) try anchor (will simply open or trigger save)
+
     try {
       const a = document.createElement('a');
       a.href = src;
@@ -330,7 +283,7 @@
       document.body.removeChild(a);
       return;
     } catch(e){}
-    // 2) try fetch->blob
+
     try {
       const res = await fetch(src, { mode: 'cors' });
       if(!res.ok) throw new Error('fetch failed');
@@ -345,46 +298,13 @@
       setTimeout(()=> URL.revokeObjectURL(url), 60000);
       return;
     } catch(err){
-      // final fallback: open CDN in new tab for manual download/play (this is allowed for download action)
       window.open(src, '_blank', 'noopener');
     }
   }
   dlBtn.addEventListener('click', downloadCurrentVideo);
 
-  // keyboard shortcuts
-  window.addEventListener('keydown', (e)=> {
-    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
-    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
-    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
-    if(e.key === 'm'){ video.muted = !video.muted; }
-  });
-
-  // error handling: skip to next on error instead of opening link; if last, show loader-off and enable play button
-  function attemptSkipOnError(){
-    // try skip to next if still available
-    if(idx < videos.length - 1){
-      idx++;
-      setSourceAndLoad(videos[idx]);
-      // try autoplay when canplay
-      video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
-    } else {
-      hideLoading();
-      playBtn.disabled = false;
-      // optional: brief visual hint
-      console.warn('Semua sumber gagal diputar.');
-    }
-  }
-  video.addEventListener('error', (e) => {
-    console.error('Video load error on index', idx, e);
-    attemptSkipOnError();
-  });
-
-  // block right-click
-  document.addEventListener('contextmenu', e => e.preventDefault());
-
-  // init
   buildDownloadButtons();
+  updateThumb();
 </script>
 
 <script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
