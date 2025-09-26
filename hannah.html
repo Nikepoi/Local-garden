@@ -9,40 +9,124 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
   :root{
-    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6;
+    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6; --glass: rgba(255,255,255,0.03);
   }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
   .wrap{max-width:980px;margin:18px auto;padding:16px}
-  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
-  .video-area{background:#000}
-  video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
-  .top-meta{padding:12px 16px 0 16px}
-  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  /* Card with stronger glow + subtle motion */
+  .card-player{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));
+    border-radius:14px;overflow:hidden;
+    box-shadow:0 18px 40px rgba(2,6,23,0.65);
+    transform: translateZ(0);
+    transition: transform .25s ease, box-shadow .25s ease;
+    position:relative;
+  }
+  .card-player:hover{ transform: translateY(-6px); box-shadow:0 30px 60px rgba(2,6,23,0.75) }
+
+  .video-area{background:#000; position:relative; overflow:hidden;}
+  /* soft glowing frame around video area */
+  .video-area::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    box-shadow: 0 0 40px rgba(59,130,246,0.06) inset, 0 0 28px rgba(59,130,246,0.02);
+    mix-blend-mode:screen;
+  }
+
+  video{width:100%;height:auto;max-height:72vh;object-fit:contain;display:block;background:#000}
+  .top-meta{padding:14px 16px 6px 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0; text-shadow:0 2px 12px rgba(0,0,0,0.6)}
   .date{color:var(--muted);font-size:13px}
-  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
-  .btn-small { min-width:72px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); display:block; }
+  .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
   .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
   .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
-  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
-  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .time { width:58px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.32); }
   .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
   .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
   .download-btn .bi { font-size:1.05rem; }
   .download-btn:hover{background:rgba(255,255,255,0.02)}
   .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-  .hint{color:var(--muted);font-size:13px;margin-left:8px}
-  @media(max-width:520px){ .btn-small{min-width:64px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
+
+  /* LOADING OVERLAY (separated from <video> element) */
+  .loading-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; z-index:30;
+  }
+  .loader{
+    pointer-events:auto;
+    display:flex; gap:14px; align-items:center;
+    background:linear-gradient(180deg, rgba(3,6,12,0.72), rgba(3,6,12,0.45));
+    padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04);
+    box-shadow:0 8px 30px rgba(3,6,12,0.6);
+    backdrop-filter: blur(6px);
+    transform: translateY(0);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float{ 0%{ transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)} }
+
+  /* spinner */
+  .spinner{
+    width:46px; height:46px; border-radius:50%;
+    border:4px solid rgba(255,255,255,0.06);
+    border-top-color: var(--accent);
+    animation: spin .9s linear infinite;
+    box-shadow: 0 6px 18px rgba(59,130,246,0.12), 0 0 10px rgba(59,130,246,0.04);
+  }
+  @keyframes spin{ to { transform: rotate(360deg); } }
+
+  .loader .meta{display:flex;flex-direction:column; gap:4px;}
+  .loader .meta .title{font-weight:700;color:#eaf4ff;font-size:14px}
+  .loader .meta .sub{color:var(--muted);font-size:13px}
+
+  /* Big glowing play separate from video (but not intrusive) */
+  .big-play {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:20;
+    width:80px; height:80px; border-radius:50%; display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06));
+    border:2px solid rgba(59,130,246,0.14);
+    box-shadow:0 8px 30px rgba(59,130,246,0.12), 0 0 40px rgba(59,130,246,0.06);
+    cursor:pointer; transition:transform .12s ease, opacity .12s;
+  }
+  .big-play:active{ transform:translate(-50%,-50%) scale(.96); }
+  .big-play svg{ width:30px;height:30px; fill:#eaf4ff; opacity:0.98; }
+
+  /* subtle pulsing border around player while loading */
+  .card-player.loading{ box-shadow:0 30px 70px rgba(59,130,246,0.12), 0 6px 20px rgba(2,6,23,0.6); outline:2px solid rgba(59,130,246,0.02); }
+  .card-player.loading .video-area::after{ box-shadow: 0 0 80px rgba(59,130,246,0.12) inset, 0 0 60px rgba(59,130,246,0.04); }
+
+  @media(max-width:520px){
+    .big-play{ width:64px; height:64px }
+    .spinner{ width:36px; height:36px; border-width:3px }
+    .loader{ padding:10px 12px }
+    .time{ width:48px }
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card card-player">
-      <div class="video-area">
-        <!-- Use a <source> element to improve initial load behavior -->
+    <div class="card card-player" id="card">
+      <div class="video-area" id="videoArea">
+        <!-- video element kept clean (controls separate) -->
         <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/zpl4db.jpg" crossorigin="anonymous">
           <source id="vsource" src="" type="video/mp4">
-          Your browser does not support HTML5 video.
         </video>
+
+        <!-- separate big play (not inside <video>) -->
+        <button id="bigPlay" class="big-play" aria-label="Play/Pause" title="Play/Pause">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l18-10L4 2z"/></svg>
+        </button>
+
+        <!-- loading overlay (hidden by default) -->
+        <div class="loading-overlay" id="loading" aria-hidden="true" style="display:none">
+          <div class="loader" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="meta">
+              <div class="title">Memuat video…</div>
+              <div class="sub">Sedang menyiapkan playback — tunggu sebentar</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="top-meta">
@@ -103,9 +187,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // DATA (Ociel Hannah)
+  // ====== DATA (updated list per your last message) ======
   const videos = [
-    "https://cdn.videy.co/mCNXWfbT1.mp4",
     "https://cdn.videy.co/odVKQ3il1.mp4",
     "https://cdn.videy.co/LJ6012Dz1.mp4",
     "https://cdn.videy.co/1SmTmZwg1.mp4",
@@ -129,15 +212,14 @@
     "https://cdn.videy.co/2ZZwptIh1.mp4"
   ];
   const thumbnail = "foto/zpl4db.jpg";
-  const downloads = {
-    terabox: "https://1024terabox.com/s/1hkszUyzpAnf6y7cuGYjF1g",
-    mediafire: "",
-    pixeldrain: ""
-  };
+  const downloads = { terabox: "https://1024terabox.com/s/1hkszUyzpAnf6y7cuGYjF1g", mediafire: "", pixeldrain: "" };
 
-  // DOM refs
+  // ====== DOM refs ======
+  const card = document.getElementById('card');
   const video = document.getElementById('video');
   const vsource = document.getElementById('vsource');
+  const bigPlay = document.getElementById('bigPlay');
+  const loading = document.getElementById('loading');
   const playBtn = document.getElementById('play');
   const prevBtn = document.getElementById('prev');
   const nextBtn = document.getElementById('next');
@@ -152,13 +234,13 @@
 
   let idx = 0;
   let isSeeking = false;
-  let attemptedReload = false;
+  let loadingState = false;
 
   titleEl.textContent = "Ociel Hannah";
   video.poster = thumbnail;
   speedSel.value = "1";
 
-  // Utility: format time
+  // ====== Helper: format time ======
   function fmt(s){
     if(!isFinite(s)) return "0:00";
     const sec = Math.floor(s % 60).toString().padStart(2,'0');
@@ -166,13 +248,13 @@
     return `${min}:${sec}`;
   }
 
-  // Build full-content buttons (ONLY full links)
+  // ====== Build "Full konten" area (only full links) ======
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
     const sources = [
-      { key: 'terabox', label: 'Terabox', icon: 'bi-cloud-arrow-down-fill' },
-      { key: 'mediafire', label: 'Mediafire', icon: 'bi-box-arrow-down' },
-      { key: 'pixeldrain', label: 'Pixeldrain', icon: 'bi-cloud-arrow-down' }
+      { key:'terabox', label:'Terabox', icon:'bi-cloud-arrow-down-fill' },
+      { key:'mediafire', label:'Mediafire', icon:'bi-box-arrow-down' },
+      { key:'pixeldrain', label:'Pixeldrain', icon:'bi-cloud-arrow-down' }
     ];
     sources.forEach(s => {
       const url = (downloads && downloads[s.key]) || "";
@@ -191,30 +273,65 @@
     }
   }
 
-  // Set source safely and load (improves first-video-play reliability)
+  // ====== Set source safely and show loading overlay ======
   function setSourceAndLoad(src){
-    attemptedReload = false;
-    playBtn.disabled = true;
-    // replace <source> src then load
+    loadingState = true;
+    showLoading();
+    // update <source> then load() to ensure browser handles it properly
     vsource.src = src;
-    // ensure crossOrigin set so some CORS responses behave better
+    video.pause();
+    try { video.load(); } catch(e){}
+    // ensure crossOrigin set (helps certain servers)
     video.crossOrigin = 'anonymous';
-    try { video.load(); } catch(e){ /* ignore */ }
   }
 
-  // Load initial
-  setSourceAndLoad(videos[0]);
-
-  // Enable play button when playable
-  video.addEventListener('canplay', () => {
+  // ====== Loading overlay control ======
+  function showLoading(){
+    loading.style.display = '';
+    loading.setAttribute('aria-hidden','false');
+    card.classList.add('loading');
+    playBtn.disabled = true;
+  }
+  function hideLoading(){
+    loading.style.display = 'none';
+    loading.setAttribute('aria-hidden','true');
+    card.classList.remove('loading');
     playBtn.disabled = false;
+    loadingState = false;
+  }
+
+  // ====== Initialize first source ======
+  idx = 0;
+  setSourceAndLoad(videos[idx]);
+
+  // ====== Events to reflect loading state ======
+  // canplay -> media ready to play
+  video.addEventListener('canplay', () => {
     durationT.textContent = fmt(video.duration || 0);
+    seek.max = video.duration || 100;
+    hideLoading();
+    // ensure play button enabled
+    playBtn.disabled = false;
   });
 
-  // Update time/seek
+  // playing -> hide loading, update UI
+  video.addEventListener('playing', () => {
+    hideLoading();
+    playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+  });
+
+  // waiting/buffering/seeking -> show loading
+  ['waiting','seeking','stalled'].forEach(ev => {
+    video.addEventListener(ev, () => {
+      // only show loader if actually not playing
+      if(video.paused || video.readyState < 3) showLoading();
+    });
+  });
+
+  // loadedmetadata/timeupdate -> update times & seek
   video.addEventListener('loadedmetadata', () => {
-    seek.max = video.duration || 100;
     durationT.textContent = fmt(video.duration || 0);
+    seek.max = video.duration || 100;
   });
   video.addEventListener('timeupdate', () => {
     if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
@@ -223,7 +340,7 @@
   seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
   seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
-  // play/pause toggle with graceful promise handling
+  // ====== Play toggle (robust) ======
   async function togglePlay(){
     try {
       if(video.paused){
@@ -232,41 +349,37 @@
         video.pause();
       }
     } catch(err) {
-      // If play fails (autoplay/CORS/temporary), try a gentle recovery:
-      // 1) ensure source loaded -> call load() -> try play again
+      // attempt recovery: reload source then try muted play
       try {
+        showLoading();
         video.load();
+        video.muted = true;
         await video.play();
       } catch(e){
-        // If still fails, mute and try once (muted autoplay may succeed in some browsers)
-        try {
-          video.muted = true;
-          await video.play();
-          // leave muted state for user to unmute manually
-        } catch(e2){
-          // final fallback: open in new tab so user can download/play externally
-          window.open(video.currentSrc || vsource.src || video.src, '_blank', 'noopener');
-        }
+        hideLoading();
+        // fallback: open source in new tab so user can play manually
+        window.open(video.currentSrc || vsource.src || '', '_blank', 'noopener');
       }
     }
   }
 
+  // wire play + bigPlay
   playBtn.addEventListener('click', togglePlay);
+  bigPlay.addEventListener('click', togglePlay);
   video.addEventListener('click', togglePlay);
 
-  // Update play button text/icon
-  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; playBtn.disabled = false; });
-  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+  // update play button text when pause/play change
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; bigPlay.style.display = 'none'; hideLoading(); });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; bigPlay.style.display = ''; });
 
-  // prev/next behavior
+  // ====== Prev / Next ======
   prevBtn.addEventListener('click', ()=> {
     if(videos.length === 0) return;
     idx = idx > 0 ? idx - 1 : videos.length - 1;
     setSourceAndLoad(videos[idx]);
-    // once canplay fires, auto-play to match expected behavior
+    // attempt autoplay when ready
     video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
   });
-
   nextBtn.addEventListener('click', ()=> {
     if(videos.length === 0) return;
     idx = idx < videos.length - 1 ? idx + 1 : 0;
@@ -274,14 +387,13 @@
     video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
   });
 
-  // load & play helper (used by auto-next)
   function loadAndPlay(i){
     idx = i;
-    setSourceAndLoad(videos[i]);
+    setSourceAndLoad(videos[idx]);
     video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
   }
 
-  // auto-next on ended
+  // auto-next
   video.addEventListener('ended', ()=> {
     if(idx < videos.length - 1){ loadAndPlay(idx + 1); }
   });
@@ -289,7 +401,7 @@
   // loop toggle
   loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
 
-  // speed selector
+  // speed
   speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
   // fullscreen
@@ -299,9 +411,9 @@
     else document.exitFullscreen();
   });
 
-  // Download current playing video (tries anchor then fetch->blob then open)
+  // ====== Download current playing file (anchor -> fetch -> open fallback) ======
   async function downloadCurrentVideo(){
-    const src = video.currentSrc || vsource.src || video.src;
+    const src = video.currentSrc || vsource.src || '';
     if(!src){ alert('Tidak ada video untuk diunduh.'); return; }
     const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
     const filename = `${safeTitle}_bagian${idx+1}.mp4`;
@@ -333,7 +445,7 @@
   }
   dlBtn.addEventListener('click', downloadCurrentVideo);
 
-  // keyboard shortcuts
+  // keyboard
   window.addEventListener('keydown', (e)=> {
     if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
@@ -342,27 +454,24 @@
     if(e.key === 'm'){ video.muted = !video.muted; }
   });
 
-  // error handling: if first load errors, try a reload once
-  video.addEventListener('error', (ev) => {
-    if(!attemptedReload){
-      attemptedReload = true;
-      try { video.load(); video.play().catch(()=>{}); } catch(e){}
+  // error handling: try reload once if first load fails
+  let triedReload = false;
+  video.addEventListener('error', () => {
+    if(!triedReload){
+      triedReload = true;
+      try { video.load(); } catch(e){}
+      setTimeout(()=> { try { video.play().catch(()=>{}); } catch(e){} }, 300);
     } else {
-      // can't play: enable play button so user can open source in new tab
+      hideLoading();
       playBtn.disabled = false;
     }
   });
 
-  // block right-click
+  // block right click
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // init download area (only full links)
-  function init(){
-    buildDownloadButtons();
-  }
+  // init download area
   buildDownloadButtons();
-  // ensure we set index to 0 and keep consistent
-  idx = 0;
 </script>
 
 <script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
