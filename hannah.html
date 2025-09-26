@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Player — Ociel Hannah</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071022; --muted:#98a8b3; --accent:#3b82f6;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000}
+  video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
+  .btn-small { min-width:72px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
+  .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
+  .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
+  .download-btn .bi { font-size:1.05rem; }
+  .download-btn:hover{background:rgba(255,255,255,0.02)}
+  .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  .hint{color:var(--muted);font-size:13px;margin-left:8px}
+  @media(max-width:520px){ .btn-small{min-width:64px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card card-player">
+      <div class="video-area">
+        <!-- Use a <source> element to improve initial load behavior -->
+        <video id="video" playsinline webkit-playsinline preload="metadata" poster="foto/zpl4db.jpg" crossorigin="anonymous">
+          <source id="vsource" src="" type="video/mp4">
+          Your browser does not support HTML5 video.
+        </video>
+      </div>
+
+      <div class="top-meta">
+        <div class="title" id="title">Ociel Hannah</div>
+        <div class="date" id="date"></div>
+      </div>
+
+      <div class="controls">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <button id="prev" class="btn btn-outline-light btn-small" title="Previous">
+            <i class="bi bi-skip-start-fill"></i> Prev
+          </button>
+
+          <button id="play" class="btn btn-primary btn-play" title="Play/Pause" disabled>
+            <i class="bi bi-play-fill"></i> Play
+          </button>
+
+          <button id="next" class="btn btn-outline-light btn-small" title="Next">
+            <i class="bi bi-skip-end-fill"></i> Next
+          </button>
+
+          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
+
+          <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
+            <i class="bi bi-download"></i> Download
+          </button>
+
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+            <select id="speed" class="form-select form-select-sm" style="width:90px">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+          </div>
+        </div>
+
+        <div class="seek-row">
+          <div class="time" id="current">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+          <div class="time" id="duration">0:00</div>
+        </div>
+      </div>
+
+      <div class="downloads">
+        <div class="heading">
+          <div>Full konten</div>
+          <div class="text-muted small">klik tombol untuk buka / download</div>
+        </div>
+        <div id="downloadButtons" class="downloads-grid mt-2"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // DATA (Ociel Hannah)
+  const videos = [
+    "https://cdn.videy.co/mCNXWfbT1.mp4",
+    "https://cdn.videy.co/odVKQ3il1.mp4",
+    "https://cdn.videy.co/LJ6012Dz1.mp4",
+    "https://cdn.videy.co/1SmTmZwg1.mp4",
+    "https://cdn.videy.co/fE6rG5yT1.mp4",
+    "https://cdn.videy.co/2bircEUw1.mp4",
+    "https://cdn.videy.co/EelulZ9U1.mp4",
+    "https://cdn.videy.co/9sB6dD4V1.mp4",
+    "https://cdn.videy.co/ABSAxMem1.mp4",
+    "https://cdn.videy.co/tmi2pv021.mp4",
+    "https://cdn.videy.co/PS5urIpE1.mp4",
+    "https://cdn.videy.co/WvLI8AOo1.mp4",
+    "https://cdn.videy.co/xDEsSmMz1.mp4",
+    "https://cdn.videy.co/joKYs3g21.mp4",
+    "https://cdn.videy.co/OmsqWj0L1.mp4",
+    "https://cdn.videy.co/MR1EHFAV1.mp4",
+    "https://cdn.videy.co/jA184tks1.mp4",
+    "https://cdn.videy.co/jhLGD9q81.mp4",
+    "https://cdn.videy.co/pKwbmvZh1.mp4",
+    "https://cdn.videy.co/OCUrW5Vp1.mp4",
+    "https://cdn.videy.co/YjLmQdoe1.mp4",
+    "https://cdn.videy.co/2ZZwptIh1.mp4"
+  ];
+  const thumbnail = "foto/zpl4db.jpg";
+  const downloads = {
+    terabox: "https://1024terabox.com/s/1hkszUyzpAnf6y7cuGYjF1g",
+    mediafire: "",
+    pixeldrain: ""
+  };
+
+  // DOM refs
+  const video = document.getElementById('video');
+  const vsource = document.getElementById('vsource');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const dlBtn = document.getElementById('dl');
+  const speedSel = document.getElementById('speed');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const titleEl = document.getElementById('title');
+  const downloadsWrap = document.getElementById('downloadButtons');
+
+  let idx = 0;
+  let isSeeking = false;
+  let attemptedReload = false;
+
+  titleEl.textContent = "Ociel Hannah";
+  video.poster = thumbnail;
+  speedSel.value = "1";
+
+  // Utility: format time
+  function fmt(s){
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
+    return `${min}:${sec}`;
+  }
+
+  // Build full-content buttons (ONLY full links)
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = "";
+    const sources = [
+      { key: 'terabox', label: 'Terabox', icon: 'bi-cloud-arrow-down-fill' },
+      { key: 'mediafire', label: 'Mediafire', icon: 'bi-box-arrow-down' },
+      { key: 'pixeldrain', label: 'Pixeldrain', icon: 'bi-cloud-arrow-down' }
+    ];
+    sources.forEach(s => {
+      const url = (downloads && downloads[s.key]) || "";
+      if(url){
+        const a = document.createElement('a');
+        a.className = "download-btn";
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer nofollow";
+        a.innerHTML = `<i class="bi ${s.icon}"></i><span>${s.label} — Full konten</span>`;
+        downloadsWrap.appendChild(a);
+      }
+    });
+    if(!downloadsWrap.children.length){
+      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
+    }
+  }
+
+  // Set source safely and load (improves first-video-play reliability)
+  function setSourceAndLoad(src){
+    attemptedReload = false;
+    playBtn.disabled = true;
+    // replace <source> src then load
+    vsource.src = src;
+    // ensure crossOrigin set so some CORS responses behave better
+    video.crossOrigin = 'anonymous';
+    try { video.load(); } catch(e){ /* ignore */ }
+  }
+
+  // Load initial
+  setSourceAndLoad(videos[0]);
+
+  // Enable play button when playable
+  video.addEventListener('canplay', () => {
+    playBtn.disabled = false;
+    durationT.textContent = fmt(video.duration || 0);
+  });
+
+  // Update time/seek
+  video.addEventListener('loadedmetadata', () => {
+    seek.max = video.duration || 100;
+    durationT.textContent = fmt(video.duration || 0);
+  });
+  video.addEventListener('timeupdate', () => {
+    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  });
+
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
+
+  // play/pause toggle with graceful promise handling
+  async function togglePlay(){
+    try {
+      if(video.paused){
+        await video.play();
+      } else {
+        video.pause();
+      }
+    } catch(err) {
+      // If play fails (autoplay/CORS/temporary), try a gentle recovery:
+      // 1) ensure source loaded -> call load() -> try play again
+      try {
+        video.load();
+        await video.play();
+      } catch(e){
+        // If still fails, mute and try once (muted autoplay may succeed in some browsers)
+        try {
+          video.muted = true;
+          await video.play();
+          // leave muted state for user to unmute manually
+        } catch(e2){
+          // final fallback: open in new tab so user can download/play externally
+          window.open(video.currentSrc || vsource.src || video.src, '_blank', 'noopener');
+        }
+      }
+    }
+  }
+
+  playBtn.addEventListener('click', togglePlay);
+  video.addEventListener('click', togglePlay);
+
+  // Update play button text/icon
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; playBtn.disabled = false; });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+
+  // prev/next behavior
+  prevBtn.addEventListener('click', ()=> {
+    if(videos.length === 0) return;
+    idx = idx > 0 ? idx - 1 : videos.length - 1;
+    setSourceAndLoad(videos[idx]);
+    // once canplay fires, auto-play to match expected behavior
+    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
+  });
+
+  nextBtn.addEventListener('click', ()=> {
+    if(videos.length === 0) return;
+    idx = idx < videos.length - 1 ? idx + 1 : 0;
+    setSourceAndLoad(videos[idx]);
+    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
+  });
+
+  // load & play helper (used by auto-next)
+  function loadAndPlay(i){
+    idx = i;
+    setSourceAndLoad(videos[i]);
+    video.addEventListener('canplay', function once(){ video.play().catch(()=>{}); video.removeEventListener('canplay', once); });
+  }
+
+  // auto-next on ended
+  video.addEventListener('ended', ()=> {
+    if(idx < videos.length - 1){ loadAndPlay(idx + 1); }
+  });
+
+  // loop toggle
+  loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+
+  // speed selector
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+  // fullscreen
+  document.getElementById('fs')?.addEventListener('click', ()=> {
+    const el = document.querySelector('.video-area');
+    if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  // Download current playing video (tries anchor then fetch->blob then open)
+  async function downloadCurrentVideo(){
+    const src = video.currentSrc || vsource.src || video.src;
+    if(!src){ alert('Tidak ada video untuk diunduh.'); return; }
+    const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+    const filename = `${safeTitle}_bagian${idx+1}.mp4`;
+    try {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    } catch(e){}
+    try {
+      const res = await fetch(src, { mode: 'cors' });
+      if(!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a2 = document.createElement('a');
+      a2.href = url;
+      a2.download = filename;
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      setTimeout(()=> URL.revokeObjectURL(url), 60000);
+      return;
+    } catch(err){
+      window.open(src, '_blank', 'noopener');
+    }
+  }
+  dlBtn.addEventListener('click', downloadCurrentVideo);
+
+  // keyboard shortcuts
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
+
+  // error handling: if first load errors, try a reload once
+  video.addEventListener('error', (ev) => {
+    if(!attemptedReload){
+      attemptedReload = true;
+      try { video.load(); video.play().catch(()=>{}); } catch(e){}
+    } else {
+      // can't play: enable play button so user can open source in new tab
+      playBtn.disabled = false;
+    }
+  });
+
+  // block right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // init download area (only full links)
+  function init(){
+    buildDownloadButtons();
+  }
+  buildDownloadButtons();
+  // ensure we set index to 0 and keep consistent
+  idx = 0;
+</script>
+
+<script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+</html>
