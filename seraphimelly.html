@@ -102,7 +102,13 @@
 
       <div class="downloads">
         <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
-        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons">
+          <!-- UCdrive full link (inserted as requested) -->
+          <a class="download-btn" href="https://uc-share.com/s/7d74f6d031014?la=id" target="_blank" rel="noopener noreferrer nofollow">
+            <i class="bi bi-cloud-arrow-down-fill"></i>
+            <span>UCdrive — Full konten</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -124,8 +130,6 @@
     "https://cdn.videy.co/Mp8rU9Fc1.mp4",
     "https://cdn.videy.co/lgAVOgb91.mp4"
   ];
-  const thumbnail = ""; // none provided
-  // Full-only links (UCdrive provided) — DO NOT include videy links here
   const downloads = {
     ucdrive: "https://uc-share.com/s/7d74f6d031014?la=id"
   };
@@ -151,28 +155,10 @@
   let isSeeking = false;
 
   titleEl.textContent = "TALENT DEDE SERAPHIMELY";
-  if(thumbnail) video.poster = thumbnail;
   speedSel.value = "1";
 
   function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 
-  // Build "Full konten" area — ONLY full links (UCdrive etc.)
-  function buildDownloadButtons(){
-    downloadsWrap.innerHTML = "";
-    if(downloads.ucdrive){
-      const a = document.createElement('a');
-      a.className = "download-btn";
-      a.href = downloads.ucdrive;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer nofollow";
-      a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>UCdrive — Full konten</span>';
-      downloadsWrap.appendChild(a);
-    } else {
-      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
-    }
-  }
-
-  // loading overlay helpers
   function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
   function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
 
@@ -183,7 +169,7 @@
     setTimeout(()=>{ toast.style.opacity = '0'; setTimeout(()=> toast.style.display='none',300); }, time);
   }
 
-  // set source WITHOUT autoplay (initial + prev/next)
+  // Set source WITHOUT autoplay (initial + prev/next)
   function setSourceNoAuto(src){
     try{ video.pause(); }catch(e){}
     video.removeAttribute('src');
@@ -321,13 +307,10 @@
   });
 
   // init
-  buildDownloadButtons();
   updateThumb();
-
-  function buildDownloadButtons(){ /* implementation above — defined earlier in scope */ }
 </script>
 
 <!-- ad/zone script (kept as previously used) -->
 <script>(function(s){s.dataset.zone='9964278',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
-                                                                          </html>
+</html>
