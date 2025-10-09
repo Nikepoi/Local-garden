@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — TALENT ALEA</title>
+<title>Player — TALENT YOLA NAKAGAWA</title>
 <link rel="icon" href="favicon.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -17,7 +17,6 @@
   .thumb-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06));border:2px solid rgba(255,255,255,0.06);cursor:pointer;z-index:22;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
   .thumb-play svg{ width:28px;height:28px; fill:#eaf4ff; opacity:0.98; }
   .thumb-play.hidden{ display:none; }
-
   .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30}
   .loader{pointer-events:auto;display:flex;gap:12px;align-items:center;background:linear-gradient(180deg, rgba(3,6,12,0.72), rgba(3,6,12,0.45));padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 8px 30px rgba(3,6,12,0.5);backdrop-filter: blur(6px);}
   .spinner{width:38px;height:38px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color: var(--accent);animation: spin .9s linear infinite;}
@@ -25,7 +24,6 @@
   .loader .meta{display:flex;flex-direction:column}
   .loader .meta .title{font-weight:700;color:#eaf4ff;font-size:14px}
   .loader .meta .sub{color:var(--muted);font-size:13px}
-
   .top-meta{padding:12px 16px 0 16px}
   .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
@@ -63,7 +61,7 @@
       </div>
 
       <div class="top-meta">
-        <div class="title" id="title">TALENT ALEA</div>
+        <div class="title" id="title">TALENT YOLA NAKAGAWA</div>
         <div class="date" id="date"></div>
       </div>
 
@@ -111,17 +109,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // DATA: TALENT ALEA + UPDATE
+  // DATA: TALENT YOLA NAKAGAWA (update)
   let videos = [
-    "https://cdn.videy.co/xwwZ007k1.mp4",
-    "https://cdn.videy.co/VWeR4SSg1.mp4",
-    "https://cdn.videy.co/9rUQ3fyH1.mp4",
-    "https://cdn.videy.co/gApbaYBW1.mp4",
-    "https://cdn.videy.co/dIzWulo51.mp4"
+    "https://cdn.videy.co/z8sedEbi1.mp4",
+    "https://cdn.videy.co/kF4w05xi1.mp4",
+    "https://cdn.videy.co/q7SdC8Ei1.mp4",
+    "https://cdn.videy.co/Ogifx9Uv1.mp4",
+    "https://cdn.videy.co/KkgjEHff1.mp4",
+    "https://cdn.videy.co/QHIWYOvZ1.mp4",
+    "https://cdn.videy.co/j5Fz9X331.mp4",
+    "https://cdn.videy.co/mFahshKB1.mp4",
+    "https://cdn.videy.co/hE3uUhck1.mp4",
+    "https://cdn.videy.co/MNLw1GWV1.mp4",
+    "https://cdn.videy.co/tPovvQlC1.mp4",
+    "https://cdn.videy.co/ChIfgLcA1.mp4"
   ];
 
-  // Full-only link (UCshare)
-  const downloads = { ucdrive: "https://uc-share.com/s/6cbbf2935de64?la=id" };
+  // Full-only link (UCshare) — only show full links here
+  const downloads = { ucdrive: "https://uc-share.com/s/969a42e040964?la=id" };
 
   // DOM refs
   const video = document.getElementById('video');
@@ -143,15 +148,15 @@
   let idx = 0;
   let isSeeking = false;
 
-  titleEl.textContent = "TALENT ALEA";
+  titleEl.textContent = "TALENT YOLA NAKAGAWA";
   speedSel.value = "1";
 
   function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
   function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
   function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
-  function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display='block'; toast.style.opacity='1'; setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=> toast.style.display='none',300); }, time); }
+  function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; toast.style.opacity = '1'; setTimeout(()=>{ toast.style.opacity = '0'; setTimeout(()=> toast.style.display='none',300); }, time); }
 
-  // Load source but DO NOT autoplay
+  // Load source but DO NOT autoplay (user requested)
   function setSourceNoAuto(src){
     try{ video.pause(); }catch(e){}
     video.removeAttribute('src');
@@ -199,7 +204,6 @@
   video.addEventListener('click', togglePlay);
 
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; updateThumb(); });
-
   function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); else thumbPlay.classList.add('hidden'); }
 
   // prev / next -> load but do NOT autoplay
@@ -318,7 +322,7 @@
   updateThumb();
 </script>
 
-<!-- iklan / zone script (sesuai permintaan) -->
+<!-- ad/zone script (sesuai permintaan sebelumnya) -->
 <script>(function(s){s.dataset.zone='9964278',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
 </html>
