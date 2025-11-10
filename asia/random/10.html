@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Player — Asia random 10</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{ --bg:#071022; --muted:#98a8b3; --accent:#3b82f6; }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000;position:relative;overflow:hidden}
+  video{width:100%;height:auto;max-height:72vh;object-fit:contain;display:block;background:#000}
+  .thumb-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06));border:2px solid rgba(255,255,255,0.06);cursor:pointer;z-index:22;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+  .thumb-play svg{ width:28px;height:28px; fill:#eaf4ff; opacity:0.98; }
+  .thumb-play.hidden{ display:none; }
+  .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30}
+  .loader{pointer-events:auto;display:flex;gap:12px;align-items:center;background:linear-gradient(180deg, rgba(3,6,12,0.72), rgba(3,6,12,0.45));padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 8px 30px rgba(3,6,12,0.5);backdrop-filter: blur(6px);}
+  .spinner{width:38px;height:38px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color: var(--accent);animation: spin .9s linear infinite;}
+  @keyframes spin{ to { transform: rotate(360deg); } }
+  .loader .meta{display:flex;flex-direction:column}
+  .loader .meta .title{font-weight:700;color:#eaf4ff;font-size:14px}
+  .loader .meta .sub{color:var(--muted);font-size:13px}
+
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
+  .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
+  .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
+  .download-btn{min-width:150px;text-align:left;background:transparent;border:1px solid rgba(255,255,255,0.06);color:#eaf4ff;padding:8px 12px;border-radius:8px;display:inline-flex;gap:8px;align-items:center;text-decoration:none;}
+  .download-btn .bi{font-size:1.05rem;}
+  .download-btn:hover{background:rgba(255,255,255,0.02)}
+  .download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  .channel-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .channel-btn{width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.02);display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03);text-decoration:none}
+  .toast-msg{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;z-index:9999;background:rgba(10,15,20,0.9);color:#eaf4ff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:none}
+  @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} .thumb-play{width:60px;height:60px} .thumb-play svg{width:22px;height:22px} .spinner{width:28px;height:28px;border-width:3px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card card-player" id="card">
+      <div class="video-area" id="videoArea">
+        <video id="video" playsinline webkit-playsinline preload="metadata" poster=""></video>
+
+        <button id="thumbPlay" class="thumb-play" aria-label="Play">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l18-10L4 2z"/></svg>
+        </button>
+
+        <div id="loading" class="loading-overlay" style="display:none" aria-hidden="true">
+          <div class="loader" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="meta"><div class="title">Memuat video…</div><div class="sub">Menunggu jaringan / buffering</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-meta">
+        <div class="title" id="title">Asia random 10</div>
+        <div class="date" id="date"></div>
+      </div>
+
+      <div class="controls">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <button id="prev" class="btn btn-outline-light btn-small" title="Previous"><i class="bi bi-skip-start-fill"></i> Prev</button>
+
+          <button id="play" class="btn btn-primary btn-play" title="Play/Pause"><i class="bi bi-play-fill"></i> Play</button>
+
+          <button id="next" class="btn btn-outline-light btn-small" title="Next"><i class="bi bi-skip-end-fill"></i> Next</button>
+
+          <button id="loop" class="btn btn-outline-light ms-2" title="Loop">Loop</button>
+
+          <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar"><i class="bi bi-download"></i> Download</button>
+
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+            <select id="speed" class="form-select form-select-sm" style="width:90px">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+          </div>
+        </div>
+
+        <div class="seek-row">
+          <div class="time" id="current">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+          <div class="time" id="duration">0:00</div>
+        </div>
+      </div>
+
+      <div class="downloads">
+        <div class="heading"><div>Full konten</div></div>
+        <div class="mt-2 download-grid" id="downloadButtons"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast-msg" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ===== DATA: Asia random 9 =====
+  let videos = [
+    "https://cdn.videy.co/jUfSvO3l1.mp4",
+    "https://cdn.videy.co/AqnfMKPy1.mp4",
+    "https://cdn.videy.co/Jrp32wPT1.mp4",
+    "https://cdn.videy.co/TOhEqMtA1.mp4",
+    "https://cdn.videy.co/ysLHQTPG1.mp4",
+    "https://cdn.videy.co/On8tusG71.mp4",
+    "https://cdn.videy.co/mTw9s2TO1.mp4",
+    "https://cdn.videy.co/8c2DOv6f1.mp4",
+    "https://cdn.videy.co/VRcHsE7Y1.mp4",
+    "https://cdn.videy.co/XReEfmUX1.mp4",
+    "https://cdn.videy.co/qw1MElAp1.mp4",
+    "https://cdn.videy.co/l68RqT641.mp4",
+    "https://cdn.videy.co/dsN8ZK7F1.mp4",
+    "https://cdn.videy.co/fassquuB1.mp4",
+    "https://cdn.videy.co/4uGhjEW21.mp4",
+    "https://cdn.videy.co/sX4XbcxT1.mp4",
+    "https://cdn.videy.co/edzr6gon1.mp4",
+    "https://cdn.videy.co/Ux4gndsI1.mp4",
+    "https://cdn.videy.co/qmxTLMeq1.mp4",
+    "https://cdn.videy.co/oFZhhkTp1.mp4",
+    "https://cdn.videy.co/4waBT6vL1.mp4",
+    "https://cdn.videy.co/KpDsJpkU1.mp4",
+    "https://cdn.videy.co/CgKSlsmG1.mp4",
+    "https://cdn.videy.co/pXq0gRPg1.mp4",
+    "https://cdn.videy.co/kcOh2TL21.mp4",
+    "https://cdn.videy.co/qh4kIyuq1.mp4",
+    "https://cdn.videy.co/LclKofsn1.mp4",
+    "https://cdn.videy.co/1NmNGwoB1.mp4",
+    "https://cdn.videy.co/Tv6CpikD1.mp4",
+    "https://cdn.videy.co/lsMpC6Eg1.mp4",
+    "https://cdn.videy.co/ZndsaBx21.mp4",
+    "https://cdn.videy.co/iMBVVxg51.mp4",
+    "https://cdn.videy.co/2k3FDMlA1.mp4",
+    "https://cdn.videy.co/cRz3z04G1.mp4",
+    "https://cdn.videy.co/WgzI7cSp1.mp4",
+    "https://cdn.videy.co/Xc3ThV6z1.mp4",
+    "https://cdn.videy.co/ru30O3fl1.mp4",
+    "https://cdn.videy.co/zSVN6UOR1.mp4",
+    "https://cdn.videy.co/tx0scESl1.mp4",
+    "https://cdn.videy.co/1FSuik8U1.mp4",
+    "https://cdn.videy.co/BqX6gSGU1.mp4",
+    "https://cdn.videy.co/TgviurZL1.mp4",
+    "https://cdn.videy.co/N4a8IQZg1.mp4"
+  ];
+
+  // Full konten (only full links shown)
+  const downloads = {
+    terabox: "https://1024terabox.com/s/1eTjnDtjDjS_7XDZtH-JH3Q"
+  };
+
+  // ===== DOM refs =====
+  const video = document.getElementById('video');
+  const thumbPlay = document.getElementById('thumbPlay');
+  const loading = document.getElementById('loading');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const dlBtn = document.getElementById('dl');
+  const speedSel = document.getElementById('speed');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const titleEl = document.getElementById('title');
+  const downloadsWrap = document.getElementById('downloadButtons');
+  const toast = document.getElementById('toast');
+
+  let idx = 0;
+  let isSeeking = false;
+
+  titleEl.textContent = "Asia random 9";
+  speedSel.value = "1";
+
+  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
+  function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
+  function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
+  function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display='block'; toast.style.opacity='1'; setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=> toast.style.display='none',300); }, time); }
+
+  function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
+
+  // Load a source but DO NOT autoplay — user must click play
+  function setSourceNoAuto(src){
+    try{ video.pause(); }catch(e){}
+    video.removeAttribute('src');
+    video.src = src;
+    try{ video.load(); }catch(e){}
+    showLoading();
+  }
+
+  // initialize first source (no autoplay)
+  if(videos.length) setSourceNoAuto(videos[0]);
+
+  // Events
+  video.addEventListener('loadedmetadata', () => {
+    durationT.textContent = fmt(video.duration || 0);
+    seek.max = video.duration || 100;
+  });
+
+  video.addEventListener('canplay', () => { hideLoading(); });
+
+  video.addEventListener('playing', () => {
+    hideLoading();
+    playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+    thumbPlay.classList.add('hidden');
+  });
+
+  ['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
+
+  video.addEventListener('timeupdate', () => {
+    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  });
+
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
+
+  async function togglePlay(){
+    try {
+      if(video.paused) await video.play();
+      else video.pause();
+    } catch(e){
+      showToast('Gagal memutar. Coba klik lagi.');
+      console.warn('Play failed', e);
+    }
+  }
+
+  playBtn.addEventListener('click', togglePlay);
+  thumbPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
+  video.addEventListener('click', togglePlay);
+
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; updateThumb(); });
+
+  function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); else thumbPlay.classList.add('hidden'); }
+
+  // Prev / Next: load next/prev but DO NOT autoplay
+  prevBtn.addEventListener('click', ()=> {
+    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+    idx = clampIndex(idx - 1);
+    setSourceNoAuto(videos[idx]);
+  });
+  nextBtn.addEventListener('click', ()=> {
+    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+    idx = clampIndex(idx + 1);
+    setSourceNoAuto(videos[idx]);
+  });
+
+  // Loop toggle
+  loopBtn.addEventListener('click', ()=> {
+    video.loop = !video.loop;
+    loopBtn.classList.toggle('btn-primary', video.loop);
+    loopBtn.classList.toggle('btn-outline-light', !video.loop);
+  });
+
+  // Speed
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+  // Fullscreen for player area
+  document.getElementById('fs')?.addEventListener('click', ()=> {
+    const el = document.querySelector('.video-area');
+    if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  // Auto-next on ended: load next but DO NOT autoplay
+  video.addEventListener('ended', ()=> {
+    if(videos.length && idx < videos.length - 1){ idx++; setSourceNoAuto(videos[idx]); }
+  });
+
+  // Error handling: remove failing source and load next (no autoplay)
+  video.addEventListener('error', (e) => {
+    const failedSrc = video.currentSrc || video.src || 'unknown';
+    console.warn('Video error at index', idx, failedSrc, e);
+    hideLoading();
+
+    const pos = videos.indexOf(failedSrc);
+    if(pos !== -1){
+      videos.splice(pos,1);
+      showToast('Bagian ' + (pos+1) + ' gagal dimuat — dihapus.');
+      if(pos <= idx) idx = Math.max(0, idx - 1);
+    } else {
+      showToast('Sumber gagal dimuat.');
+    }
+
+    if(videos.length){
+      idx = clampIndex(idx);
+      setTimeout(()=> setSourceNoAuto(videos[idx]), 250);
+    } else {
+      showToast('Semua sumber gagal.');
+      try{ video.removeAttribute('src'); video.load(); }catch(e){}
+    }
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
+
+  // Block right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Download current playing video
+  async function downloadCurrentVideo(){
+    const src = video.currentSrc || video.src || '';
+    if(!src){ showToast('Tidak ada video untuk diunduh.'); return; }
+    const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+    const filename = `${safeTitle}_bagian${idx+1}.mp4`;
+
+    try {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    } catch(e){ /* fallback */ }
+
+    try {
+      const res = await fetch(src, { mode: 'cors' });
+      if(!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a2 = document.createElement('a');
+      a2.href = url;
+      a2.download = filename;
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      setTimeout(()=> URL.revokeObjectURL(url), 60000);
+      return;
+    } catch(err){
+      window.open(src, '_blank', 'noopener');
+    }
+  }
+  dlBtn.addEventListener('click', downloadCurrentVideo);
+
+  // Build Full konten area (only full links)
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = '';
+    if(downloads.terabox){
+      const b = document.createElement('a');
+      b.className = 'download-btn';
+      b.href = downloads.terabox;
+      b.target = '_blank';
+      b.rel = 'noopener noreferrer nofollow';
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
+      downloadsWrap.appendChild(b);
+    }
+    if(!downloads.terabox){
+      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link.</div>';
+    }
+  }
+
+  // Init
+  buildDownloadButtons();
+  updateThumb();
+  function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); else thumbPlay.classList.add('hidden'); }
+</script>
+
+<!-- iklan / zone script -->
+<script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+  </html>
