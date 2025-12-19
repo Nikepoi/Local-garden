@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — Responsive OME TV BY SPONGOMELAMI</title>
+<title>OME TV BY SPONGOMELAMI</title>
 <link rel="icon" href="favicon.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"><style>
@@ -13,54 +13,40 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:linear-gradient(180deg,#020617 0,#071129 100%);color:#eaf4ff;font-family:Inter,system-ui,Arial;-webkit-font-smoothing:antialiased}
-.container-player{max-width:1100px;margin:20px auto;padding:14px}
+.container-player{max-width:1100px;margin:18px auto;padding:14px}
 .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(2,6,23,0.6)}
 
-/* layout */
 .player-shell{display:flex;flex-direction:column;gap:12px;padding:12px}
 .player-area{position:relative;border-radius:10px;overflow:hidden;background:#000; touch-action:manipulation}
 video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;background:#000}
 
-/* center poster play */
+/* poster play (smaller, non-blocking) */
 .poster-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.poster-btn{pointer-events:auto;display:inline-flex;gap:12px;align-items:center;background:linear-gradient(90deg, rgba(0,0,0,0.65), rgba(0,0,0,0.25));padding:14px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:800;font-size:16px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.poster-btn{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;width:120px;height:44px;gap:10px;background:linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.3));padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:800;font-size:15px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.45)}
+.poster-btn .bi{font-size:18px}
 
-/* overlay controls (bottom of video) */
-.controls-overlay{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.55));display:flex;flex-direction:column;gap:8px}
-.control-row{display:flex;align-items:center;gap:8px}
-.control-left{display:flex;align-items:center;gap:8px}
-.control-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.btn-ghost{background:transparent;border:0;color:var(--muted);padding:8px;border-radius:10px;cursor:pointer}
-.btn-primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0;color:white;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px rgba(79,140,255,.12);font-weight:700}
+/* control strip (outside video) */
+.control-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0));margin-top:8px}
+.ctrl-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.02);cursor:pointer;color:#eaf4ff}
+.ctrl-btn.primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0}
+.ctrl-section{display:flex;align-items:center;gap:8px}
+.seek{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}
 .range{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:999px;appearance:none;outline:none}
 .range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
 .time{min-width:48px;text-align:center;color:var(--muted);font-size:13px}
 
-/* external control strip (outside video box) */
-.control-strip{display:flex;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0));}
-.ctrl-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.02);cursor:pointer;color:#eaf4ff}
-.ctrl-btn.primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0}
-.ctrl-section{display:flex;align-items:center;gap:8px}
-
-/* meta below */
 .meta{padding:6px 6px 12px}
 .title{font-size:20px;font-weight:800;margin:0}
 .sub{color:var(--muted);font-size:13px;margin-top:6px}
 
-/* full links area */
 .full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
 .btn-download{display:inline-flex;gap:8px;align-items:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
 
-/* small responsive tweaks */
-@media(min-width:900px){
-  .player-shell{padding:16px}
-  .poster-btn{padding:16px 22px;font-size:16px}
-}
 @media(max-width:520px){
-  .poster-btn{padding:12px 14px;font-size:14px}
+  .poster-btn{width:96px;height:40px;font-size:14px}
   .title{font-size:18px}
+  .seek{min-width:140px}
 }
-
 </style></head>
 <body>
   <div class="container-player">
@@ -74,49 +60,23 @@ video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;ba
         </button>
       </div>
 
-      <div class="controls-overlay" id="controlsOverlay" aria-hidden="false">
-        <div class="control-row">
-          <div class="control-left">
-            <button id="playSmall" class="btn-primary" title="Play/Pause"><i id="playSmallIcon" class="bi bi-play-fill"></i></button>
-            <button id="dlSmall" class="btn-ghost" title="Download"><i class="bi bi-download"></i></button>
-          </div>
-
-          <div class="control-right">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="color:var(--muted);font-size:13px">Speed</span>
-              <select id="speedSmall" class="form-select form-select-sm" style="width:84px">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1" selected>1x</option>
-                <option value="1.25">1.25x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2">2x</option>
-              </select>
-            </div>
-
-            <button id="muteSmall" class="btn-ghost" title="Mute"><i id="muteSmallIcon" class="bi bi-volume-up-fill"></i></button>
-            <button id="fsSmall" class="btn-ghost" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
-          </div>
-        </div>
-
-        <div class="control-row" style="align-items:center">
-          <div class="time" id="cur">0:00</div>
-          <input id="seek" type="range" min="0" max="100" value="0" class="range" />
-          <div class="time" id="dur">0:00</div>
-        </div>
-      </div>
-
     </div> <!-- player-area -->
 
-    <!-- EXTERNAL CONTROL STRIP (moved OUTSIDE video box) -->
+    <!-- CONTROL STRIP: moved OUTSIDE the video box to be always visible and non-obstructive -->
     <div class="control-strip" id="controlStrip">
       <div class="ctrl-section">
         <button id="prev" class="ctrl-btn" title="Prev"><i class="bi bi-skip-start-fill"></i> Prev</button>
-        <button id="play" class="ctrl-btn primary" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i> <span id="playText" style="font-weight:800"> Play</span></button>
+        <button id="play" class="ctrl-btn primary" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i><span id="playText" style="font-weight:800"> Play</span></button>
         <button id="next" class="ctrl-btn" title="Next">Next <i class="bi bi-skip-end-fill"></i></button>
       </div>
 
-      <div class="ctrl-section" style="margin-left:auto;align-items:center">
+      <div class="seek">
+        <div class="time" id="cur">0:00</div>
+        <input id="seek" type="range" min="0" max="100" value="0" class="range" />
+        <div class="time" id="dur">0:00</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <button id="dl" class="ctrl-btn" title="Download"><i class="bi bi-download"></i> Download</button>
         <div style="display:flex;align-items:center;gap:6px">
           <label style="margin:0;color:var(--muted);font-size:13px">Speed</label>
@@ -184,17 +144,7 @@ const cur = document.getElementById('cur');
 const dur = document.getElementById('dur');
 const muteBtn = document.getElementById('mute');
 const muteIcon = document.getElementById('muteIcon');
-const controlsOverlay = document.getElementById('controlsOverlay');
 const fullLinksEl = document.getElementById('fullLinks');
-
-// small overlay controls (redundant small controls inside video for quick access)
-const playSmall = document.getElementById('playSmall');
-const playSmallIcon = document.getElementById('playSmallIcon');
-const dlSmall = document.getElementById('dlSmall');
-const muteSmall = document.getElementById('muteSmall');
-const muteSmallIcon = document.getElementById('muteSmallIcon');
-const speedSmall = document.getElementById('speedSmall');
-const fsSmall = document.getElementById('fsSmall');
 
 let idx = 0;
 let seeking = false;
@@ -224,25 +174,23 @@ video.addEventListener('stalled', ()=> setLoading(true));
 video.addEventListener('play', ()=> { updatePlayUI(true); posterOverlay.style.display='none'; });
 video.addEventListener('pause', ()=> { updatePlayUI(false); posterOverlay.style.display=''; });
 
-function updatePlayUI(playing){ const ic = playing ? 'bi bi-pause-fill' : 'bi bi-play-fill'; playIcon.className = ic; playSmallIcon.className = ic; playText.textContent = playing ? ' Pause' : ' Play'; }
+function updatePlayUI(playing){ const ic = playing ? 'bi bi-pause-fill' : 'bi bi-play-fill'; playIcon.className = ic; playText.textContent = playing ? ' Pause' : ' Play'; }
 
 seek.addEventListener('input', ()=> { seeking = true; cur.textContent = fmt(seek.value); });
 seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); seeking = false; });
 
-// external play toggle
+// play toggles
 function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
 playBtn.addEventListener('click', togglePlay);
-playSmall.addEventListener('click', togglePlay);
 posterPlay.addEventListener('click', ()=> { togglePlay(); posterOverlay.style.display='none'; });
 video.addEventListener('click', ()=> {
-  // tap video -> toggle overlay controls visibility on touch
+  // tapping video on mobile toggles poster visibility only (no overlay controls inside video)
   if(isTouchDevice()){
-    controlsOverlay.style.display = controlsOverlay.style.display === 'none' ? 'flex' : 'none';
-    if(!video.paused) posterOverlay.style.display='none';
+    posterOverlay.style.display = posterOverlay.style.display === 'none' ? 'flex' : 'none';
   } else togglePlay();
 });
 
-// prev/next moved outside
+// prev/next
 prevBtn.addEventListener('click', ()=> {
   if(!videos.length) return;
   idx = idx > 0 ? idx-1 : videos.length-1;
@@ -264,25 +212,18 @@ function loadIndex(i, {autoPlay=false} = {}){
   if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; }
 }
 
-// small overlay controls
-dlSmall.addEventListener('click', ()=> { const src = video.currentSrc || video.src; if(!src){ alert('Tidak ada video aktif.'); return; } const watch = cdnToWatch(src); window.open(watch, '_blank', 'noopener'); });
-playSmall.addEventListener('click', togglePlay);
-
-// download external
+// download
 dlBtn.addEventListener('click', ()=> { const src = video.currentSrc || video.src; if(!src){ alert('Tidak ada video aktif.'); return; } const watch = cdnToWatch(src); window.open(watch, '_blank', 'noopener'); });
 
 // speed
-speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); speedSmall.value = speedSel.value; });
-speedSmall.addEventListener('change', ()=> { video.playbackRate = Number(speedSmall.value); speedSel.value = speedSmall.value; });
+speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.value));
 
 // mute
 muteBtn.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
-muteSmall.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
-function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); muteSmallIcon.className = muteIcon.className; }
+function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
 
 // fullscreen
 fsBtn.addEventListener('click', ()=> { const el = document.querySelector('.player-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
-fsSmall.addEventListener('click', ()=> { const el = document.querySelector('.player-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
 
 // auto-next on ended -> load next but don't autoplay
 video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadIndex(idx, {autoPlay:false}); } });
@@ -305,7 +246,7 @@ function flashSeek(text){ const t = document.createElement('div'); t.textContent
 // right-click block
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-function setLoading(state){ /* simple loading indicator via attribute */ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
+function setLoading(state){ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
 
 function isTouchDevice(){ return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
 
