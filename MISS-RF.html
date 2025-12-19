@@ -1,88 +1,84 @@
 <!doctype html>
-
 <html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — Responsive (Mobile + Desktop)</title>
+<title>Player — RIYANI</title>
 <link rel="icon" href="favicon.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"><style>
-:root{
-  --bg:#060717; --panel:#071129; --muted:#9fb0c0; --accent:#4f8cff;
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:linear-gradient(180deg,#020617 0,#071129 100%);color:#eaf4ff;font-family:Inter,system-ui,Arial;-webkit-font-smoothing:antialiased}
-.container-player{max-width:1100px;margin:20px auto;padding:14px}
-.card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(2,6,23,0.6)}
-
-/* layout */
-.player-shell{display:flex;flex-direction:column;gap:12px;padding:12px}
-.player-area{position:relative;border-radius:10px;overflow:hidden;background:#000; touch-action:manipulation}
-video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;background:#000}
-
-/* center poster play */
-.poster-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.poster-btn{pointer-events:auto;display:inline-flex;gap:12px;align-items:center;background:linear-gradient(90deg, rgba(0,0,0,0.65), rgba(0,0,0,0.25));padding:14px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:800;font-size:16px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
-
-/* overlay controls (bottom) */
-.controls-overlay{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.55));display:flex;flex-direction:column;gap:8px}
-.control-row{display:flex;align-items:center;gap:8px}
-.control-left{display:flex;align-items:center;gap:8px}
-.control-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.btn-ghost{background:transparent;border:0;color:var(--muted);padding:8px;border-radius:10px;cursor:pointer}
-.btn-primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0;color:white;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px rgba(79,140,255,.12);font-weight:700}
-.range{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:999px;appearance:none;outline:none}
-.range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
-.time{min-width:48px;text-align:center;color:var(--muted);font-size:13px}
-
-/* meta below */
-.meta{padding:6px 6px 12px}
-.title{font-size:20px;font-weight:800;margin:0}
-.sub{color:var(--muted);font-size:13px;margin-top:6px}
-
-/* full links area */
-.full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
-.btn-download{display:inline-flex;gap:8px;align-items:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
-
-/* small responsive tweaks */
-@media(min-width:900px){
-  .player-shell{padding:16px}
-  .poster-btn{padding:16px 22px;font-size:16px}
-}
-@media(max-width:520px){
-  .poster-btn{padding:12px 14px;font-size:14px}
-  .title{font-size:18px}
-}
-
-/* hidden (used when controls shown by tap) */
-.hide-on-touch{display:none}
-</style></head>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{ --bg:#071022; --muted:#98a8b3; --accent:#3b82f6; }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000;padding:12px} /* space around video so controls don't block */
+  .video-container{background:#000;border-radius:8px;overflow:hidden;display:block}
+  video{width:100%;height:auto;max-height:72vh;object-fit:contain;display:block;background:#000}
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); background:transparent; }
+  .controls-box{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); border-radius:10px; padding:10px}
+  .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
+  .seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+  .downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+  .downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
+  .download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
+  .download-btn .bi { font-size:1.05rem; }
+  .download-btn:hover{background:rgba(255,255,255,0.02)}
+  .downloads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
+  .loader { position:absolute; inset:0; display:flex;align-items:center;justify-content:center;pointer-events:none; }
+  .spinner { width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;box-shadow:0 6px 18px rgba(59,130,246,0.12) }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .video-wrapper{position:relative}
+</style>
+</head>
 <body>
-  <div class="container-player">
-    <div class="card-player">
-      <div class="player-shell"><div class="player-area" id="playerArea">
-      <video id="video" preload="metadata" playsinline webkit-playsinline></video>
-
-      <div class="poster-overlay" id="posterOverlay">
-        <button id="posterPlay" class="poster-btn" aria-label="Play">
-          <i class="bi bi-play-fill"></i> PLAY
-        </button>
+  <div class="wrap">
+    <div class="card card-player">
+      <div class="video-wrapper">
+        <div class="video-area">
+          <div class="video-container">
+            <video id="video" playsinline webkit-playsinline preload="metadata"></video>
+          </div>
+        </div>
+        <div class="loader" id="loader" style="display:none"><div class="spinner" aria-hidden="true"></div></div>
       </div>
 
-      <div class="controls-overlay" id="controlsOverlay" aria-hidden="false">
-        <div class="control-row">
-          <div class="control-left">
-            <button id="play" class="btn-primary" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i><span id="playText" style="margin-left:8px">Play</span></button>
-            <button id="prev" class="btn-ghost" title="Prev"><i class="bi bi-skip-start-fill"></i></button>
-            <button id="next" class="btn-ghost" title="Next"><i class="bi bi-skip-end-fill"></i></button>
-            <button id="dl" class="btn-ghost" title="Download"><i class="bi bi-download"></i></button>
-          </div>
+      <div class="top-meta">
+        <div class="title" id="title">RIYANI</div>
+        <div class="date" id="date"></div>
+      </div>
 
-          <div class="control-right">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="color:var(--muted);font-size:13px">Speed</span>
-              <select id="speed" class="form-select form-select-sm" style="width:84px">
+      <!-- CONTROLS: placed in a separate box below the video (won't overlay) -->
+      <div class="controls">
+        <div class="controls-box">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <button id="prev" class="btn btn-outline-light btn-small" title="Previous">
+              <i class="bi bi-skip-start-fill"></i> Prev
+            </button>
+
+            <button id="play" class="btn btn-primary btn-play" title="Play/Pause">
+              <i class="bi bi-play-fill"></i> Play
+            </button>
+
+            <button id="next" class="btn btn-outline-light btn-small" title="Next">
+              <i class="bi bi-skip-end-fill"></i> Next
+            </button>
+
+            <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
+
+            <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar">
+              <i class="bi bi-download"></i> Download
+            </button>
+
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+              <select id="speed" class="form-select form-select-sm" style="width:90px">
                 <option value="0.5">0.5x</option>
                 <option value="0.75">0.75x</option>
                 <option value="1" selected>1x</option>
@@ -90,165 +86,213 @@ video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;ba
                 <option value="1.5">1.5x</option>
                 <option value="2">2x</option>
               </select>
+              <button id="fs" class="btn btn-outline-light">Fullscreen</button>
             </div>
-
-            <button id="mute" class="btn-ghost" title="Mute"><i id="muteIcon" class="bi bi-volume-up-fill"></i></button>
-            <button id="fs" class="btn-ghost" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
           </div>
-        </div>
 
-        <div class="control-row" style="align-items:center">
-          <div class="time" id="cur">0:00</div>
-          <input id="seek" type="range" min="0" max="100" value="0" class="range" />
-          <div class="time" id="dur">0:00</div>
+          <div class="seek-row">
+            <div class="time" id="current">0:00</div>
+            <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+            <div class="time" id="duration">0:00</div>
+          </div>
         </div>
       </div>
 
-    </div> <!-- player-area -->
-
-    <div class="meta">
-      <div class="title" id="title">--</div>
-      <div class="sub" id="subtitle">--</div>
+      <div class="downloads">
+        <div class="heading">
+          <div>Full konten</div>
+          <div class="text-muted small" id="full-note"></div>
+        </div>
+        <div id="downloadButtons" class="downloads-grid mt-2"></div>
+      </div>
     </div>
+  </div>
 
-    <div>
-      <div style="font-weight:800;font-size:15px">Full konten</div>
-      <div style="color:var(--muted);font-size:13px;margin-top:6px" id="fullnote">Klik tombol untuk membuka</div>
-      <div id="fullLinks" class="full-links" style="margin-top:8px"></div>
-    </div>
+<script>
+  // ===== DATA: RIYANI =====
+  const videos = [
+    "https://cdn.videy.co/bDbcluYN1.mp4",
+    "https://cdn.videy.co/ilFWUbgz1.mp4",
+    "https://cdn.videy.co/jeNnVf6W1.mp4",
+    "https://cdn.videy.co/ZjoltyJ91.mp4",
+    "https://cdn.videy.co/5EdudnNO1.mp4",
+    "https://cdn.videy.co/a0RVUxvn1.mp4",
+    "https://cdn.videy.co/MfHPvn421.mp4"
+  ];
 
-  </div><!-- player-shell -->
-</div><!-- card -->
+  // Full konten: none
+  const downloads = {
+    // intentionally empty for RIYANI (no full link)
+  };
 
-  </div><!-- container --><script>
-/* ===== DATA - ganti sesuai kebutuhan ===== */
-const titleText = "MISS RF";
-const subtitleText = "";
-const poster = ""; // poster URL (opsional)
-const videos = [
-  "https://cdn.videy.co/Rx8bQeSX1.mp4",
-  "https://cdn.videy.co/RIFfYjU71.mp4",
-  "https://cdn.videy.co/VpPqisZI1.mp4"
-];
-const fullLinks = [
-  // contoh: { label: "Terabox — Full konten", url: "https://1024terabox.com/..." }
-];
-/* ======================================== */
+  // DOM refs
+  const video = document.getElementById('video');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const dlBtn = document.getElementById('dl');
+  const speedSel = document.getElementById('speed');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const titleEl = document.getElementById('title');
+  const downloadsWrap = document.getElementById('downloadButtons');
+  const loader = document.getElementById('loader');
+  const fullNote = document.getElementById('full-note');
 
-const video = document.getElementById('video');
-const posterOverlay = document.getElementById('posterOverlay');
-const posterPlay = document.getElementById('posterPlay');
-const titleEl = document.getElementById('title');
-const subtitleEl = document.getElementById('subtitle');
-const playBtn = document.getElementById('play');
-const playIcon = document.getElementById('playIcon');
-const playText = document.getElementById('playText');
-const prevBtn = document.getElementById('prev');
-const nextBtn = document.getElementById('next');
-const dlBtn = document.getElementById('dl');
-const speedSel = document.getElementById('speed');
-const fsBtn = document.getElementById('fs');
-const seek = document.getElementById('seek');
-const cur = document.getElementById('cur');
-const dur = document.getElementById('dur');
-const muteBtn = document.getElementById('mute');
-const muteIcon = document.getElementById('muteIcon');
-const controlsOverlay = document.getElementById('controlsOverlay');
-const fullLinksEl = document.getElementById('fullLinks');
+  let idx = 0;
+  let isSeeking = false;
 
-let idx = 0;
-let seeking = false;
-let controlsVisible = true;
+  // metadata
+  titleEl.textContent = "RIYANI";
+  document.getElementById('date').textContent = "";
 
-// init
-titleEl.textContent = titleText;
-subtitleEl.textContent = subtitleText || "";
-if(poster) video.poster = poster;
-video.preload = "metadata";
-video.src = videos.length ? videos[0] : "";
-video.playbackRate = 1;
+  // init video (load first but DO NOT autoplay)
+  video.poster = ""; // add poster if available
+  video.preload = "metadata";
+  if (videos.length) video.src = videos[0];
+  video.playbackRate = 1;
+  speedSel.value = "1";
 
-function fmt(s){ if(!isFinite(s) || s === undefined) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
-
-function cdnToWatch(src){ try{ const name = new URL(src).pathname.split('/').pop(); const id = name.replace(/\.[^/.]+$/,''); return `https://videy.co/v/?id=${encodeURIComponent(id)}`; }catch(e){ return src; } }
-
-// full links
-function buildFullLinks(){ fullLinksEl.innerHTML = ''; if(!fullLinks || !fullLinks.length){ fullLinksEl.innerHTML = '<div style="color:var(--muted)">Tidak ada full konten</div>'; return; } fullLinks.forEach(link=>{ const a = document.createElement('a'); a.className='btn-download'; a.href = link.url; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow'; a.innerHTML = `<i class="bi bi-cloud-arrow-down-fill"></i><div style="font-weight:700">${link.label}</div>`; fullLinksEl.appendChild(a); }); }
-buildFullLinks();
-
-// events
-video.addEventListener('loadedmetadata', ()=> { dur.textContent = fmt(video.duration); seek.max = video.duration || 100; setLoading(false); });
-video.addEventListener('timeupdate', ()=> { if(!seeking){ seek.value = video.currentTime; cur.textContent = fmt(video.currentTime); } });
-video.addEventListener('waiting', ()=> setLoading(true));
-video.addEventListener('canplay', ()=> setLoading(false));
-video.addEventListener('stalled', ()=> setLoading(true));
-video.addEventListener('play', ()=> { playIcon.className='bi bi-pause-fill'; playText.textContent=' Pause'; posterOverlay.style.display='none'; });
-video.addEventListener('pause', ()=> { playIcon.className='bi bi-play-fill'; playText.textContent=' Play'; posterOverlay.style.display=''; });
-
-seek.addEventListener('input', ()=> { seeking = true; cur.textContent = fmt(seek.value); });
-seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); seeking = false; });
-
-function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
-playBtn.addEventListener('click', togglePlay);
-posterPlay.addEventListener('click', ()=> { togglePlay(); posterOverlay.style.display='none'; });
-video.addEventListener('click', ()=> {
-  // single tap toggles controls (mobile friendly)
-  if(isTouchDevice()){
-    controlsVisible = !controlsVisible;
-    controlsOverlay.style.display = controlsVisible ? 'flex' : 'none';
-    // hide poster when playing
-    if(!video.paused) posterOverlay.style.display='none';
-  } else togglePlay();
-});
-
-// prev/next (load only)
-prevBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = idx > 0 ? idx-1 : videos.length-1; loadIndex(idx, {autoPlay:false}); });
-nextBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = idx < videos.length-1 ? idx+1 : 0; loadIndex(idx, {autoPlay:false}); });
-
-function loadIndex(i, {autoPlay=false} = {}){ idx = i; setLoading(true); video.pause(); video.src = videos[i]; video.load(); posterOverlay.style.display = ''; if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; } }
-
-// speed
-speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.value));
-
-// mute
-muteBtn.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
-function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
-
-// fullscreen
-fsBtn.addEventListener('click', ()=> { const el = document.querySelector('.player-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
-
-// download
-dlBtn.addEventListener('click', ()=> { const src = video.currentSrc || video.src; if(!src){ alert('Tidak ada video aktif.'); return; } const watch = cdnToWatch(src); window.open(watch, '_blank', 'noopener'); });
-
-// auto-next on ended -> load next but don't autoplay
-video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadIndex(idx, {autoPlay:false}); } });
-
-// keyboard
-window.addEventListener('keydown', (e)=>{ if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 10); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); } if(e.key === 'm'){ video.muted = !video.muted; updateMute(); } });
-
-// double-tap left/right for mobile seek (10s)
-let lastTap = 0;
-video.addEventListener('touchend', function(e){ const current = Date.now(); const tapLength = current - lastTap; const touch = e.changedTouches[0]; const w = video.clientWidth; if(tapLength < 300 && tapLength > 0){ // double tap
-    const x = touch.clientX - video.getBoundingClientRect().left;
-    if(x < w/2){ video.currentTime = Math.max(0, video.currentTime - 10); flashSeek('-10'); }
-    else { video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); flashSeek('+10'); }
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = "";
+    // No full links for this entry => show nothing (or muted note)
+    fullNote.textContent = ""; // removed extra instruction text as requested
+    // show a small muted message instead of links
+    const msg = document.createElement('div');
+    msg.style.color = 'var(--muted)';
+    msg.style.fontSize = '13px';
+    msg.textContent = 'Full konten tidak tersedia.';
+    downloadsWrap.appendChild(msg);
   }
-  lastTap = current;
-});
 
-function flashSeek(text){ const t = document.createElement('div'); t.textContent = text; t.style.position='absolute'; t.style.left='50%'; t.style.top='50%'; t.style.transform='translate(-50%,-50%)'; t.style.background='rgba(0,0,0,0.6)'; t.style.padding='8px 12px'; t.style.borderRadius='8px'; t.style.fontWeight='800'; t.style.zIndex='9999'; document.querySelector('.player-area').appendChild(t); setTimeout(()=> t.remove(),400); }
+  function fmt(s){
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
+    return `${min}:${sec}`;
+  }
 
-// right-click block
-document.addEventListener('contextmenu', e => e.preventDefault());
+  function showLoader(){ loader.style.display = ''; }
+  function hideLoader(){ loader.style.display = 'none'; }
 
-function setLoading(state){ /* simple loading indicator via attribute */ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
+  video.addEventListener('loadstart', ()=> showLoader());
+  video.addEventListener('waiting', ()=> showLoader());
+  video.addEventListener('canplay', ()=> hideLoader());
+  video.addEventListener('canplaythrough', ()=> hideLoader());
 
-function isTouchDevice(){ return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
+  video.addEventListener('loadedmetadata', () => {
+    durationT.textContent = fmt(video.duration);
+    seek.max = video.duration || 100;
+    hideLoader();
+  });
 
-// initial
-setLoading(true);
-video.load();
-updateMute();
+  video.addEventListener('timeupdate', () => {
+    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  });
 
-</script></body>
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
+
+  function togglePlay(){
+    if(video.paused) {
+      video.play().catch(()=>{ alert('Gagal memainkan video.'); });
+    } else {
+      video.pause();
+    }
+  }
+  playBtn.addEventListener('click', togglePlay);
+  video.addEventListener('click', togglePlay);
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+
+  // Prev / Next: LOAD video but DO NOT autoplay (user must press Play)
+  prevBtn.addEventListener('click', ()=> {
+    if(videos.length === 0) return;
+    if(idx > 0) idx--; else idx = videos.length - 1;
+    loadVideo(idx, false);
+  });
+  nextBtn.addEventListener('click', ()=> {
+    if(videos.length === 0) return;
+    if(idx < videos.length - 1) idx++; else idx = 0;
+    loadVideo(idx, false);
+  });
+
+  function loadVideo(i, autoplay = false){
+    idx = i;
+    video.src = videos[i];
+    // reset UI
+    seek.value = 0;
+    currentT.textContent = '0:00';
+    durationT.textContent = '0:00';
+    showLoader();
+    // ensure paused so user clicks play manually (non-autoplay)
+    if(autoplay){ video.play().catch(()=>{}); } else { video.pause(); }
+  }
+
+  loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+  document.getElementById('fs')?.addEventListener('click', ()=> {
+    const el = document.querySelector('.video-area');
+    if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadVideo(idx, false); } });
+
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
+
+  // block right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Download current video (anchor -> fetch fallback)
+  async function downloadCurrentVideo(){
+    const src = video.currentSrc || video.src;
+    if(!src){ alert('Tidak ada video untuk diunduh.'); return; }
+    const safeTitle = titleEl.textContent.trim().replace(/\s+/g,'_').replace(/[^\w\-_.]/g,'');
+    const filename = `${safeTitle}_bagian${idx+1}.mp4`;
+    try {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    } catch(e){}
+    try {
+      const res = await fetch(src, { mode: 'cors' });
+      if(!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a2 = document.createElement('a');
+      a2.href = url;
+      a2.download = filename;
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      setTimeout(()=> URL.revokeObjectURL(url), 60000);
+      return;
+    } catch(err){
+      window.open(src, '_blank', 'noopener');
+    }
+  }
+  dlBtn.addEventListener('click', downloadCurrentVideo);
+
+  // initialize downloads area
+  buildDownloadButtons();
+  hideLoader();
+</script>
+
+<!-- tambahkan kode iklan sesuai permintaan (tepat sebelum </body>) -->
+<script>(function(s){s.dataset.zone='9964278',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
 </html>
