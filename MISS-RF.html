@@ -1,181 +1,145 @@
 <!doctype html>
+
 <html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Player — MISS RF</title>
+<title>Player — Responsive (Mobile + Desktop)</title>
 <link rel="icon" href="favicon.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-<style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"><style>
 :root{
   --bg:#060717; --panel:#071129; --muted:#9fb0c0; --accent:#4f8cff;
-  --glass: rgba(255,255,255,0.03);
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:linear-gradient(180deg,#020617 0,#071129 100%);color:#eaf4ff;font-family:Inter,system-ui,Arial;-webkit-font-smoothing:antialiased}
-.container-player{max-width:1200px;margin:28px auto;padding:18px}
+.container-player{max-width:1100px;margin:20px auto;padding:14px}
 .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(2,6,23,0.6)}
-.media-wrap{display:grid;grid-template-columns:1fr 360px;gap:18px;padding:18px}
-@media(max-width:1000px){ .media-wrap{grid-template-columns:1fr;padding:12px} .sidebar{display:none} }
 
-/* VIDEO AREA */
-.player-area{position:relative;border-radius:10px;overflow:hidden;background:#000}
+/* layout */
+.player-shell{display:flex;flex-direction:column;gap:12px;padding:12px}
+.player-area{position:relative;border-radius:10px;overflow:hidden;background:#000; touch-action:manipulation}
 video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;background:#000}
 
-/* Poster overlay (big play) */
+/* center poster play */
 .poster-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.poster-btn{pointer-events:auto;display:inline-flex;gap:12px;align-items:center;background:linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2));padding:16px 22px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:700;font-size:16px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
-.poster-btn .bi{font-size:22px}
+.poster-btn{pointer-events:auto;display:inline-flex;gap:12px;align-items:center;background:linear-gradient(90deg, rgba(0,0,0,0.65), rgba(0,0,0,0.25));padding:14px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:800;font-size:16px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
 
-/* Loading indicator */
-.loader-pill{position:absolute;right:18px;top:18px;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.45);color:var(--muted);visibility:hidden}
-.loader-dot{width:8px;height:8px;border-radius:999px;background:white;opacity:.85;animation:ld 1s infinite}
-.loader-dot:nth-child(2){animation-delay:.12s}
-.loader-dot:nth-child(3){animation-delay:.24s}
-@keyframes ld{0%{transform:scale(.8);opacity:.5}50%{transform:scale(1.25);opacity:1}100%{transform:scale(.8);opacity:.5}}
-
-/* META + CONTROLS */
-.meta{padding:14px 6px 0 6px}
-.title{font-size:22px;font-weight:800;margin:0}
-.sub{color:var(--muted);font-size:13px;margin-top:6px}
-.controls{padding:14px;border-top:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:12px}
-.control-row{display:flex;align-items:center;gap:10px}
-.center-controls{display:flex;align-items:center;gap:12px}
-.btn-lg-ghost{background:transparent;border:0;color:var(--muted);padding:12px;border-radius:12px;cursor:pointer}
-.btn-lg-primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0;color:white;padding:12px 18px;border-radius:12px;box-shadow:0 8px 20px rgba(79,140,255,.12);font-weight:700}
-.seek{display:flex;align-items:center;gap:12px}
+/* overlay controls (bottom) */
+.controls-overlay{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.55));display:flex;flex-direction:column;gap:8px}
+.control-row{display:flex;align-items:center;gap:8px}
+.control-left{display:flex;align-items:center;gap:8px}
+.control-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn-ghost{background:transparent;border:0;color:var(--muted);padding:8px;border-radius:10px;cursor:pointer}
+.btn-primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0;color:white;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px rgba(79,140,255,.12);font-weight:700}
 .range{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:999px;appearance:none;outline:none}
-.range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
-.time{min-width:60px;text-align:center;color:var(--muted);font-size:14px}
+.range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
+.time{min-width:48px;text-align:center;color:var(--muted);font-size:13px}
 
-/* SIDEBAR (playlist / full links) */
-.sidebar{padding:18px;border-left:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:12px}
-.thumb{width:100%;height:120px;background:#0b1420;border-radius:8px;object-fit:cover}
-.playlist-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
-.playlist-item:hover{background:rgba(255,255,255,0.02)}
-.playlist-item img{width:96px;height:64px;border-radius:8px;object-fit:cover}
-.playlist-item .txt{flex:1}
-.playlist-item .title-small{font-weight:700}
-.btn-download{display:flex;gap:8px;align-items:center;border-radius:10px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
+/* meta below */
+.meta{padding:6px 6px 12px}
+.title{font-size:20px;font-weight:800;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
 
-/* small responsive */
+/* full links area */
+.full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
+.btn-download{display:inline-flex;gap:8px;align-items:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
+
+/* small responsive tweaks */
+@media(min-width:900px){
+  .player-shell{padding:16px}
+  .poster-btn{padding:16px 22px;font-size:16px}
+}
 @media(max-width:520px){
   .poster-btn{padding:12px 14px;font-size:14px}
   .title{font-size:18px}
 }
-</style>
-</head>
+
+/* hidden (used when controls shown by tap) */
+.hide-on-touch{display:none}
+</style></head>
 <body>
   <div class="container-player">
     <div class="card-player">
-      <div class="media-wrap">
-        <!-- LEFT: Video -->
-        <div>
-          <div class="player-area" id="playerArea">
-            <video id="video" preload="metadata" playsinline webkit-playsinline></video>
+      <div class="player-shell"><div class="player-area" id="playerArea">
+      <video id="video" preload="metadata" playsinline webkit-playsinline></video>
 
-            <div class="poster-overlay" id="posterOverlay">
-              <button id="posterPlay" class="poster-btn" aria-label="Play">
-                <i class="bi bi-play-fill"></i> PLAY
-              </button>
-            </div>
+      <div class="poster-overlay" id="posterOverlay">
+        <button id="posterPlay" class="poster-btn" aria-label="Play">
+          <i class="bi bi-play-fill"></i> PLAY
+        </button>
+      </div>
 
-            <div class="loader-pill" id="loader">
-              <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
-              <div style="font-size:13px;color:var(--muted)">Memuat</div>
-            </div>
+      <div class="controls-overlay" id="controlsOverlay" aria-hidden="false">
+        <div class="control-row">
+          <div class="control-left">
+            <button id="play" class="btn-primary" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i><span id="playText" style="margin-left:8px">Play</span></button>
+            <button id="prev" class="btn-ghost" title="Prev"><i class="bi bi-skip-start-fill"></i></button>
+            <button id="next" class="btn-ghost" title="Next"><i class="bi bi-skip-end-fill"></i></button>
+            <button id="dl" class="btn-ghost" title="Download"><i class="bi bi-download"></i></button>
           </div>
 
-          <div class="meta">
-            <div class="title" id="title">--</div>
-            <div class="sub" id="subtitle">--</div>
-          </div>
-
-          <div class="controls">
-            <div class="control-row center-controls">
-              <button id="prev" class="btn-lg-ghost" title="Prev"><i class="bi bi-skip-start-fill" style="font-size:20px"></i></button>
-
-              <button id="play" class="btn-lg-primary" title="Play/Pause">
-                <i id="playIcon" class="bi bi-play-fill"></i><span id="playText" style="margin-left:8px"> Play</span>
-              </button>
-
-              <button id="next" class="btn-lg-ghost" title="Next"><i class="bi bi-skip-end-fill" style="font-size:20px"></i></button>
-
-              <button id="dl" class="btn-lg-ghost" title="Download">
-                <i class="bi bi-download" style="font-size:18px"></i>
-              </button>
-
-              <div class="ms-auto d-flex align-items-center gap-2">
-                <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
-                <select id="speed" class="form-select form-select-sm" style="width:90px">
-                  <option value="0.5">0.5x</option>
-                  <option value="0.75">0.75x</option>
-                  <option value="1" selected>1x</option>
-                  <option value="1.25">1.25x</option>
-                  <option value="1.5">1.5x</option>
-                  <option value="2">2x</option>
-                </select>
-
-                <button id="fs" class="btn-lg-ghost" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
-              </div>
+          <div class="control-right">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="color:var(--muted);font-size:13px">Speed</span>
+              <select id="speed" class="form-select form-select-sm" style="width:84px">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
             </div>
 
-            <div class="seek">
-              <div class="time" id="cur">0:00</div>
-              <input id="seek" type="range" min="0" max="100" value="0" class="range" />
-              <div class="time" id="dur">0:00</div>
-            </div>
+            <button id="mute" class="btn-ghost" title="Mute"><i id="muteIcon" class="bi bi-volume-up-fill"></i></button>
+            <button id="fs" class="btn-ghost" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
           </div>
         </div>
 
-        <!-- RIGHT: Sidebar -->
-        <aside class="sidebar">
-          <div>
-            <div style="font-weight:800;font-size:15px">Full konten</div>
-            <div style="color:var(--muted);font-size:13px;margin-top:6px" id="fullnote">Klik tombol untuk membuka</div>
-          </div>
+        <div class="control-row" style="align-items:center">
+          <div class="time" id="cur">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" class="range" />
+          <div class="time" id="dur">0:00</div>
+        </div>
+      </div>
 
-          <div id="fullLinks" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-            <!-- full content buttons inserted here -->
-          </div>
+    </div> <!-- player-area -->
 
-          <hr style="border-color:rgba(255,255,255,0.03)">
+    <div class="meta">
+      <div class="title" id="title">--</div>
+      <div class="sub" id="subtitle">--</div>
+    </div>
 
-          <div style="font-weight:800;font-size:15px">Playlist</div>
-          <div id="playlist" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;padding-right:6px"></div>
-        </aside>
+    <div>
+      <div style="font-weight:800;font-size:15px">Full konten</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:6px" id="fullnote">Klik tombol untuk membuka</div>
+      <div id="fullLinks" class="full-links" style="margin-top:8px"></div>
+    </div>
 
-      </div><!-- media-wrap -->
-    </div><!-- card -->
-  </div><!-- container -->
+  </div><!-- player-shell -->
+</div><!-- card -->
 
-<script>
-/* ===== DATA - replace values below with your item ===== */
+  </div><!-- container --><script>
+/* ===== DATA - ganti sesuai kebutuhan ===== */
 const titleText = "MISS RF";
-const subtitleText = ""; // e.g. date or tag
-const poster = ""; // e.g. "foto/xxx.jpg" or leave empty
+const subtitleText = "";
+const poster = ""; // poster URL (opsional)
 const videos = [
   "https://cdn.videy.co/Rx8bQeSX1.mp4",
   "https://cdn.videy.co/RIFfYjU71.mp4",
-  "https://cdn.videy.co/VpPqisZI1.mp4",
-  "https://cdn.videy.co/iSvy2IEj1.mp4"
+  "https://cdn.videy.co/VpPqisZI1.mp4"
 ];
-// fullLinks: only show real "full content" links (Terabox / UC / Mediafire...). Leave empty array if none.
 const fullLinks = [
-  // example: { label: "Terabox — Full konten", url: "https://1024terabox.com/..." }
+  // contoh: { label: "Terabox — Full konten", url: "https://1024terabox.com/..." }
 ];
-/* ================================================== */
+/* ======================================== */
 
 const video = document.getElementById('video');
 const posterOverlay = document.getElementById('posterOverlay');
 const posterPlay = document.getElementById('posterPlay');
-const loader = document.getElementById('loader');
-
 const titleEl = document.getElementById('title');
 const subtitleEl = document.getElementById('subtitle');
-
 const playBtn = document.getElementById('play');
 const playIcon = document.getElementById('playIcon');
 const playText = document.getElementById('playText');
@@ -187,73 +151,32 @@ const fsBtn = document.getElementById('fs');
 const seek = document.getElementById('seek');
 const cur = document.getElementById('cur');
 const dur = document.getElementById('dur');
-
-const playlistEl = document.getElementById('playlist');
+const muteBtn = document.getElementById('mute');
+const muteIcon = document.getElementById('muteIcon');
+const controlsOverlay = document.getElementById('controlsOverlay');
 const fullLinksEl = document.getElementById('fullLinks');
 
 let idx = 0;
 let seeking = false;
+let controlsVisible = true;
 
-// init meta
+// init
 titleEl.textContent = titleText;
-subtitleEl.textContent = subtitleText || "" ;
+subtitleEl.textContent = subtitleText || "";
 if(poster) video.poster = poster;
 video.preload = "metadata";
 video.src = videos.length ? videos[0] : "";
-speedSel.value = "1";
 video.playbackRate = 1;
 
-// helper: format seconds
-function fmt(s){ if(!isFinite(s)) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,"0"); return `${m}:${sec}`; }
+function fmt(s){ if(!isFinite(s) || s === undefined) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
 
-// helper: cdn -> watch URL
-function cdnToWatch(src){
-  try{
-    const name = new URL(src).pathname.split('/').pop();
-    const id = name.replace(/\.[^/.]+$/,'');
-    return `https://videy.co/v/?id=${encodeURIComponent(id)}`;
-  }catch(e){ return src; }
-}
+function cdnToWatch(src){ try{ const name = new URL(src).pathname.split('/').pop(); const id = name.replace(/\.[^/.]+$/,''); return `https://videy.co/v/?id=${encodeURIComponent(id)}`; }catch(e){ return src; } }
 
-// build playlist UI (thumbnails optional)
-function buildPlaylist(){
-  playlistEl.innerHTML = "";
-  videos.forEach((s,i)=>{
-    const div = document.createElement('div');
-    div.className = 'playlist-item';
-    div.innerHTML = `
-      <img src="${poster || ''}" alt="thumb-${i}" onerror="this.style.opacity=.2" />
-      <div class="txt">
-        <div class="title-small">Part ${i+1}</div>
-        <div style="font-size:13px;color:var(--muted)">${(new URL(s).hostname)} • ${s.split('/').pop()}</div>
-      </div>
-    `;
-    div.addEventListener('click', ()=> { loadIndex(i, {autoPlay:false}); });
-    playlistEl.appendChild(div);
-  });
-}
-buildPlaylist();
-
-// build fullLinks UI (only full content links)
-function buildFullLinks(){
-  fullLinksEl.innerHTML = "";
-  if(!fullLinks || !fullLinks.length){
-    fullLinksEl.innerHTML = '<div style="color:var(--muted)">Tidak ada full konten</div>';
-    return;
-  }
-  fullLinks.forEach(link=>{
-    const a = document.createElement('a');
-    a.className='btn-download';
-    a.href = link.url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = `<i class="bi bi-cloud-arrow-down-fill"></i><div style="font-weight:700">${link.label}</div>`;
-    fullLinksEl.appendChild(a);
-  });
-}
+// full links
+function buildFullLinks(){ fullLinksEl.innerHTML = ''; if(!fullLinks || !fullLinks.length){ fullLinksEl.innerHTML = '<div style="color:var(--muted)">Tidak ada full konten</div>'; return; } fullLinks.forEach(link=>{ const a = document.createElement('a'); a.className='btn-download'; a.href = link.url; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow'; a.innerHTML = `<i class="bi bi-cloud-arrow-down-fill"></i><div style="font-weight:700">${link.label}</div>`; fullLinksEl.appendChild(a); }); }
 buildFullLinks();
 
-// video event wiring
+// events
 video.addEventListener('loadedmetadata', ()=> { dur.textContent = fmt(video.duration); seek.max = video.duration || 100; setLoading(false); });
 video.addEventListener('timeupdate', ()=> { if(!seeking){ seek.value = video.currentTime; cur.textContent = fmt(video.currentTime); } });
 video.addEventListener('waiting', ()=> setLoading(true));
@@ -262,93 +185,70 @@ video.addEventListener('stalled', ()=> setLoading(true));
 video.addEventListener('play', ()=> { playIcon.className='bi bi-pause-fill'; playText.textContent=' Pause'; posterOverlay.style.display='none'; });
 video.addEventListener('pause', ()=> { playIcon.className='bi bi-play-fill'; playText.textContent=' Play'; posterOverlay.style.display=''; });
 
-// seek handling
 seek.addEventListener('input', ()=> { seeking = true; cur.textContent = fmt(seek.value); });
 seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); seeking = false; });
 
-// play toggle
 function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
 playBtn.addEventListener('click', togglePlay);
 posterPlay.addEventListener('click', ()=> { togglePlay(); posterOverlay.style.display='none'; });
-video.addEventListener('click', togglePlay);
-
-// prev/next: load only (no autoplay)
-prevBtn.addEventListener('click', ()=> {
-  if(!videos.length) return;
-  idx = idx > 0 ? idx-1 : videos.length-1;
-  loadIndex(idx, {autoPlay:false});
-});
-nextBtn.addEventListener('click', ()=> {
-  if(!videos.length) return;
-  idx = idx < videos.length-1 ? idx+1 : 0;
-  loadIndex(idx, {autoPlay:false});
+video.addEventListener('click', ()=> {
+  // single tap toggles controls (mobile friendly)
+  if(isTouchDevice()){
+    controlsVisible = !controlsVisible;
+    controlsOverlay.style.display = controlsVisible ? 'flex' : 'none';
+    // hide poster when playing
+    if(!video.paused) posterOverlay.style.display='none';
+  } else togglePlay();
 });
 
-function loadIndex(i, {autoPlay=false} = {}){
-  idx = i;
-  setLoading(true);
-  video.pause();
-  video.src = videos[i];
-  video.load();
-  posterOverlay.style.display = '';
-  // optionally keep user to click play -> only autoplay if requested
-  if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; }
-}
+// prev/next (load only)
+prevBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = idx > 0 ? idx-1 : videos.length-1; loadIndex(idx, {autoPlay:false}); });
+nextBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = idx < videos.length-1 ? idx+1 : 0; loadIndex(idx, {autoPlay:false}); });
 
-// loop toggle
-document.getElementById('loop').addEventListener('click', function(){
-  video.loop = !video.loop;
-  this.classList.toggle('btn-lg-primary', video.loop);
-});
+function loadIndex(i, {autoPlay=false} = {}){ idx = i; setLoading(true); video.pause(); video.src = videos[i]; video.load(); posterOverlay.style.display = ''; if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; } }
 
 // speed
 speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.value));
 
-// fullscreen
-fsBtn.addEventListener('click', ()=> {
-  const el = document.querySelector('.player-area');
-  if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
-  else document.exitFullscreen();
-});
+// mute
+muteBtn.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
+function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
 
-// download button -> open watch URL (no cdn)
-dlBtn.addEventListener('click', ()=> {
-  const src = video.currentSrc || video.src;
-  if(!src){ alert('Tidak ada video aktif.'); return; }
-  const watch = cdnToWatch(src);
-  window.open(watch, '_blank', 'noopener');
-});
+// fullscreen
+fsBtn.addEventListener('click', ()=> { const el = document.querySelector('.player-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
+
+// download
+dlBtn.addEventListener('click', ()=> { const src = video.currentSrc || video.src; if(!src){ alert('Tidak ada video aktif.'); return; } const watch = cdnToWatch(src); window.open(watch, '_blank', 'noopener'); });
 
 // auto-next on ended -> load next but don't autoplay
-video.addEventListener('ended', ()=> {
-  if(idx < videos.length - 1){
-    idx++;
-    loadIndex(idx, {autoPlay:false});
-  }
-});
+video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadIndex(idx, {autoPlay:false}); } });
 
 // keyboard
-window.addEventListener('keydown', (e)=>{
-  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-  if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
-  if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
-  if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
-  if(e.key === 'm'){ video.muted = !video.muted; }
+window.addEventListener('keydown', (e)=>{ if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 10); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); } if(e.key === 'm'){ video.muted = !video.muted; updateMute(); } });
+
+// double-tap left/right for mobile seek (10s)
+let lastTap = 0;
+video.addEventListener('touchend', function(e){ const current = Date.now(); const tapLength = current - lastTap; const touch = e.changedTouches[0]; const w = video.clientWidth; if(tapLength < 300 && tapLength > 0){ // double tap
+    const x = touch.clientX - video.getBoundingClientRect().left;
+    if(x < w/2){ video.currentTime = Math.max(0, video.currentTime - 10); flashSeek('-10'); }
+    else { video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); flashSeek('+10'); }
+  }
+  lastTap = current;
 });
+
+function flashSeek(text){ const t = document.createElement('div'); t.textContent = text; t.style.position='absolute'; t.style.left='50%'; t.style.top='50%'; t.style.transform='translate(-50%,-50%)'; t.style.background='rgba(0,0,0,0.6)'; t.style.padding='8px 12px'; t.style.borderRadius='8px'; t.style.fontWeight='800'; t.style.zIndex='9999'; document.querySelector('.player-area').appendChild(t); setTimeout(()=> t.remove(),400); }
 
 // right-click block
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-// loading UI
-function setLoading(state){ loader.style.visibility = state ? 'visible' : 'hidden'; }
+function setLoading(state){ /* simple loading indicator via attribute */ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
+
+function isTouchDevice(){ return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
 
 // initial
 setLoading(true);
 video.load();
-</script>
+updateMute();
 
-<!-- ad script if you want it (change zone) -->
-<script>(function(s){s.dataset.zone='9964278',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-
-</body>
+</script></body>
 </html>
