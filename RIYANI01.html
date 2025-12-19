@@ -76,7 +76,7 @@
 
           <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
 
-          <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Buka link tonton/download (videy)">
+          <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Buka link tonton (videy)">
             <i class="bi bi-download"></i> Download
           </button>
 
@@ -124,8 +124,8 @@
     "https://cdn.videy.co/MfHPvn421.mp4"
   ];
 
-  // Full konten: none
-  const downloads = { };
+  // no full konten links provided
+  const downloads = {};
 
   // ===== DOM refs =====
   const video = document.getElementById('video');
@@ -148,7 +148,7 @@
   let isSeeking = false;
 
   titleEl.textContent = "RIYANI";
-  video.poster = ""; // none provided
+  video.poster = "";
   video.preload = "metadata";
   video.src = videos.length ? videos[0] : "";
   video.playbackRate = 1;
@@ -167,12 +167,12 @@
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = "";
 
-    // per-part "Videy — Bagian X" buttons link to videy.co watch URL
-    if(videos && videos.length){
+    // per-part buttons -> open videy.co watch URL (NOT CDN)
+    if(Array.isArray(videos) && videos.length){
       videos.forEach((src,i) => {
         const a = document.createElement('a');
         a.className = "download-btn";
-        a.href = cdnToWatch(src);
+        a.href = cdnToWatch(src);          // <-- watch URL (no CDN)
         a.target = "_blank";
         a.rel = "noopener noreferrer nofollow";
         a.innerHTML = `<i class="bi bi-chevron-bar-down"></i><span>Videy — Bagian ${i+1}</span>`;
@@ -180,31 +180,12 @@
       });
     }
 
-    // full konten links (none for RIYANI)
+    // full konten only if provided (none here)
     if(Object.keys(downloads).length === 0){
       const ph = document.createElement('div');
       ph.className = 'placeholder-none';
       ph.textContent = 'Tidak ada link full konten.';
       downloadsWrap.appendChild(ph);
-    }else{
-      if(downloads.ucdrive){
-        const b = document.createElement('a');
-        b.className = "download-btn";
-        b.href = downloads.ucdrive;
-        b.target = "_blank";
-        b.rel = "noopener noreferrer nofollow";
-        b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>UCdrive — Full konten</span>';
-        downloadsWrap.appendChild(b);
-      }
-      if(downloads.terabox){
-        const c = document.createElement('a');
-        c.className = "download-btn";
-        c.href = downloads.terabox;
-        c.target = "_blank";
-        c.rel = "noopener noreferrer nofollow";
-        c.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
-        downloadsWrap.appendChild(c);
-      }
     }
   }
 
@@ -217,7 +198,6 @@
 
   function setLoading(v){ loadingEl.style.visibility = v ? 'visible' : 'hidden'; }
 
-  // events for loading state & metadata
   video.addEventListener('loadedmetadata', () => {
     durationT.textContent = fmt(video.duration);
     seek.max = video.duration || 100;
@@ -228,14 +208,12 @@
   video.addEventListener('canplay', ()=> setLoading(false));
   video.addEventListener('canplaythrough', ()=> setLoading(false));
 
-  // time updates
   video.addEventListener('timeupdate', () => {
     if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
   });
   seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
   seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
-  // play/pause
   function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
   playBtn.addEventListener('click', togglePlay);
   thumbBtn.addEventListener('click', ()=> { togglePlay(); thumbPlay.style.display = 'none'; });
@@ -244,7 +222,6 @@
   video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; thumbPlay.style.display = 'none'; });
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; thumbPlay.style.display = ''; });
 
-  // prev/next: load new video but DO NOT autoplay
   prevBtn.addEventListener('click', ()=> {
     if(videos.length === 0) return;
     idx = idx > 0 ? idx - 1 : videos.length - 1;
@@ -266,32 +243,26 @@
     if(autoPlay){ video.play().catch(()=>{}); thumbPlay.style.display = 'none'; }
   }
 
-  // loop
   loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
-
-  // speed
   speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
-  // fullscreen (player area)
   document.getElementById('fs')?.addEventListener('click', ()=> {
     const el = document.querySelector('.video-area');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
-  // ended: leave paused
   video.addEventListener('ended', ()=> { /* leave paused */ });
 
-  // DOWNLOAD (open videy watch url for current part)
+  // Download button opens videy watch (no CDN)
   function openWatchForCurrent(){
     const src = video.currentSrc || video.src;
     if(!src){ alert('Tidak ada video aktif.'); return; }
-    const watch = cdnToWatch(src);
+    const watch = cdnToWatch(src); // <-- returns https://videy.co/v/?id=ID
     window.open(watch, '_blank', 'noopener');
   }
   dlBtn.addEventListener('click', openWatchForCurrent);
 
-  // keyboard shortcuts
   window.addEventListener('keydown', (e)=> {
     if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
@@ -300,7 +271,6 @@
     if(e.key === 'm'){ video.muted = !video.muted; }
   });
 
-  // block right-click
   document.addEventListener('contextmenu', e => e.preventDefault());
 
   // init
