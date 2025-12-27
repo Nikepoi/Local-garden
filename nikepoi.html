@@ -3,31 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Generator — Video Player HTML (Single-file)</title>
+  <title>Generator — Video Player HTML (Safe)</title>
   <style>
     :root{--bg:#0b1220;--muted:#98a8b3;--accent:#3b82f6}
     body{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb;margin:0;padding:24px}
     .card{max-width:980px;margin:0 auto;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.04));padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
     label{display:block;margin-bottom:6px;font-weight:600}
-    input[type=text], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    input[type=text], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
     textarea{min-height:120px;font-family:monospace}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
     .actions{display:flex;gap:8px;align-items:center;margin-top:10px}
     button{background:var(--accent);color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
     button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
     .muted{color:var(--muted);font-size:13px}
     .preview{margin-top:16px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
     iframe{width:100%;height:420px;border:0;display:block}
-    .small{font-size:13px}
     .split{display:grid;grid-template-columns:1fr 380px;gap:12px}
     @media(max-width:980px){.split{grid-template-columns:1fr} iframe{height:260px}}
   </style>
 </head>
 <body>
   <div class="card">
-    <h2 style="margin:0 0 10px">HTML Video Player — Generator</h2>
-    <p class="muted">Isi kolom-kolom di bawah lalu tekan <strong>Generate</strong>. Hasilnya muncul di kotak kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p>
+    <h2 style="margin:0 0 10px">HTML Video Player — Generator (Safe)</h2>
+    <p class="muted">Isi lalu tekan <strong>Generate</strong>. Hasil muncul di kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p>
 
     <div class="split">
       <div>
@@ -49,7 +46,7 @@
           <button id="generate">Generate</button>
           <button id="previewBtn" class="ghost">Update Preview</button>
           <button id="download" class="ghost">Download .html</button>
-          <div style="margin-left:auto" class="small muted">Preview berjalan di iframe — script eksternal akan dimuat</div>
+          <div style="margin-left:auto" class="muted">Preview di iframe — script eksternal akan dimuat</div>
         </div>
       </div>
 
@@ -70,256 +67,251 @@
   </div>
 
 <script>
-/* -------------------------
-   Generator script (safe)
-   - buildPlayerHtml uses array.join (no template literal leaks)
-   - closes any literal </script> sequences safely when needed
-   ------------------------- */
+/*
+  Safe generator:
+  - buildPlayerHtml builds HTML using array.join (no template literals)
+  - any closing script tags inside generated data are escaped
+  - permanent ad script inserted via concatenation
+*/
 
-const el = id => document.getElementById(id);
+(function(){
+  const el = id => document.getElementById(id);
 
-// escape value for attribute / text
-function escapeHtmlAttr(s){
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+  function escapeHtmlAttr(s){
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
 
-// prevent literal "</script>" sequence inside generated strings (we'll ensure closure safely)
-function escapeCloseScript(s){
-  return String(s || '').replace(/<\/script>/gi, '<\\/script>');
-}
+  // replace literal </script> inside JSON/text so generated file won't accidentally close scripts
+  function escapeCloseScript(s){
+    return String(s || '').replace(/<\/script>/gi, '<\\/script>');
+  }
 
-// permanent ad script content (we build closing tag with concatenation to avoid ending this outer script)
-const adScriptInner = "(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))";
-const permanentAdForOutput = '<script>' + adScriptInner + '<' + '/script>'; // this will be included in generated HTML
+  // permanent ad script inner code (no closing tag here)
+  var adScriptInner = "(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))";
+  var permanentAdForOutput = '<script>' + adScriptInner + '<' + '/script>'; // constructed to avoid literal </script> in this outer script
 
-function buildPlayerHtml({ title, thumbnail, videos, downloads }){
-  // sanitize JSON content to avoid accidental </script>
-  const videosJsonSafe = escapeCloseScript(JSON.stringify(videos || [], null, 2));
-  const downloadsJsonSafe = escapeCloseScript(JSON.stringify(downloads || {}, null, 2));
+  function buildPlayerHtml(opts){
+    opts = opts || {};
+    var title = opts.title || '';
+    var thumbnail = opts.thumbnail || '';
+    var videos = Array.isArray(opts.videos) ? opts.videos : [];
+    var downloads = opts.downloads || {};
 
-  const lines = [];
+    // safe JSON to embed in generated page
+    var videosJsonSafe = escapeCloseScript(JSON.stringify(videos, null, 2));
+    var downloadsJsonSafe = escapeCloseScript(JSON.stringify(downloads, null, 2));
 
-  lines.push('<!doctype html>');
-  lines.push('<html lang="id">');
-  lines.push('<head>');
-  lines.push('<meta charset="utf-8" />');
-  lines.push('<meta name="viewport" content="width=device-width,initial-scale=1" />');
-  lines.push('<title>' + escapeHtmlAttr(title) + '</title>');
-  lines.push('<link rel="icon" href="favicon.ico">');
-  // include css libs (close script tags with concatenation where necessary)
-  lines.push('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">');
-  lines.push('<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">');
+    var lines = [];
 
-  // inline styles (kept short)
-  lines.push('<style>');
-  lines.push(':root{--bg:#071022;--muted:#98a8b3;--accent:#3b82f6}');
-  lines.push('html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}');
-  lines.push('.wrap{max-width:980px;margin:18px auto;padding:16px}');
-  lines.push('.card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}');
-  lines.push('.video-area{background:#000}');
-  lines.push('video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}');
-  lines.push('.top-meta{padding:12px 16px 0 16px}.title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}.date{color:var(--muted);font-size:13px}');
-  lines.push('.controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }');
-  lines.push('.btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }');
-  lines.push('.btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }');
-  lines.push('.seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }');
-  lines.push('.time { width:50px; text-align:center; color:var(--muted); font-size:14px; }');
-  lines.push('.downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }');
-  lines.push('.download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }');
-  lines.push('.download-btn .bi { font-size:1.05rem; }');
-  lines.push('@media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }');
-  lines.push('</style>');
+    lines.push('<!doctype html>');
+    lines.push('<html lang="id">');
+    lines.push('<head>');
+    lines.push('<meta charset="utf-8" />');
+    lines.push('<meta name="viewport" content="width=device-width,initial-scale=1" />');
+    lines.push('<title>' + escapeHtmlAttr(title) + '</title>');
+    lines.push('<link rel="icon" href="favicon.ico">');
+    lines.push('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">');
+    lines.push('<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">');
 
-  lines.push('</head>');
-  lines.push('<body>');
-  lines.push('  <div class="wrap">');
-  lines.push('    <div class="card card-player">');
-  lines.push('      <div class="video-area">');
-  lines.push('        <video id="video" playsinline webkit-playsinline preload="metadata" poster="' + escapeHtmlAttr(thumbnail) + '"></video>');
-  lines.push('      </div>');
-  lines.push('');
-  lines.push('      <div class="top-meta">');
-  lines.push('        <div class="title" id="title">' + escapeHtmlAttr(title) + '</div>');
-  lines.push('        <div class="date" id="date"></div>');
-  lines.push('      </div>');
-  lines.push('');
-  lines.push('      <div class="controls">');
-  lines.push('        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">');
-  lines.push('          <button id="prev" class="btn btn-outline-light btn-small"><i class="bi bi-skip-start-fill"></i> Prev</button>');
-  lines.push('          <button id="play" class="btn btn-primary btn-play"><i class="bi bi-play-fill"></i> Play</button>');
-  lines.push('          <button id="next" class="btn btn-outline-light btn-small"><i class="bi bi-skip-end-fill"></i> Next</button>');
-  lines.push('          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>');
-  lines.push('          <div class="ms-auto d-flex align-items-center gap-2">');
-  lines.push('            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>');
-  lines.push('            <select id="speed" class="form-select form-select-sm" style="width:90px">');
-  lines.push('              <option value="0.5">0.5x</option>');
-  lines.push('              <option value="0.75">0.75x</option>');
-  lines.push('              <option value="1" selected>1x</option>');
-  lines.push('              <option value="1.25">1.25x</option>');
-  lines.push('              <option value="1.5">1.5x</option>');
-  lines.push('              <option value="2">2x</option>');
-  lines.push('            </select>');
-  lines.push('            <button id="fs" class="btn btn-outline-light">Fullscreen</button>');
-  lines.push('          </div>');
-  lines.push('        </div>');
-  lines.push('');
-  lines.push('        <div class="seek-row">');
-  lines.push('          <div class="time" id="current">0:00</div>');
-  lines.push('          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">');
-  lines.push('          <div class="time" id="duration">0:00</div>');
-  lines.push('        </div>');
-  lines.push('      </div>');
+    lines.push('<style>');
+    lines.push(':root{--bg:#071022;--muted:#98a8b3;--accent:#3b82f6}');
+    lines.push('html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}');
+    lines.push('.wrap{max-width:980px;margin:18px auto;padding:16px}');
+    lines.push('.card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}');
+    lines.push('.video-area{background:#000}');
+    lines.push('video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}');
+    lines.push('.top-meta{padding:12px 16px 0 16px}.title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}.date{color:var(--muted);font-size:13px}');
+    lines.push('.controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }');
+    lines.push('.btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }');
+    lines.push('.btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }');
+    lines.push('.seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }');
+    lines.push('.time { width:50px; text-align:center; color:var(--muted); font-size:14px; }');
+    lines.push('.downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }');
+    lines.push('.download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }');
+    lines.push('.download-btn .bi { font-size:1.05rem; }');
+    lines.push('@media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }');
+    lines.push('</style>');
 
-  // conditional downloads section
-  if (Object.keys(downloads || {}).length) {
-    lines.push('      <div class="downloads">');
-    lines.push('        <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>');
-    lines.push('        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>');
+    lines.push('</head>');
+    lines.push('<body>');
+    lines.push('  <div class="wrap">');
+    lines.push('    <div class="card card-player">');
+    lines.push('      <div class="video-area">');
+    lines.push('        <video id="video" playsinline webkit-playsinline preload="metadata" poster="' + escapeHtmlAttr(thumbnail) + '"></video>');
     lines.push('      </div>');
-  }
+    lines.push('      <div class="top-meta">');
+    lines.push('        <div class="title" id="title">' + escapeHtmlAttr(title) + '</div>');
+    lines.push('        <div class="date" id="date"></div>');
+    lines.push('      </div>');
+    lines.push('      <div class="controls">');
+    lines.push('        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">');
+    lines.push('          <button id="prev" class="btn btn-outline-light btn-small"><i class="bi bi-skip-start-fill"></i> Prev</button>');
+    lines.push('          <button id="play" class="btn btn-primary btn-play"><i class="bi bi-play-fill"></i> Play</button>');
+    lines.push('          <button id="next" class="btn btn-outline-light btn-small"><i class="bi bi-skip-end-fill"></i> Next</button>');
+    lines.push('          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>');
+    lines.push('          <div class="ms-auto d-flex align-items-center gap-2">');
+    lines.push('            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>');
+    lines.push('            <select id="speed" class="form-select form-select-sm" style="width:90px">');
+    lines.push('              <option value="0.5">0.5x</option>');
+    lines.push('              <option value="0.75">0.75x</option>');
+    lines.push('              <option value="1" selected>1x</option>');
+    lines.push('              <option value="1.25">1.25x</option>');
+    lines.push('              <option value="1.5">1.5x</option>');
+    lines.push('              <option value="2">2x</option>');
+    lines.push('            </select>');
+    lines.push('            <button id="fs" class="btn btn-outline-light">Fullscreen</button>');
+    lines.push('          </div>');
+    lines.push('        </div>');
+    lines.push('        <div class="seek-row">');
+    lines.push('          <div class="time" id="current">0:00</div>');
+    lines.push('          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">');
+    lines.push('          <div class="time" id="duration">0:00</div>');
+    lines.push('        </div>');
+    lines.push('      </div>');
 
-  lines.push('    </div>');
-  lines.push('  </div>');
+    if (Object.keys(downloads).length) {
+      lines.push('      <div class="downloads">');
+      lines.push('        <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>');
+      lines.push('        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>');
+      lines.push('      </div>');
+    }
 
-  // include bootstrap JS (close using concatenation so this script block (generator) is safe)
-  lines.push('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">' + '<' + '/script>');
-  lines.push('<script>');
+    lines.push('    </div>');
+    lines.push('  </div>');
 
-  // player JS: we insert videosJsonSafe & downloadsJsonSafe as JS literals inside the generated file
-  lines.push('  const videos = ' + videosJsonSafe + ';');
-  lines.push('  const thumbnail = ' + JSON.stringify(thumbnail || '') + ';');
-  lines.push('  const downloads = ' + downloadsJsonSafe + ';');
+    // include bootstrap js using concatenation to avoid closing current <script>
+    lines.push('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">' + '<' + '/script>');
 
-  lines.push('  const video = document.getElementById("video");');
-  lines.push('  const playBtn = document.getElementById("play");');
-  lines.push('  const prevBtn = document.getElementById("prev");');
-  lines.push('  const nextBtn = document.getElementById("next");');
-  lines.push('  const loopBtn = document.getElementById("loop");');
-  lines.push('  const speedSel = document.getElementById("speed");');
-  lines.push('  const seek = document.getElementById("seek");');
-  lines.push('  const currentT = document.getElementById("current");');
-  lines.push('  const durationT = document.getElementById("duration");');
-  lines.push('  const titleEl = document.getElementById("title");');
-  lines.push('  const dateEl = document.getElementById("date");');
-  lines.push('  const downloadsWrap = document.getElementById("downloadButtons");');
+    // begin player script
+    lines.push('<script>');
+    lines.push('  const videos = ' + videosJsonSafe + ';');
+    lines.push('  const thumbnail = ' + JSON.stringify(thumbnail || '') + ';');
+    lines.push('  const downloads = ' + downloadsJsonSafe + ';');
 
-  lines.push('  let idx = 0; let isSeeking = false;');
-  lines.push('  titleEl.textContent = ' + JSON.stringify(title || '') + ';');
-  lines.push('  dateEl.textContent = "";');
+    lines.push('  const video = document.getElementById("video");');
+    lines.push('  const playBtn = document.getElementById("play");');
+    lines.push('  const prevBtn = document.getElementById("prev");');
+    lines.push('  const nextBtn = document.getElementById("next");');
+    lines.push('  const loopBtn = document.getElementById("loop");');
+    lines.push('  const speedSel = document.getElementById("speed");');
+    lines.push('  const seek = document.getElementById("seek");');
+    lines.push('  const currentT = document.getElementById("current");');
+    lines.push('  const durationT = document.getElementById("duration");');
+    lines.push('  const titleEl = document.getElementById("title");');
+    lines.push('  const dateEl = document.getElementById("date");');
+    lines.push('  const downloadsWrap = document.getElementById("downloadButtons");');
 
-  lines.push('  video.poster = thumbnail;');
-  lines.push('  video.preload = "metadata";');
-  lines.push('  video.src = videos.length ? videos[0] : "";');
-  lines.push('  video.playbackRate = 1;');
-  lines.push('  if(speedSel) speedSel.value = "1";');
+    lines.push('  let idx = 0; let isSeeking = false;');
+    lines.push('  titleEl.textContent = ' + JSON.stringify(title || '') + ';');
+    lines.push('  dateEl.textContent = "";');
 
-  // buildDownloadButtons function
-  lines.push('  function buildDownloadButtons(){ if(!downloadsWrap) return; downloadsWrap.innerHTML = ""; for(const k in downloads){ const b = document.createElement("a"); b.className = "download-btn"; b.href = downloads[k]; b.target = "_blank"; b.rel = "noopener noreferrer nofollow"; b.innerHTML = "<i class=\\"bi bi-cloud-arrow-down-fill\\"></i><span>"+k+" — Full konten</span>"; downloadsWrap.appendChild(b);} }');
+    lines.push('  video.poster = thumbnail;');
+    lines.push('  video.preload = "metadata";');
+    lines.push('  video.src = videos.length ? videos[0] : "";');
+    lines.push('  video.playbackRate = 1;');
+    lines.push('  if(speedSel) speedSel.value = "1";');
 
-  lines.push('  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s % 60).toString().padStart(2,"0"); const min = Math.floor(s / 60); return min + ":" + sec; }');
+    lines.push('  function buildDownloadButtons(){ if(!downloadsWrap) return; downloadsWrap.innerHTML = ""; for(const k in downloads){ const b = document.createElement("a"); b.className = "download-btn"; b.href = downloads[k]; b.target = "_blank"; b.rel = "noopener noreferrer nofollow"; b.innerHTML = "<i class=\\"bi bi-cloud-arrow-down-fill\\"></i><span>"+k+" — Full konten</span>"; downloadsWrap.appendChild(b); } }');
 
-  lines.push('  video.addEventListener("loadedmetadata", ()=>{ durationT.textContent = fmt(video.duration); seek.max = video.duration || 100; });');
-  lines.push('  video.addEventListener("timeupdate", ()=>{ if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });');
-  lines.push('  seek.addEventListener("input", ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });');
-  lines.push('  seek.addEventListener("change", ()=> { video.currentTime = Number(seek.value); isSeeking = false; });');
+    lines.push('  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s % 60).toString().padStart(2,"0"); const min = Math.floor(s / 60); return min + ":" + sec; }');
 
-  lines.push('  function togglePlay(){ if(video.paused) video.play(); else video.pause(); }');
-  lines.push('  if(playBtn) playBtn.addEventListener("click", togglePlay);');
-  lines.push('  video.addEventListener("click", togglePlay);');
-  lines.push('  video.addEventListener("play", ()=> { if(playBtn) playBtn.innerHTML = "<i class=\"bi bi-pause-fill\"></i> Pause"; });');
-  lines.push('  video.addEventListener("pause", ()=> { if(playBtn) playBtn.innerHTML = "<i class=\"bi bi-play-fill\"></i> Play"; });');
+    lines.push('  video.addEventListener("loadedmetadata", ()=>{ durationT.textContent = fmt(video.duration); seek.max = video.duration || 100; });');
+    lines.push('  video.addEventListener("timeupdate", ()=>{ if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });');
+    lines.push('  seek.addEventListener("input", ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });');
+    lines.push('  seek.addEventListener("change", ()=> { video.currentTime = Number(seek.value); isSeeking = false; });');
 
-  lines.push('  if(prevBtn) prevBtn.addEventListener("click", ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });');
-  lines.push('  if(nextBtn) nextBtn.addEventListener("click", ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });');
-  lines.push('  function loadAndPlay(i){ if(!videos[i]) return; video.src = videos[i]; video.play().catch(()=>{}); }');
+    lines.push('  function togglePlay(){ if(video.paused) video.play(); else video.pause(); }');
+    lines.push('  if(playBtn) playBtn.addEventListener("click", togglePlay);');
+    lines.push('  video.addEventListener("click", togglePlay);');
+    lines.push('  video.addEventListener("play", ()=> { if(playBtn) playBtn.innerHTML = "<i class=\\"bi bi-pause-fill\\"></i> Pause"; });');
+    lines.push('  video.addEventListener("pause", ()=> { if(playBtn) playBtn.innerHTML = "<i class=\\"bi bi-play-fill\\"></i> Play"; });');
 
-  lines.push('  if(loopBtn) loopBtn.addEventListener("click", ()=> { video.loop = !video.loop; loopBtn.classList.toggle("btn-primary", video.loop); loopBtn.classList.toggle("btn-outline-light", !video.loop); });');
-  lines.push('  if(speedSel) speedSel.addEventListener("change", ()=> { video.playbackRate = Number(speedSel.value); });');
+    lines.push('  if(prevBtn) prevBtn.addEventListener("click", ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });');
+    lines.push('  if(nextBtn) nextBtn.addEventListener("click", ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });');
+    lines.push('  function loadAndPlay(i){ if(!videos[i]) return; video.src = videos[i]; video.play().catch(()=>{}); }');
 
-  lines.push('  document.getElementById("fs")?.addEventListener("click", ()=> { const el = document.querySelector(".video-area"); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });');
+    lines.push('  if(loopBtn) loopBtn.addEventListener("click", ()=> { video.loop = !video.loop; loopBtn.classList.toggle("btn-primary", video.loop); loopBtn.classList.toggle("btn-outline-light", !video.loop); });');
+    lines.push('  if(speedSel) speedSel.addEventListener("change", ()=> { video.playbackRate = Number(speedSel.value); });');
 
-  lines.push('  video.addEventListener("ended", ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });');
+    lines.push('  document.getElementById("fs")?.addEventListener("click", ()=> { const el = document.querySelector(".video-area"); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });');
 
-  lines.push('  window.addEventListener("keydown", (e)=> { if(["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return; if(e.code === "Space"){ e.preventDefault(); togglePlay(); } if(e.code === "ArrowLeft"){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === "ArrowRight"){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === "m"){ video.muted = !video.muted; } });');
+    lines.push('  video.addEventListener("ended", ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });');
 
-  lines.push('  document.addEventListener("contextmenu", e => e.preventDefault());');
+    lines.push('  window.addEventListener("keydown", (e)=> { if(["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return; if(e.code === "Space"){ e.preventDefault(); togglePlay(); } if(e.code === "ArrowLeft"){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === "ArrowRight"){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === "m"){ video.muted = !video.muted; } });');
 
-  lines.push('  buildDownloadButtons();');
+    lines.push('  document.addEventListener("contextmenu", e => e.preventDefault());');
 
-  lines.push('</script>');
+    lines.push('  buildDownloadButtons();');
 
-  // permanent ad script inserted as full closing tag (constructed here)
-  lines.push(permanentAdForOutput);
+    lines.push('</script>');
 
-  lines.push('</body>');
-  lines.push('</html>');
+    // permanent ad script appended safely
+    lines.push(permanentAdForOutput);
 
-  return lines.join('\n');
-} // end buildPlayerHtml
+    lines.push('</body>');
+    lines.push('</html>');
 
-/* ================= UI bindings for generator (this script file) ================= */
+    return lines.join('\n');
+  } // end buildPlayerHtml
 
-document.getElementById('generate').addEventListener('click', ()=>{
-  const title = el('title').value.trim() || '';
-  const thumbnail = el('thumbnail').value.trim() || '';
+  // UI bindings (generator page)
+  document.getElementById('generate').addEventListener('click', function(){
+    var title = el('title').value.trim() || '';
+    var thumbnail = el('thumbnail').value.trim() || '';
+    var videos = (el('videos').value || '').trim() ? (el('videos').value || '').trim().split(/\s+/).filter(s=>s.indexOf('http')===0) : [];
+    var downloads = {};
+    var t = el('terabox').value.trim(); if(t) downloads['Terabox'] = t;
+    var u = el('ucdrive').value.trim(); if(u) downloads['UCDrive'] = u;
+    var m = el('mediafire').value.trim(); if(m) downloads['Mediafire'] = m;
 
-  // split by whitespace (newline + spaces)
-  const videos = (el('videos').value || '').trim()
-    .split(/\s+/)
-    .map(s=>s.trim())
-    .filter(s=>s && s.startsWith('http'));
+    var html = buildPlayerHtml({ title: title, thumbnail: thumbnail, videos: videos, downloads: downloads });
+    el('output').value = html;
+    el('preview').srcdoc = html;
+  });
 
-  const downloads = {};
-  const terabox = el('terabox').value.trim(); if(terabox) downloads['Terabox'] = terabox;
-  const ucdrive = el('ucdrive').value.trim(); if(ucdrive) downloads['UCDrive'] = ucdrive;
-  const mediafire = el('mediafire').value.trim(); if(mediafire) downloads['Mediafire'] = mediafire;
+  document.getElementById('previewBtn').addEventListener('click', function(){
+    el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>';
+  });
 
-  const html = buildPlayerHtml({ title, thumbnail, videos, downloads });
-  el('output').value = html;
-  el('preview').srcdoc = html;
-});
+  document.getElementById('copy').addEventListener('click', async function(){
+    try{
+      await navigator.clipboard.writeText(el('output').value);
+      alert('HTML disalin ke clipboard ✅');
+    }catch(e){
+      el('output').select();
+      document.execCommand('copy');
+      alert('HTML disalin (fallback) ✅');
+    }
+  });
 
-document.getElementById('previewBtn').addEventListener('click', ()=> {
-  el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>';
-});
+  document.getElementById('openNew').addEventListener('click', function(){
+    var w = window.open();
+    w.document.open();
+    w.document.write(el('output').value);
+    w.document.close();
+  });
 
-document.getElementById('copy').addEventListener('click', async ()=>{
-  try{
-    await navigator.clipboard.writeText(el('output').value);
-    alert('HTML disalin ke clipboard ✅');
-  }catch(e){
-    el('output').select();
-    document.execCommand('copy');
-    alert('HTML disalin (fallback) ✅');
-  }
-});
+  document.getElementById('download').addEventListener('click', function(){
+    var blob = new Blob([el('output').value], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
 
-document.getElementById('openNew').addEventListener('click', ()=>{
-  const w = window.open();
-  w.document.open();
-  w.document.write(el('output').value);
-  w.document.close();
-});
+  document.getElementById('minify').addEventListener('click', function(){
+    var v = el('output').value; var min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n');
+    el('output').value = min; el('preview').srcdoc = min; alert('Minify applied');
+  });
 
-document.getElementById('download').addEventListener('click', ()=>{
-  const blob = new Blob([el('output').value], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html';
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-});
+  // auto-generate once so preview isn't empty
+  document.addEventListener('DOMContentLoaded', function(){ document.getElementById('generate').click(); });
 
-document.getElementById('minify').addEventListener('click', ()=>{
-  const v = el('output').value; const min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n');
-  el('output').value = min; el('preview').srcdoc = min; alert('Minify applied');
-});
-
-// auto generate once on load (so preview not empty)
-document.addEventListener('DOMContentLoaded', ()=> document.getElementById('generate').click());
-
+})(); // IIFE end
 </script>
+
 </body>
-  </html>
+    </html>
