@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="id">
 <head>
   <meta charset="utf-8" />
@@ -28,52 +27,54 @@
 <body>
   <div class="card">
     <h2 style="margin:0 0 10px">HTML Video Player — Generator</h2>
-    <p class="muted">Isi kolom-kolom di bawah lalu tekan <strong>Generate</strong>. Hasilnya muncul di kotak kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p><div class="split">
-  <div>
-    <label for="title">Judul</label>
-    <input id="title" type="text" placeholder="Contoh: BIYAA BDERNADETTE" value="BIYAA BDERNADETTE">
+    <p class="muted">Isi kolom-kolom di bawah lalu tekan <strong>Generate</strong>. Hasilnya muncul di kotak kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p>
+    <div class="split">
+      <div>
+        <label for="title">Judul</label>
+        <input id="title" type="text" placeholder="Contoh: BIYAA BDERNADETTE" value="BIYAA BDERNADETTE">
 
-    <label for="thumbnail" style="margin-top:10px">Thumbnail (URL)</label>
-    <input id="thumbnail" type="text" placeholder="https://example.com/thumb.jpg">
+        <label for="thumbnail" style="margin-top:10px">Thumbnail (URL)</label>
+        <input id="thumbnail" type="text" placeholder="https://example.com/thumb.jpg">
 
-    <label for="videos" style="margin-top:10px">Daftar video (satu URL per baris)</label>
-    <textarea id="videos" placeholder="https://.../video1.mp4\nhttps://.../video2.mp4">https://cdn.videy.co/OEROHlvI2.mp4
+        <label for="videos" style="margin-top:10px">Daftar video (satu URL per baris)</label>
+        <textarea id="videos" placeholder="https://.../video1.mp4\nhttps://.../video2.mp4">https://cdn.videy.co/OEROHlvI2.mp4
 
 https://cdn.videy.co/Mtx4PRs21.mp4 https://cdn.videy.co/BxHCEBln2.mp4</textarea>
 
-<label for="downloads" style="margin-top:10px">Links download (format: label|url per baris)</label>
-    <textarea id="downloads" placeholder="Terabox|https://...">Terabox|https://1024terabox.com/s/1mML801h4xbk3Ueu8gc9x5Q</textarea>
+        <label for="downloads" style="margin-top:10px">Links download (format: label|url per baris)</label>
+        <textarea id="downloads" placeholder="Terabox|https://...">Terabox|https://1024terabox.com/s/1mML801h4xbk3Ueu8gc9x5Q</textarea>
 
-    <label for="adscript" style="margin-top:10px">Script iklan (opsional)</label>
-    <textarea id="adscript" placeholder="paste script iklan di sini (optional)"></textarea>
+        <label for="adscript" style="margin-top:10px">Script iklan (opsional)</label>
+        <textarea id="adscript" placeholder="paste script iklan di sini (optional)"></textarea>
 
-    <div class="actions">
-      <button id="generate">Generate</button>
-      <button id="previewBtn" class="ghost">Update Preview</button>
-      <button id="download" class="ghost">Download .html</button>
-      <div style="margin-left:auto" class="small muted">Preview berjalan di iframe — script eksternal akan dimuat</div>
+        <div class="actions">
+          <button id="generate">Generate</button>
+          <button id="previewBtn" class="ghost">Update Preview</button>
+          <button id="download" class="ghost">Download .html</button>
+          <div style="margin-left:auto" class="small muted">Preview berjalan di iframe — script eksternal akan dimuat</div>
+        </div>
+      </div>
+
+      <div>
+        <label for="output">Hasil HTML</label>
+        <textarea id="output" readonly></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="copy">Salin</button>
+          <button id="openNew" class="ghost">Buka di tab baru</button>
+          <button id="minify" class="ghost">Minify</button>
+        </div>
+
+        <div class="preview" id="previewWrap" style="margin-top:12px">
+          <iframe id="preview"></iframe>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div>
-    <label for="output">Hasil HTML</label>
-    <textarea id="output" readonly></textarea>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button id="copy">Salin</button>
-      <button id="openNew" class="ghost">Buka di tab baru</button>
-      <button id="minify" class="ghost">Minify</button>
-    </div>
-
-    <div class="preview" id="previewWrap" style="margin-top:12px">
-      <iframe id="preview"></iframe>
-    </div>
-  </div>
-</div>
-
-  </div><script>
+<script>
   // Helper
-  const el = id=>document.getElementById(id);
-  function escapeScriptClose(s){ return s.replace(/<\\/script>/gi, '<\\/script>'); }
+  const el = id => document.getElementById(id);
+  function escapeScriptClose(s){ return String(s).replace(/<\/script>/gi, '<\\/script>'); }
   function escapeHtmlAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
   function buildPlayerHtml({title, thumbnail, videos, downloads, adScript}){
@@ -109,51 +110,55 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
 .download-btn .bi { font-size:1.05rem; }
 .download-btn:hover{background:rgba(255,255,255,0.02)}
 @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
-</style></head>
+</style>
+</head>
 <body>
   <div class="wrap">
     <div class="card card-player">
       <div class="video-area">
         <video id="video" playsinline webkit-playsinline preload="metadata" poster="${escapeHtmlAttr(thumbnail)}"></video>
-      </div><div class="top-meta">
-    <div class="title" id="title">${escapeHtmlAttr(title)}</div>
-    <div class="date" id="date"></div>
-  </div>
+      </div>
+      <div class="top-meta">
+        <div class="title" id="title">${escapeHtmlAttr(title)}</div>
+        <div class="date" id="date"></div>
+      </div>
 
-  <div class="controls">
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-      <button id="prev" class="btn btn-outline-light btn-small"><i class="bi bi-skip-start-fill"></i> Prev</button>
-      <button id="play" class="btn btn-primary btn-play"><i class="bi bi-play-fill"></i> Play</button>
-      <button id="next" class="btn btn-outline-light btn-small"><i class="bi bi-skip-end-fill"></i> Next</button>
-      <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
-      <div class="ms-auto d-flex align-items-center gap-2">
-        <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
-        <select id="speed" class="form-select form-select-sm" style="width:90px">
-          <option value="0.5">0.5x</option>
-          <option value="0.75">0.75x</option>
-          <option value="1" selected>1x</option>
-          <option value="1.25">1.25x</option>
-          <option value="1.5">1.5x</option>
-          <option value="2">2x</option>
-        </select>
-        <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+      <div class="controls">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <button id="prev" class="btn btn-outline-light btn-small"><i class="bi bi-skip-start-fill"></i> Prev</button>
+          <button id="play" class="btn btn-primary btn-play"><i class="bi bi-play-fill"></i> Play</button>
+          <button id="next" class="btn btn-outline-light btn-small"><i class="bi bi-skip-end-fill"></i> Next</button>
+          <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+            <select id="speed" class="form-select form-select-sm" style="width:90px">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+          </div>
+        </div>
+
+        <div class="seek-row">
+          <div class="time" id="current">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+          <div class="time" id="duration">0:00</div>
+        </div>
+      </div>
+
+      <div class="downloads">
+        <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
+        <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
       </div>
     </div>
-
-    <div class="seek-row">
-      <div class="time" id="current">0:00</div>
-      <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
-      <div class="time" id="duration">0:00</div>
-    </div>
   </div>
 
-  <div class="downloads">
-    <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
-    <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
-  </div>
-</div>
-
-  </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
   const videos = ${videosJson};
   const thumbnail = ${JSON.stringify(thumbnail)};
   const downloads = ${downloadsObj};
@@ -181,9 +186,25 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
   video.playbackRate = 1;
   speedSel.value = "1";
 
-  function buildDownloadButtons(){ downloadsWrap.innerHTML = ""; for(const k in downloads){ const b = document.createElement('a'); b.className = 'download-btn'; b.href = downloads[k]; b.target = '_blank'; b.rel='noopener noreferrer nofollow'; b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>'+k+' — Full konten</span>'; downloadsWrap.appendChild(b); } }
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = "";
+    for(const k in downloads){
+      const b = document.createElement('a');
+      b.className = 'download-btn';
+      b.href = downloads[k];
+      b.target = '_blank';
+      b.rel = 'noopener noreferrer nofollow';
+      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>'+k+' — Full konten</span>';
+      downloadsWrap.appendChild(b);
+    }
+  }
 
-  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s % 60).toString().padStart(2,'0'); const min = Math.floor(s / 60); return `${min}:${'${'}sec}`; }
+  function fmt(s){
+    if(!isFinite(s)) return "0:00";
+    const sec = Math.floor(s % 60).toString().padStart(2,'0');
+    const min = Math.floor(s / 60);
+    return min + ":" + sec;
+  }
 
   video.addEventListener('loadedmetadata', ()=>{ durationT.textContent = fmt(video.duration); seek.max = video.duration || 100; });
   video.addEventListener('timeupdate', ()=>{ if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });
@@ -207,28 +228,68 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
 
   video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });
 
-  window.addEventListener('keydown', (e)=> { if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === 'm'){ video.muted = !video.muted; } });
+  window.addEventListener('keydown', (e)=> {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+    if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+    if(e.key === 'm'){ video.muted = !video.muted; }
+  });
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
   buildDownloadButtons();
-</script>${safeAd}
+</script>
+
+${safeAd}
 
 </body>
 </html>`;
-  }// UI bindings el('generate').addEventListener('click', ()=>{ const title = el('title').value.trim() || 'Player'; const thumbnail = el('thumbnail').value.trim() || ''; const videos = el('videos').value.split('\n').map(s=>s.trim()).filter(Boolean); const downloads = {}; el('downloads').value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{ const parts = line.split('|'); downloads[parts[0].trim()] = parts[1] ? parts[1].trim() : parts[0].trim(); }); const adScript = el('adscript').value || ''; const html = buildPlayerHtml({title, thumbnail, videos, downloads, adScript}); el('output').value = html; el('preview').srcdoc = html; });
+  } // end buildPlayerHtml
 
-el('previewBtn').addEventListener('click', ()=>{ el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>'; });
+  // ================= UI bindings =================
+  el('generate').addEventListener('click', ()=>{
+    const title = el('title').value.trim() || 'Player';
+    const thumbnail = el('thumbnail').value.trim() || '';
+    const videos = el('videos').value
+      .split(/\s+/) // split by whitespace (enter + spaces)
+      .map(s=>s.trim())
+      .filter(s=>s.startsWith('http'));
 
-el('copy').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(el('output').value); alert('HTML disalin ke clipboard ✅'); }catch(e){ el('output').select(); document.execCommand('copy'); alert('HTML disalin (fallback) ✅'); } });
+    const downloads = {};
+    el('downloads').value.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+      const parts = line.split('|');
+      const k = parts[0] ? parts[0].trim() : ''; const v = parts[1] ? parts[1].trim() : (k || '');
+      if(k) downloads[k] = v;
+    });
 
-el('openNew').addEventListener('click', ()=>{ const w = window.open(); w.document.open(); w.document.write(el('output').value); w.document.close(); });
+    const adScript = el('adscript').value || '';
+    const html = buildPlayerHtml({title, thumbnail, videos, downloads, adScript});
+    el('output').value = html;
+    el('preview').srcdoc = html;
+  });
 
-el('download').addEventListener('click', ()=>{ const blob = new Blob([el('output').value], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  el('previewBtn').addEventListener('click', ()=>{ el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>'; });
 
-el('minify').addEventListener('click', ()=>{ const v = el('output').value; const min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n'); el('output').value = min; el('preview').srcdoc = min; alert('Minify applied'); });
+  el('copy').addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText(el('output').value); alert('HTML disalin ke clipboard ✅'); }
+    catch(e){ el('output').select(); document.execCommand('copy'); alert('HTML disalin (fallback) ✅'); }
+  });
 
-// Init one-time document.addEventListener('DOMContentLoaded', ()=> el('generate').click()); </script>
+  el('openNew').addEventListener('click', ()=>{ const w = window.open(); w.document.open(); w.document.write(el('output').value); w.document.close(); });
 
+  el('download').addEventListener('click', ()=>{
+    const blob = new Blob([el('output').value], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
+  el('minify').addEventListener('click', ()=>{
+    const v = el('output').value; const min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n'); el('output').value = min; el('preview').srcdoc = min; alert('Minify applied');
+  });
+
+  // Init one-time
+  document.addEventListener('DOMContentLoaded', ()=> el('generate').click());
+</script>
 </body>
 </html>
