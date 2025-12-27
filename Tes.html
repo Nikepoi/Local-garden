@@ -1,217 +1,234 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<title>Video Player HTML Generator — Fixed & Aman</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-  body { background: #f6f7fb; padding: 18px; font-family: Inter, system-ui, Arial; }
-  .box { max-width:960px; margin:20px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 8px 24px rgba(17,24,39,0.06) }
-  h1{font-size:18px;margin-bottom:12px}
-  .dynamic-field{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-  .dynamic-field input{flex:1}
-  .small-muted{font-size:12px;color:#6b7b8c}
-  textarea.form-control, input.form-control{background:#fbfdff}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-  #result { font-family: monospace; white-space: pre-wrap; }
-</style>
-</head>
-<body>
-<div class="box">
-  <h1>Video Player HTML Generator</h1>
-  <input id="pageTitle" class="form-control mb-3" placeholder="Masukkan judul halaman..." value="">
-
-  <div class="mb-3">
-    <label class="form-label">Daftar Video (CDN URL + Original URL untuk download)</label>
-    <div id="videosContainer">
-      <!-- field akan ditambahkan via JS -->
-    </div>
-    <div class="controls">
-      <button type="button" id="addVideo" class="btn btn-sm btn-primary">+ Tambah Video</button>
-      <button type="button" id="clear" class="btn btn-sm btn-outline-secondary">Kosongkan Semua</button>
-      <div class="small-muted">CDN URL untuk referensi, Original URL untuk tombol download. Kosongkan jika tidak dipakai.</div>
-    </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Kode Iklan (opsional, akan disisipkan apa adanya)</label>
-    <textarea id="adCode" class="form-control" rows="4">(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</textarea>
-    <div class="small-muted">Hapus isi textarea ini jika tidak ingin ada iklan.</div>
-  </div>
-
-  <div class="d-flex gap-2 mb-3">
-    <button id="generate" class="btn btn-primary">Generate HTML</button>
-    <button id="copyBtn" class="btn btn-success">Copy Hasil</button>
-    <button id="downloadBtn" class="btn btn-outline-secondary">Download .html</button>
-  </div>
-
-  <div id="output" style="display:none;">
-    <h6>Hasil HTML (siap disimpan atau upload)</h6>
-    <textarea id="result" class="form-control" rows="16" readonly></textarea>
-  </div>
-</div>
-
-<script>
-// ============== GENERATOR SCRIPT (halaman ini) ==============
-const addVideoBtn = document.getElementById('addVideo');
-const videosContainer = document.getElementById('videosContainer');
-const generateBtn = document.getElementById('generate');
-const clearBtn = document.getElementById('clear');
-const output = document.getElementById('output');
-const resultTA = document.getElementById('result');
-const copyBtn = document.getElementById('copyBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const pageTitleInput = document.getElementById('pageTitle');
-const adCodeEl = document.getElementById('adCode');
-
-function createVideoField() {
-  const wrap = document.createElement('div');
-  wrap.className = 'dynamic-field';
-  wrap.innerHTML = `
-    <input type="text" class="form-control" placeholder="CDN URL (untuk referensi)" value="">
-    <input type="text" class="form-control" placeholder="Original URL (untuk download)" value="">
-    <button type="button" class="btn btn-sm btn-danger btn-remove">-</button>
-  `;
-  videosContainer.appendChild(wrap);
-}
-
-// Hapus field (minimal 1 field tetap ada)
-videosContainer.addEventListener('click', e => {
-  if (e.target.classList.contains('btn-remove')) {
-    const row = e.target.closest('.dynamic-field');
-    if (row && videosContainer.children.length > 1) {
-      row.remove();
-    }
-  }
-});
-
-addVideoBtn.addEventListener('click', createVideoField);
-
-clearBtn.addEventListener('click', () => {
-  pageTitleInput.value = '';
-  adCodeEl.value = '';
-  videosContainer.innerHTML = '';
-  createVideoField();
-  output.style.display = 'none';
-  resultTA.value = '';
-});
-
-// ============== BAGIAN UTAMA: BUILD HTML YANG AKAN DI-GENERATE ==============
-function buildGeneratedHTML(title, videos, adCode) {
-  const videosJson = JSON.stringify(videos); // aman, tidak akan menghasilkan </script>
-
-  let html = `<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${title || 'Video Player'}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generator — Video Player HTML (Single-file)</title>
   <style>
-    body{font-family:Inter,system-ui,Arial;background:#071029;color:#fff;margin:0;padding:18px}
-    .card{max-width:1100px;margin:auto;background:#081226;padding:20px;border-radius:10px}
-    a{color:#8fb3ff;display:block;margin:12px 0;padding:14px;background:#112240;border-radius:8px;text-align:center;font-size:16px;text-decoration:none}
-    a:hover{background:#1a3355}
-    #player{margin:20px 0;padding:40px;background:#000;border-radius:8px;text-align:center;color:#ccc;font-size:15px}
-    .note{color:#9aa6b6;font-size:14px;margin-top:20px}
+    :root{--bg:#0b1220;--muted:#98a8b3;--accent:#3b82f6}
+    body{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb;margin:0;padding:24px}
+    .card{max-width:980px;margin:0 auto;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.04));padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+    label{display:block;margin-bottom:6px;font-weight:600}
+    input[type=text], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    textarea{min-height:120px;font-family:monospace}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+    button{background:var(--accent);color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .muted{color:var(--muted);font-size:13px}
+    .preview{margin-top:16px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
+    iframe{width:100%;height:420px;border:0;display:block}
+    .small{font-size:13px}
+    .split{display:grid;grid-template-columns:1fr 380px;gap:12px}
+    @media(max-width:980px){.split{grid-template-columns:1fr} iframe{height:260px}}
   </style>
 </head>
 <body>
-<div class="card">
-  <h2 class="text-center mb-4">${title || 'Video Player'}</h2>
+  <div class="card">
+    <h2 style="margin:0 0 10px">HTML Video Player — Generator</h2>
+    <p class="muted">Isi kolom-kolom di bawah lalu tekan <strong>Generate</strong>. Hasilnya muncul di kotak kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p><div class="split">
+  <div>
+    <label for="title">Judul</label>
+    <input id="title" type="text" placeholder="Contoh: BIYAA BDERNADETTE" value="BIYAA BDERNADETTE">
 
-  <div id="player">
-    Klik link download di bawah untuk memutar video<br>
-    (bisa dibuka di VLC, MX Player, atau player lain)
+    <label for="thumbnail" style="margin-top:10px">Thumbnail (URL)</label>
+    <input id="thumbnail" type="text" placeholder="https://example.com/thumb.jpg">
+
+    <label for="videos" style="margin-top:10px">Daftar video (satu URL per baris)</label>
+    <textarea id="videos" placeholder="https://.../video1.mp4\nhttps://.../video2.mp4">https://cdn.videy.co/OEROHlvI2.mp4
+
+https://cdn.videy.co/Mtx4PRs21.mp4 https://cdn.videy.co/BxHCEBln2.mp4</textarea>
+
+<label for="downloads" style="margin-top:10px">Links download (format: label|url per baris)</label>
+    <textarea id="downloads" placeholder="Terabox|https://...">Terabox|https://1024terabox.com/s/1mML801h4xbk3Ueu8gc9x5Q</textarea>
+
+    <label for="adscript" style="margin-top:10px">Script iklan (opsional)</label>
+    <textarea id="adscript" placeholder="paste script iklan di sini (optional)"></textarea>
+
+    <div class="actions">
+      <button id="generate">Generate</button>
+      <button id="previewBtn" class="ghost">Update Preview</button>
+      <button id="download" class="ghost">Download .html</button>
+      <div style="margin-left:auto" class="small muted">Preview berjalan di iframe — script eksternal akan dimuat</div>
+    </div>
   </div>
 
-  <div class="note">Download links:</div>
-  <div id="links"></div>
+  <div>
+    <label for="output">Hasil HTML</label>
+    <textarea id="output" readonly></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="copy">Salin</button>
+      <button id="openNew" class="ghost">Buka di tab baru</button>
+      <button id="minify" class="ghost">Minify</button>
+    </div>
+
+    <div class="preview" id="previewWrap" style="margin-top:12px">
+      <iframe id="preview"></iframe>
+    </div>
+  </div>
 </div>
 
-<script>
-// Data video yang di-embed langsung di halaman
-const videos = ${videosJson};
+  </div><script>
+  // Helper
+  const el = id=>document.getElementById(id);
+  function escapeScriptClose(s){ return s.replace(/<\\/script>/gi, '<\\/script>'); }
+  function escapeHtmlAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const linksEl = document.getElementById('links');
-  
-  if (!videos || videos.length === 0) {
-    linksEl.innerHTML = '<div style="color:#9aa6b6;padding:30px;text-align:center">Tidak ada video</div>';
-    return;
-  }
+  function buildPlayerHtml({title, thumbnail, videos, downloads, adScript}){
+    const videosJson = JSON.stringify(videos, null, 2);
+    const downloadsObj = JSON.stringify(downloads, null, 2);
+    const safeAd = adScript ? escapeScriptClose(adScript) : '';
 
-  videos.forEach(function(v) {
-    if (!v.cdn && !v.original) return;
+    return `<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtmlAttr(title)}</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{--bg:#071022;--muted:#98a8b3;--accent:#3b82f6}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+.wrap{max-width:980px;margin:18px auto;padding:16px}
+.card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+.video-area{background:#000}
+video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;background:#000}
+.top-meta{padding:12px 16px 0 16px}.title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}.date{color:var(--muted);font-size:13px}
+.controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); }
+.btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+.btn-play { min-width:88px; padding:10px 14px; font-size:1rem; }
+.seek-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+.time { width:50px; text-align:center; color:var(--muted); font-size:14px; }
+.downloads { padding:12px; border-top:1px solid rgba(255,255,255,0.02); background: rgba(2,6,15,0.35); }
+.downloads .heading { color:#ffffff; font-weight:700; display:flex;align-items:center;justify-content:space-between; gap:10px; }
+.download-btn { min-width:150px; text-align:left; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#eaf4ff; padding:8px 12px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
+.download-btn .bi { font-size:1.05rem; }
+.download-btn:hover{background:rgba(255,255,255,0.02)}
+@media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .btn-play{min-width:78px} .title{font-size:18px} }
+</style></head>
+<body>
+  <div class="wrap">
+    <div class="card card-player">
+      <div class="video-area">
+        <video id="video" playsinline webkit-playsinline preload="metadata" poster="${escapeHtmlAttr(thumbnail)}"></video>
+      </div><div class="top-meta">
+    <div class="title" id="title">${escapeHtmlAttr(title)}</div>
+    <div class="date" id="date"></div>
+  </div>
 
-    const a = document.createElement('a');
-    a.href = v.original || v.cdn || '#';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.textContent = v.original || v.cdn || 'Link Video';
-    linksEl.appendChild(a);
-  });
-});
-</script>`;
+  <div class="controls">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+      <button id="prev" class="btn btn-outline-light btn-small"><i class="bi bi-skip-start-fill"></i> Prev</button>
+      <button id="play" class="btn btn-primary btn-play"><i class="bi bi-play-fill"></i> Play</button>
+      <button id="next" class="btn btn-outline-light btn-small"><i class="bi bi-skip-end-fill"></i> Next</button>
+      <button id="loop" class="btn btn-outline-light ms-2">Loop</button>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
+        <select id="speed" class="form-select form-select-sm" style="width:90px">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <button id="fs" class="btn btn-outline-light">Fullscreen</button>
+      </div>
+    </div>
 
-  // Sisipkan kode iklan apa adanya (raw)
-  if (adCode && adCode.trim()) {
-    html += `\n<!-- Kode Iklan -->\n${adCode.trim()}\n`;
-  }
+    <div class="seek-row">
+      <div class="time" id="current">0:00</div>
+      <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
+      <div class="time" id="duration">0:00</div>
+    </div>
+  </div>
 
-  html += `\n</body>\n</html>`;
-  return html;
-}
+  <div class="downloads">
+    <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
+    <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
+  </div>
+</div>
 
-// ============== EVENT GENERATE ==============
-generateBtn.addEventListener('click', () => {
-  const title = pageTitleInput.value.trim();
-  const adCode = adCodeEl.value;
+  </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script>
+  const videos = ${videosJson};
+  const thumbnail = ${JSON.stringify(thumbnail)};
+  const downloads = ${downloadsObj};
 
-  const rows = videosContainer.querySelectorAll('.dynamic-field');
-  const videos = Array.from(rows).map(row => {
-    const inputs = row.querySelectorAll('input');
-    return {
-      cdn: inputs[0].value.trim(),
-      original: inputs[1].value.trim()
-    };
-  }).filter(v => v.cdn || v.original); // buang yang kosong total
+  const video = document.getElementById('video');
+  const playBtn = document.getElementById('play');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const loopBtn = document.getElementById('loop');
+  const speedSel = document.getElementById('speed');
+  const seek = document.getElementById('seek');
+  const currentT = document.getElementById('current');
+  const durationT = document.getElementById('duration');
+  const titleEl = document.getElementById('title');
+  const dateEl = document.getElementById('date');
+  const downloadsWrap = document.getElementById('downloadButtons');
 
-  const generatedHtml = buildGeneratedHTML(title, videos, adCode);
+  let idx = 0; let isSeeking = false;
+  titleEl.textContent = ${JSON.stringify(title)};
+  dateEl.textContent = "";
 
-  resultTA.value = generatedHtml;
-  output.style.display = 'block';
-  resultTA.focus();
-  resultTA.select();
-});
+  video.poster = thumbnail;
+  video.preload = "metadata";
+  video.src = videos.length ? videos[0] : "";
+  video.playbackRate = 1;
+  speedSel.value = "1";
 
-// ============== COPY & DOWNLOAD ==============
-copyBtn.addEventListener('click', () => {
-  if (!resultTA.value) return alert('Generate dulu HTML-nya!');
-  resultTA.select();
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(resultTA.value).then(() => alert('Berhasil dicopy ke clipboard!'));
-  } else {
-    document.execCommand('copy');
-    alert('Berhasil dicopy (fallback)');
-  }
-});
+  function buildDownloadButtons(){ downloadsWrap.innerHTML = ""; for(const k in downloads){ const b = document.createElement('a'); b.className = 'download-btn'; b.href = downloads[k]; b.target = '_blank'; b.rel='noopener noreferrer nofollow'; b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>'+k+' — Full konten</span>'; downloadsWrap.appendChild(b); } }
 
-downloadBtn.addEventListener('click', () => {
-  if (!resultTA.value) return alert('Generate dulu HTML-nya!');
-  const blob = new Blob([resultTA.value], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'video-player.html';
-  a.click();
-  URL.revokeObjectURL(url);
-});
+  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s % 60).toString().padStart(2,'0'); const min = Math.floor(s / 60); return `${min}:${'${'}sec}`; }
 
-// ============== INIT ==============
-createVideoField(); // tambah satu field kosong saat load
+  video.addEventListener('loadedmetadata', ()=>{ durationT.textContent = fmt(video.duration); seek.max = video.duration || 100; });
+  video.addEventListener('timeupdate', ()=>{ if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });
+  seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+  seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
-</script>
+  function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
+  playBtn.addEventListener('click', togglePlay);
+  video.addEventListener('click', togglePlay);
+  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
+  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+
+  prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
+  nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
+  function loadAndPlay(i){ video.src = videos[i]; video.play().catch(()=>{}); }
+
+  loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+  document.getElementById('fs')?.addEventListener('click', ()=> { const el = document.querySelector('.video-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
+
+  video.addEventListener('ended', ()=> { if(idx < videos.length - 1){ idx++; loadAndPlay(idx); } });
+
+  window.addEventListener('keydown', (e)=> { if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return; if(e.code === 'Space'){ e.preventDefault(); togglePlay(); } if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); } if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); } if(e.key === 'm'){ video.muted = !video.muted; } });
+
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  buildDownloadButtons();
+</script>${safeAd}
+
+</body>
+</html>`;
+  }// UI bindings el('generate').addEventListener('click', ()=>{ const title = el('title').value.trim() || 'Player'; const thumbnail = el('thumbnail').value.trim() || ''; const videos = el('videos').value.split('\n').map(s=>s.trim()).filter(Boolean); const downloads = {}; el('downloads').value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{ const parts = line.split('|'); downloads[parts[0].trim()] = parts[1] ? parts[1].trim() : parts[0].trim(); }); const adScript = el('adscript').value || ''; const html = buildPlayerHtml({title, thumbnail, videos, downloads, adScript}); el('output').value = html; el('preview').srcdoc = html; });
+
+el('previewBtn').addEventListener('click', ()=>{ el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>'; });
+
+el('copy').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(el('output').value); alert('HTML disalin ke clipboard ✅'); }catch(e){ el('output').select(); document.execCommand('copy'); alert('HTML disalin (fallback) ✅'); } });
+
+el('openNew').addEventListener('click', ()=>{ const w = window.open(); w.document.open(); w.document.write(el('output').value); w.document.close(); });
+
+el('download').addEventListener('click', ()=>{ const blob = new Blob([el('output').value], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+
+el('minify').addEventListener('click', ()=>{ const v = el('output').value; const min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n'); el('output').value = min; el('preview').srcdoc = min; alert('Minify applied'); });
+
+// Init one-time document.addEventListener('DOMContentLoaded', ()=> el('generate').click()); </script>
+
 </body>
 </html>
