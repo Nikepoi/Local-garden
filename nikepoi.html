@@ -7,15 +7,16 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background: #f8f9fa; padding: 20px; font-family: system-ui, sans-serif; }
-    .output { min-height: 300px; }
+    .output { min-height: 300px; font-size: 0.9rem; }
+    pre { background: #f1f3f5; padding: 10px; border-radius: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2 class="mb-4">Generator Video Player (mirip contoh kamu)</h2>
+    <h2 class="mb-4">Generator Video Player (Fixed Version)</h2>
     <form id="form">
       <div class="mb-3">
-        <label class="form-label">Judul Player (ditampilkan di atas video)</label>
+        <label class="form-label">Judul Player</label>
         <input type="text" class="form-control" id="judul" value="Cella dini" required>
       </div>
 
@@ -39,8 +40,8 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Link Full Konten (UCshare / Google Drive dll, opsional)</label>
-        <input type="url" class="form-control" id="fullLink" placeholder="https://uc-share.com/..." value="https://uc-share.com/s/05e76439e56e4?la=id">
+        <label class="form-label">Link Full Konten (opsional)</label>
+        <input type="url" class="form-control" id="fullLink" value="https://uc-share.com/s/05e76439e56e4?la=id">
       </div>
 
       <button type="button" class="btn btn-primary me-2" onclick="generate()">Generate HTML</button>
@@ -49,8 +50,8 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
 
     <hr>
 
-    <h4>Hasil HTML (salin atau download)</h4>
-    <textarea class="form-control output" id="result" readonly placeholder="Hasil akan muncul di sini setelah klik Generate..."></textarea>
+    <h4>Hasil HTML</h4>
+    <textarea class="form-control output" id="result" readonly placeholder="Klik Generate untuk melihat hasil..."></textarea>
   </div>
 
   <script>
@@ -80,7 +81,6 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
   .loader .meta{display:flex;flex-direction:column}
   .loader .meta .title{font-weight:700;color:#eaf4ff;font-size:14px}
   .loader .meta .sub{color:var(--muted);font-size:13px}
-
   .top-meta{padding:12px 16px 0 16px}
   .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
   .date{color:var(--muted);font-size:13px}
@@ -104,11 +104,9 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
     <div class="card card-player" id="card">
       <div class="video-area" id="videoArea">
         <video id="video" playsinline webkit-playsinline preload="metadata"></video>
-
         <button id="thumbPlay" class="thumb-play" aria-label="Play">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l18-10L4 2z"/></svg>
         </button>
-
         <div id="loading" class="loading-overlay" style="display:none" aria-hidden="true">
           <div class="loader" role="status" aria-live="polite">
             <div class="spinner" aria-hidden="true"></div>
@@ -116,24 +114,17 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
           </div>
         </div>
       </div>
-
       <div class="top-meta">
         <div class="title" id="title">{{JUDUL}}</div>
         <div class="date" id="date"></div>
       </div>
-
       <div class="controls">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <button id="prev" class="btn btn-outline-light btn-small" title="Previous"><i class="bi bi-skip-start-fill"></i> Prev</button>
-
           <button id="play" class="btn btn-primary btn-play" title="Play/Pause"><i class="bi bi-play-fill"></i> Play</button>
-
           <button id="next" class="btn btn-outline-light btn-small" title="Next"><i class="bi bi-skip-end-fill"></i> Next</button>
-
           <button id="loop" class="btn btn-outline-light ms-2" title="Loop">Loop</button>
-
           <button id="dl" class="btn btn-outline-light btn-small ms-2" title="Download bagian yang sedang diputar"><i class="bi bi-download"></i> Download</button>
-
           <div class="ms-auto d-flex align-items-center gap-2">
             <label class="mb-0 me-1" style="color:var(--muted)">Speed</label>
             <select id="speed" class="form-select form-select-sm" style="width:90px">
@@ -147,32 +138,23 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
             <button id="fs" class="btn btn-outline-light">Fullscreen</button>
           </div>
         </div>
-
         <div class="seek-row">
           <div class="time" id="current">0:00</div>
           <input id="seek" type="range" min="0" max="100" value="0" step="0.01" class="form-range" style="flex:1">
           <div class="time" id="duration">0:00</div>
         </div>
       </div>
-
       <div class="downloads">
         <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
         <div class="mt-2 download-grid" id="downloadButtons"></div>
       </div>
     </div>
   </div>
-
   <div id="toast" class="toast-msg" role="status" aria-live="polite"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // DATA: {{JUDUL}}
   let videos = [{{VIDEO_LIST}}];
-
-  // Full-only link (UCshare) - ONLY shown in Full konten area
   const downloads = { ucdrive: "{{FULL_LINK}}" };
-
-  // DOM refs
   const video = document.getElementById('video');
   const thumbPlay = document.getElementById('thumbPlay');
   const loading = document.getElementById('loading');
@@ -188,18 +170,14 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
   const titleEl = document.getElementById('title');
   const downloadsWrap = document.getElementById('downloadButtons');
   const toast = document.getElementById('toast');
-
   let idx = 0;
   let isSeeking = false;
-
   titleEl.textContent = "{{JUDUL}}";
   speedSel.value = "1";
-
   function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `\${min}:\${sec}`; }
   function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
   function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
   function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display='block'; toast.style.opacity='1'; setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=> toast.style.display='none',300); }, time); }
-
   function setSourceNoAuto(src){
     try{ video.pause(); }catch(e){}
     video.removeAttribute('src');
@@ -207,92 +185,48 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
     try{ video.load(); }catch(e){}
     showLoading();
   }
-
   function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
-
   if(videos.length) setSourceNoAuto(videos[0]);
-
-  video.addEventListener('loadedmetadata', () => {
-    durationT.textContent = fmt(video.duration || 0);
-    seek.max = video.duration || 100;
-  });
+  video.addEventListener('loadedmetadata', () => { durationT.textContent = fmt(video.duration || 0); seek.max = video.duration || 100; });
   video.addEventListener('canplay', () => { hideLoading(); });
-  video.addEventListener('playing', () => {
-    hideLoading();
-    playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
-    thumbPlay.classList.add('hidden');
-  });
+  video.addEventListener('playing', () => { hideLoading(); playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; thumbPlay.classList.add('hidden'); });
   ['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
-
-  video.addEventListener('timeupdate', () => {
-    if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
-  });
+  video.addEventListener('timeupdate', () => { if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });
   seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
   seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
-
   async function togglePlay(){
-    try {
-      if(video.paused) await video.play();
-      else video.pause();
-    } catch(e){
+    try { if(video.paused) await video.play(); else video.pause(); } catch(e){
       showToast('Gagal memutar. Coba klik lagi atau buka Full konten.');
-      console.warn('Play failed', e);
     }
   }
-
   playBtn.addEventListener('click', togglePlay);
   thumbPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
   video.addEventListener('click', togglePlay);
-
   video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; updateThumb(); });
-
   function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); else thumbPlay.classList.add('hidden'); }
-
-  prevBtn.addEventListener('click', ()=> {
-    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
-    idx = clampIndex(idx - 1);
-    setSourceNoAuto(videos[idx]);
-  });
-  nextBtn.addEventListener('click', ()=> {
-    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
-    idx = clampIndex(idx + 1);
-    setSourceNoAuto(videos[idx]);
-  });
-
+  prevBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = clampIndex(idx - 1); setSourceNoAuto(videos[idx]); });
+  nextBtn.addEventListener('click', ()=> { if(!videos.length) return; idx = clampIndex(idx + 1); setSourceNoAuto(videos[idx]); });
   loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
   speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
-
   document.getElementById('fs')?.addEventListener('click', ()=> {
     const el = document.querySelector('.video-area');
     if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
-
   video.addEventListener('ended', ()=> { if(videos.length && idx < videos.length - 1){ idx++; setSourceNoAuto(videos[idx]); } });
-
   video.addEventListener('error', (e) => {
-    const failedSrc = video.currentSrc || video.src || 'unknown';
-    console.warn('Video error at index', idx, failedSrc, e);
     hideLoading();
-
-    const pos = videos.indexOf(failedSrc);
+    const pos = videos.indexOf(video.currentSrc || video.src || '');
     if(pos !== -1){
       videos.splice(pos,1);
       showToast('Bagian ' + (pos+1) + ' gagal dimuat — dihapus dari daftar.');
       if(pos <= idx) idx = Math.max(0, idx - 1);
-    } else {
-      showToast('Sumber gagal dimuat. Silakan coba bagian lain atau Full konten.');
     }
-
     if(videos.length){
       idx = clampIndex(idx);
       setTimeout(()=> setSourceNoAuto(videos[idx]), 250);
-    } else {
-      showToast('Semua sumber gagal. Gunakan Full konten.');
-      try{ video.removeAttribute('src'); video.load(); }catch(e){}
     }
   });
-
   window.addEventListener('keydown', (e)=> {
     if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
@@ -300,12 +234,10 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
     if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
     if(e.key === 'm'){ video.muted = !video.muted; }
   });
-
   document.addEventListener('contextmenu', e => e.preventDefault());
-
   async function downloadCurrentVideo(){
     const src = video.currentSrc || video.src || '';
-    if(!src){ showToast('Tidak ada video untuk diunduh.'); return; }
+    if(!src) return;
     const safeTitle = titleEl.textContent.trim().replace(/\\s+/g,'_').replace(/[^\\w\\-_.]/g,'');
     const filename = `\${safeTitle}_bagian\${idx+1}.mp4`;
     try {
@@ -315,27 +247,25 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      return;
-    } catch(e){}
-    try {
-      const res = await fetch(src, { mode: 'cors' });
-      if(!res.ok) throw new Error('fetch failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a2 = document.createElement('a');
-      a2.href = url;
-      a2.download = filename;
-      document.body.appendChild(a2);
-      a2.click();
-      document.body.removeChild(a2);
-      setTimeout(()=> URL.revokeObjectURL(url), 60000);
-      return;
-    } catch(err){
-      window.open(src, '_blank', 'noopener');
+    } catch(e){
+      try {
+        const res = await fetch(src, { mode: 'cors' });
+        if(!res.ok) throw 0;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a2 = document.createElement('a');
+        a2.href = url;
+        a2.download = filename;
+        document.body.appendChild(a2);
+        a2.click();
+        document.body.removeChild(a2);
+        setTimeout(()=> URL.revokeObjectURL(url), 60000);
+      } catch(err){
+        window.open(src, '_blank', 'noopener');
+      }
     }
   }
   dlBtn.addEventListener('click', downloadCurrentVideo);
-
   function buildDownloadButtons(){
     downloadsWrap.innerHTML = '';
     if(downloads.ucdrive){
@@ -350,13 +280,9 @@ https://cdn.videy.co/G9htG10Y1.mp4</textarea>
       downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link yang tersedia.</div>';
     }
   }
-
   buildDownloadButtons();
   updateThumb();
-
-  function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); else thumbPlay.classList.add('hidden'); }
 </script>
-
 <script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
 </html>`;
