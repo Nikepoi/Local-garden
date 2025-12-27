@@ -28,26 +28,24 @@
   <div class="card">
     <h2 style="margin:0 0 10px">HTML Video Player — Generator</h2>
     <p class="muted">Isi kolom-kolom di bawah lalu tekan <strong>Generate</strong>. Hasilnya muncul di kotak kanan — klik <strong>Salin</strong> untuk copy HTML siap pakai.</p>
+
     <div class="split">
       <div>
         <label for="title">Judul</label>
-        <input id="title" type="text" placeholder="Contoh: BIYAA BDERNADETTE" value="BIYAA BDERNADETTE">
+        <input id="title" type="text" placeholder="Contoh: BIYAA BDERNADETTE" value="">
 
         <label for="thumbnail" style="margin-top:10px">Thumbnail (URL)</label>
         <input id="thumbnail" type="text" placeholder="https://example.com/thumb.jpg">
 
-        <label for="videos" style="margin-top:10px">Daftar video (satu URL per baris)</label>
-        <textarea id="videos" placeholder="https://.../video1.mp4\nhttps://.../video2.mp4">https://cdn.videy.co/OEROHlvI2.mp4
+        <label for="videos" style="margin-top:10px">Daftar video (pisah dengan baris atau spasi) — default kosong</label>
+        <textarea id="videos" placeholder="https://.../video1.mp4\nhttps://.../video2.mp4"></textarea>
 
-https://cdn.videy.co/Mtx4PRs21.mp4 https://cdn.videy.co/BxHCEBln2.mp4</textarea>
+        <label style="margin-top:10px">Konten Full (isi salah satu atau beberapa)</label>
+        <input id="terabox" type="text" placeholder="Terabox URL (contoh: https://1024terabox.com/...)">
+        <input id="ucdrive" type="text" placeholder="UCDrive URL (contoh: https://ucdrive.example/...)" style="margin-top:8px">
+        <input id="mediafire" type="text" placeholder="Mediafire URL (contoh: https://www.mediafire.com/...)" style="margin-top:8px">
 
-        <label for="downloads" style="margin-top:10px">Links download (format: label|url per baris)</label>
-        <textarea id="downloads" placeholder="Terabox|https://...">Terabox|https://1024terabox.com/s/1mML801h4xbk3Ueu8gc9x5Q</textarea>
-
-        <label for="adscript" style="margin-top:10px">Script iklan (opsional)</label>
-        <textarea id="adscript" placeholder="paste script iklan di sini (optional)"></textarea>
-
-        <div class="actions">
+        <div class="actions" style="margin-top:12px">
           <button id="generate">Generate</button>
           <button id="previewBtn" class="ghost">Update Preview</button>
           <button id="download" class="ghost">Download .html</button>
@@ -74,14 +72,16 @@ https://cdn.videy.co/Mtx4PRs21.mp4 https://cdn.videy.co/BxHCEBln2.mp4</textarea>
 <script>
   // Helper
   const el = id => document.getElementById(id);
-  function escapeScriptClose(s){ return String(s).replace(/<\/script>/gi, '<\\/script>'); }
-  function escapeHtmlAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+  function escapeHtmlAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
-  function buildPlayerHtml({title, thumbnail, videos, downloads, adScript}){
+  // Permanent ad script (inserted verbatim into generated HTML)
+  const permanentAd = "<script>(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>";
+
+  function buildPlayerHtml({title, thumbnail, videos, downloads}){
     const videosJson = JSON.stringify(videos, null, 2);
     const downloadsObj = JSON.stringify(downloads, null, 2);
-    const safeAd = adScript ? escapeScriptClose(adScript) : '';
 
+    // Build template. Note: downloads section is conditional (only when downloads present).
     return `<!doctype html>
 <html lang="id">
 <head>
@@ -118,6 +118,7 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
       <div class="video-area">
         <video id="video" playsinline webkit-playsinline preload="metadata" poster="${escapeHtmlAttr(thumbnail)}"></video>
       </div>
+
       <div class="top-meta">
         <div class="title" id="title">${escapeHtmlAttr(title)}</div>
         <div class="date" id="date"></div>
@@ -150,10 +151,10 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
         </div>
       </div>
 
-      <div class="downloads">
+${Object.keys(downloads).length ? `      <div class="downloads">
         <div class="heading"><div>Full konten</div><div class="text-muted small">klik tombol untuk buka</div></div>
         <div class="mt-2 d-flex flex-column gap-2" id="downloadButtons"></div>
-      </div>
+      </div>` : ``}
     </div>
   </div>
 
@@ -184,27 +185,11 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
   video.preload = "metadata";
   video.src = videos.length ? videos[0] : "";
   video.playbackRate = 1;
-  speedSel.value = "1";
+  if(speedSel) speedSel.value = "1";
 
-  function buildDownloadButtons(){
-    downloadsWrap.innerHTML = "";
-    for(const k in downloads){
-      const b = document.createElement('a');
-      b.className = 'download-btn';
-      b.href = downloads[k];
-      b.target = '_blank';
-      b.rel = 'noopener noreferrer nofollow';
-      b.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>'+k+' — Full konten</span>';
-      downloadsWrap.appendChild(b);
-    }
-  }
+  function buildDownloadButtons(){ if(!downloadsWrap) return; downloadsWrap.innerHTML = ""; for(const k in downloads){ const b = document.createElement('a'); b.className = 'download-btn'; b.href = downloads[k]; b.target = '_blank'; b.rel='noopener noreferrer nofollow'; b.innerHTML = '<i class=\"bi bi-cloud-arrow-down-fill\"></i><span>'+k+' — Full konten</span>'; downloadsWrap.appendChild(b); } }
 
-  function fmt(s){
-    if(!isFinite(s)) return "0:00";
-    const sec = Math.floor(s % 60).toString().padStart(2,'0');
-    const min = Math.floor(s / 60);
-    return min + ":" + sec;
-  }
+  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s % 60).toString().padStart(2,'0'); const min = Math.floor(s / 60); return min + ":" + sec; }
 
   video.addEventListener('loadedmetadata', ()=>{ durationT.textContent = fmt(video.duration); seek.max = video.duration || 100; });
   video.addEventListener('timeupdate', ()=>{ if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); } });
@@ -212,17 +197,18 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
   seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
   function togglePlay(){ if(video.paused) video.play(); else video.pause(); }
-  playBtn.addEventListener('click', togglePlay);
+  if(playBtn) playBtn.addEventListener('click', togglePlay);
   video.addEventListener('click', togglePlay);
-  video.addEventListener('play', ()=> { playBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause'; });
-  video.addEventListener('pause', ()=> { playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Play'; });
+  video.addEventListener('play', ()=> { if(playBtn) playBtn.innerHTML = '<i class=\"bi bi-pause-fill\"></i> Pause'; });
+  video.addEventListener('pause', ()=> { if(playBtn) playBtn.innerHTML = '<i class=\"bi bi-play-fill\"></i> Play'; });
 
-  prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
-  nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
-  function loadAndPlay(i){ video.src = videos[i]; video.play().catch(()=>{}); }
+  if(prevBtn) prevBtn.addEventListener('click', ()=> { if(idx > 0) idx--; else idx = videos.length - 1; loadAndPlay(idx); });
+  if(nextBtn) nextBtn.addEventListener('click', ()=> { if(idx < videos.length - 1) idx++; else idx = 0; loadAndPlay(idx); });
 
-  loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
-  speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+  function loadAndPlay(i){ if(!videos[i]) return; video.src = videos[i]; video.play().catch(()=>{}); }
+
+  if(loopBtn) loopBtn.addEventListener('click', ()=> { video.loop = !video.loop; loopBtn.classList.toggle('btn-primary', video.loop); loopBtn.classList.toggle('btn-outline-light', !video.loop); });
+  if(speedSel) speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
   document.getElementById('fs')?.addEventListener('click', ()=> { const el = document.querySelector('.video-area'); if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
 
@@ -241,55 +227,8 @@ video{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;ba
   buildDownloadButtons();
 </script>
 
-${safeAd}
+<!-- permanent ad script -->
+<script>(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
 </body>
-</html>`;
-  } // end buildPlayerHtml
-
-  // ================= UI bindings =================
-  el('generate').addEventListener('click', ()=>{
-    const title = el('title').value.trim() || 'Player';
-    const thumbnail = el('thumbnail').value.trim() || '';
-    const videos = el('videos').value
-      .split(/\s+/) // split by whitespace (enter + spaces)
-      .map(s=>s.trim())
-      .filter(s=>s.startsWith('http'));
-
-    const downloads = {};
-    el('downloads').value.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
-      const parts = line.split('|');
-      const k = parts[0] ? parts[0].trim() : ''; const v = parts[1] ? parts[1].trim() : (k || '');
-      if(k) downloads[k] = v;
-    });
-
-    const adScript = el('adscript').value || '';
-    const html = buildPlayerHtml({title, thumbnail, videos, downloads, adScript});
-    el('output').value = html;
-    el('preview').srcdoc = html;
-  });
-
-  el('previewBtn').addEventListener('click', ()=>{ el('preview').srcdoc = el('output').value || '<p style="padding:16px">Tidak ada output. Tekan Generate dulu.</p>'; });
-
-  el('copy').addEventListener('click', async ()=>{
-    try{ await navigator.clipboard.writeText(el('output').value); alert('HTML disalin ke clipboard ✅'); }
-    catch(e){ el('output').select(); document.execCommand('copy'); alert('HTML disalin (fallback) ✅'); }
-  });
-
-  el('openNew').addEventListener('click', ()=>{ const w = window.open(); w.document.open(); w.document.write(el('output').value); w.document.close(); });
-
-  el('download').addEventListener('click', ()=>{
-    const blob = new Blob([el('output').value], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = (el('title').value || 'player') + '.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
-
-  el('minify').addEventListener('click', ()=>{
-    const v = el('output').value; const min = v.replace(/\n\s+/g,'\n').replace(/\n{2,}/g,'\n'); el('output').value = min; el('preview').srcdoc = min; alert('Minify applied');
-  });
-
-  // Init one-time
-  document.addEventListener('DOMContentLoaded', ()=> el('generate').click());
-</script>
-</body>
-  </html>
+</html>
