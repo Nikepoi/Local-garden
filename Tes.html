@@ -1,307 +1,156 @@
 <!DOCTYPE html><html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Video Player HTML Generator (Clean)</title>
+<title>Video Player HTML Generator — Simple</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-  body { background: #f6f7fb; padding: 20px; font-family: Inter, system-ui, Arial; }
-  .form-container { max-width: 920px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 8px 30px rgba(16,24,40,0.06); }
-  h1 { text-align: center; margin-bottom: 18px; font-size:20px }
-  .btn-generate { margin-top: 12px; }
-  #output { margin-top: 20px; }
-  .dynamic-field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .dynamic-input { flex: 1; }
-  .hint { font-size:13px; color:#617080 }
-  textarea.form-control, input.form-control { background: #fbfdff }
-  .small-muted { font-size:12px; color:#697b8c }
+  body { background: #f6f7fb; padding: 18px; font-family: Inter, system-ui, Arial; }
+  .box { max-width:920px; margin:20px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 8px 24px rgba(17,24,39,0.06) }
+  h1{font-size:18px;margin-bottom:12px}
+  .dynamic-field{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .dynamic-field input{flex:1}
+  .small-muted{font-size:12px;color:#6b7b8c}
+  textarea.form-control, input.form-control{background:#fbfdff}
+  .controls{display:flex;gap:8px;margin-top:10px}
 </style>
 </head>
-<body><div class="container form-container">
-  <h1>Video Player HTML Generator — Clean</h1>  <div class="mb-3">
-    <label class="form-label">Judul Halaman & Video</label>
-    <input type="text" class="form-control" id="titleText" placeholder="Masukkan judul..." value="">
-  </div>  <div class="mb-3">
-    <label class="form-label">Subtitle (opsional)</label>
-    <input type="text" class="form-control" id="subtitleText" placeholder="Subtitle (boleh dikosongkan)" value="">
-  </div>  <div class="mb-3">
-    <label class="form-label">Link Poster (opsional, URL gambar)</label>
-    <input type="text" class="form-control" id="poster" placeholder="Contoh: https://example.com/poster.jpg" value="">
-    <div class="form-text small-muted">Kosongkan jika tidak menggunakan poster.</div>
-  </div>  <div class="mb-3">
-    <label class="form-label">Link Video (bisa tambah/hapus)</label>
+<body><div class="box">
+  <h1>Judul</h1>
+  <input id="pageTitle" class="form-control mb-3" placeholder="Masukkan judul halaman..." value="">  <div class="mb-3">
+    <label class="form-label">Daftar Video (kosongkan contoh — tambahkan sendiri)</label>
     <div id="videosContainer">
+      <!-- setiap field berisi: CDN URL + Original URL -->
       <div class="dynamic-field">
-        <input type="text" class="form-control dynamic-input" value="" placeholder="https://.../video.mp4">
-        <button type="button" class="btn btn-sm btn-danger" onclick="removeField(this)">-</button>
+        <input type="text" class="form-control" placeholder="CDN URL (kosong)" value="">
+        <input type="text" class="form-control" placeholder="Original URL untuk download (kosong)" value="">
+        <button type="button" class="btn btn-sm btn-danger btn-remove">-</button>
       </div>
     </div>
-    <button type="button" class="btn btn-sm btn-primary mt-2" onclick="addField('videosContainer')">+ Tambah Video</button>
-    <div class="form-text small-muted">Isi link video satu per baris. Biarkan kosong jika belum ada.</div>
-  </div>  <div class="mb-3">
-    <label class="form-label">Full Konten Links (format: Label | URL)</label>
-    <div id="fullLinksContainer">
-      <div class="dynamic-field">
-        <input type="text" class="form-control dynamic-input" value="" placeholder="Label | https://example.com/file">
-        <button type="button" class="btn btn-sm btn-danger" onclick="removeField(this)">-</button>
-      </div>
+    <div class="controls">
+      <button type="button" id="addVideo" class="btn btn-sm btn-primary">+ Tambah Video</button>
+      <div class="small-muted">Setiap baris: CDN URL + Original download URL. Biarkan kosong jika belum ada.</div>
     </div>
-    <button type="button" class="btn btn-sm btn-primary mt-2" onclick="addField('fullLinksContainer')">+ Tambah Link</button>
-    <div class="form-text small-muted">Gunakan tanda pip ( | ) untuk memisahkan label dan URL.</div>
   </div>  <div class="mb-3">
     <label class="form-label">Kode Iklan (opsional)</label>
-    <textarea class="form-control" id="adCode" rows="3" placeholder="(kosongkan jika tidak pakai)"></textarea>
-    <div class="form-text small-muted">Jika Anda akan menyuntikkan script iklan — hanya masukkan kode yang Anda percaya. Generator tidak memodifikasi kode tersebut.</div>
-  </div><button class="btn btn-primary btn-lg w-100 btn-generate" onclick="generate()">Generate HTML</button>
-
-  <div id="output" class="mt-3" style="display:none;">
-    <h5>Hasil HTML (copy semua di bawah ini)</h5>
-    <textarea class="form-control" id="result" rows="18" readonly></textarea>
+    <textarea id="adCode" class="form-control" rows="4">(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</textarea>
+    <div class="small-muted">Default script iklan dimasukkan. Kalau tidak mau iklan, hapus seluruh isi.</div>
+  </div>  <div class="d-flex gap-2">
+    <button id="generate" class="btn btn-primary">Generate HTML</button>
+    <button id="clear" class="btn btn-outline-secondary">Kosongkan Semua</button>
+  </div>  <div id="output" style="display:none;margin-top:12px">
+    <h6>Hasil HTML</h6>
+    <textarea id="result" class="form-control" rows="14" readonly></textarea>
     <div class="d-flex gap-2 mt-2">
-      <button class="btn btn-success" onclick="copyResult()">Copy ke Clipboard</button>
-      <button class="btn btn-outline-secondary" onclick="downloadResult()">Download .html</button>
+      <button id="copyBtn" class="btn btn-success">Copy ke Clipboard</button>
+      <button id="downloadBtn" class="btn btn-outline-secondary">Download .html</button>
     </div>
-    <div class="mt-2 hint">Catatan: contoh URL dikosongkan. Isi sesuai kebutuhan lalu upload ke server Anda.</div>
   </div>
 </div><script>
-function addField(containerId){
-  const container = document.getElementById(containerId);
-  const field = document.createElement('div');
-  field.className = 'dynamic-field';
-  field.innerHTML = `
-    <input type="text" class="form-control dynamic-input" value="" placeholder="">
-    <button type="button" class="btn btn-sm btn-danger" onclick="removeField(this)">-</button>
+// --- Minimal, event-driven (tidak menggunakan inline onclick) ---
+const addVideoBtn = document.getElementById('addVideo');
+const videosContainer = document.getElementById('videosContainer');
+const generateBtn = document.getElementById('generate');
+const clearBtn = document.getElementById('clear');
+const output = document.getElementById('output');
+const resultTA = document.getElementById('result');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const pageTitle = document.getElementById('pageTitle');
+const adCodeEl = document.getElementById('adCode');
+
+// add new pair field
+function addField(){
+  const wrap = document.createElement('div');
+  wrap.className = 'dynamic-field';
+  wrap.innerHTML = `
+    <input type="text" class="form-control" placeholder="CDN URL (kosong)" value="">
+    <input type="text" class="form-control" placeholder="Original URL untuk download (kosong)" value="">
+    <button type="button" class="btn btn-sm btn-danger btn-remove">-</button>
   `;
-  container.appendChild(field);
+  videosContainer.appendChild(wrap);
 }
 
-function removeField(btn){
-  const field = btn.parentElement;
-  field.remove();
+// remove using event delegation
+videosContainer.addEventListener('click', (e)=>{
+  if(e.target.classList.contains('btn-remove')){
+    const row = e.target.closest('.dynamic-field');
+    if(row) row.remove();
+  }
+});
+
+addVideoBtn.addEventListener('click', ()=>{ addField(); });
+
+clearBtn.addEventListener('click', ()=>{
+  pageTitle.value = '';
+  adCodeEl.value = '';
+  // remove all rows and add one empty row
+  videosContainer.innerHTML = '';
+  addField();
+  output.style.display = 'none';
+  resultTA.value = '';
+});
+
+function escapeClosingScript(s){
+  return s.replace(/<\/script>/gi, '<\/script>');
 }
 
-function generate(){
-  const titleText = document.getElementById('titleText').value.trim() || '';
-  const subtitleText = document.getElementById('subtitleText').value.trim() || '';
-  const poster = document.getElementById('poster').value.trim() || '';
-  const adCode = document.getElementById('adCode').value.trim() || '';
+generateBtn.addEventListener('click', ()=>{
+  // collect
+  const title = pageTitle.value.trim();
+  const adCode = adCodeEl.value || '';
+  const rows = Array.from(videosContainer.querySelectorAll('.dynamic-field'));
+  const videos = rows.map(r=>{
+    const inputs = r.querySelectorAll('input');
+    return { cdn: inputs[0].value.trim(), original: inputs[1].value.trim() };
+  }).filter(v => v.cdn || v.original);
 
-  const videoInputs = document.querySelectorAll('#videosContainer input');
-  const videos = Array.from(videoInputs).map(i=>i.value.trim()).filter(Boolean);
+  // build JSON to embed
+  const videosJSON = JSON.stringify(videos, null, 2);
+  const safeAd = escapeClosingScript(adCode);
 
-  const fullLinkInputs = document.querySelectorAll('#fullLinksContainer input');
-  const fullLinks = Array.from(fullLinkInputs).map(i=>{
-    const parts = i.value.trim().split('|');
-    if(parts.length < 2) return null;
-    return { label: parts[0].trim(), url: parts[1].trim() };
-  }).filter(Boolean);
-
-  const videosJS = JSON.stringify(videos, null, 2);
-  const fullLinksJS = JSON.stringify(fullLinks, null, 2);
-
-  let adScript = '';
-  if(adCode){
-    adScript = `\n<!-- ad script (injected as provided) -->\n<script>${adCode}</script>`;}
-
-const html = `<!doctype html>
-
+  const html = `<!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${titleText || 'Video Player'}</title>
+<title>${title ? title.replace(/</g, '&lt;') : 'Video Player'}</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-<style>
-  /* Simple, neutral theme for comfortable editing */
-  :root{ --accent:#4477ff; --muted:#6b7b8c }
-  body{font-family:Inter,system-ui,Arial;margin:0;background:#071029;color:#fff}
-  .container-player{max-width:1100px;margin:18px auto;padding:12px}
-  .card-player{background:linear-gradient(180deg,#081122 0,#041028 100%);border-radius:12px;overflow:hidden;padding:10px}
-  .player-area{position:relative;border-radius:8px;overflow:hidden;background:#000}
-  video{width:100%;height:auto;display:block;background:#000}
-  .poster-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .poster-btn{pointer-events:auto;padding:10px 14px;border-radius:999px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
-  .control-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.03)}
-  .ctrl-btn{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
-  .title{font-size:18px;font-weight:700}
-  .sub{color:var(--muted);font-size:13px}
-  .full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
-  .btn-download{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-decoration:none;color:#fff}
-  @media(max-width:520px){ .title{font-size:16px} }
-</style>
-</head>
+<style>body{font-family:Inter,system-ui,Arial;background:#071029;color:#fff;margin:0;padding:18px}.card{max-width:1100px;margin:auto;background:#081226;padding:12px;border-radius:10px}</style></head>
 <body>
-  <div class="container-player">
-    <div class="card-player">
-      <div class="player-area" id="playerArea">
-        <video id="video" preload="metadata" playsinline webkit-playsinline></video>
-        <div class="poster-overlay" id="posterOverlay">
-          <button id="posterPlay" class="poster-btn" aria-label="Play"><i class="bi bi-play-fill"></i> PLAY</button>
-        </div>
-      </div><div class="control-strip">
-    <button id="play" class="ctrl-btn" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i> <span id="playText">Play</span></button>
-    <div style="flex:1;display:flex;align-items:center;gap:8px">
-      <div id="cur">0:00</div>
-      <input id="seek" type="range" min="0" max="100" value="0" style="flex:1">
-      <div id="dur">0:00</div>
-    </div>
-    <select id="speed" style="width:90px">
-      <option value="0.5">0.5x</option>
-      <option value="0.75">0.75x</option>
-      <option value="1" selected>1x</option>
-      <option value="1.25">1.25x</option>
-      <option value="1.5">1.5x</option>
-      <option value="2">2x</option>
-    </select>
-    <button id="mute" class="ctrl-btn" title="Mute"><i id="muteIcon" class="bi bi-volume-up-fill"></i></button>
-    <button id="fs" class="ctrl-btn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
-    <button id="dl" class="ctrl-btn" title="Download"><i class="bi bi-download"></i></button>
-  </div>
-
-  <div style="padding:10px">
-    <div class="title" id="title">${titleText}</div>
-    <div class="sub" id="subtitle">${subtitleText}</div>
-  </div>
-
-  <div style="padding:10px">
-    <div style="font-weight:700">Full konten</div>
-    <div id="fullLinks" class="full-links" style="margin-top:8px"></div>
-  </div>
+<div class="card">
+  <h2>${title ? title.replace(/</g, '&lt;') : 'Video Player'}</h2>
+  <div id="player">Player minimal (paste CDN URL di data)</div>
+  <div style="margin-top:12px;font-size:13px;color:#9aa6b6">Download links:</div>
+  <div id="links" style="margin-top:6px"></div>
 </div>
-
-  </div><script>
-/* ===== DATA ===== */
-const titleText = ${JSON.stringify(titleText)};
-const subtitleText = ${JSON.stringify(subtitleText)};
-const poster = ${JSON.stringify(poster)};
-const videos = ${videosJS};
-const fullLinks = ${fullLinksJS};
-/* ================ */
-
-const video = document.getElementById('video');
-const posterOverlay = document.getElementById('posterOverlay');
-const posterPlay = document.getElementById('posterPlay');
-const titleEl = document.getElementById('title');
-const subtitleEl = document.getElementById('subtitle');
-const playBtn = document.getElementById('play');
-const playIcon = document.getElementById('playIcon');
-const playText = document.getElementById('playText');
-const dlBtn = document.getElementById('dl');
-const speedSel = document.getElementById('speed');
-const fsBtn = document.getElementById('fs');
-const seek = document.getElementById('seek');
-const cur = document.getElementById('cur');
-const dur = document.getElementById('dur');
-const muteBtn = document.getElementById('mute');
-const muteIcon = document.getElementById('muteIcon');
-const fullLinksEl = document.getElementById('fullLinks');
-
-let idx = 0;
-let seeking = false;
-
-// init UI
-titleEl.textContent = titleText || '';
-if(subtitleText) subtitleEl.textContent = subtitleText; else subtitleEl.style.display = 'none';
-if(poster){ video.poster = poster; posterOverlay.style.display = ''; } else { posterOverlay.style.display = 'none'; }
-video.preload = 'metadata';
-video.src = (videos.length ? videos[0] : '');
-video.playbackRate = 1;
-
-function fmt(s){ if(!isFinite(s)) return '0:00'; const m=Math.floor(s/60); const sec=String(Math.floor(s%60)).padStart(2,'0'); return `${m}:${sec}`; }
-
-function buildFullLinks(){
-  fullLinksEl.innerHTML = '';
-  if(!fullLinks || !fullLinks.length){
-    fullLinksEl.innerHTML = '<div style="color:#9aa6b6">Tidak ada full konten</div>';
-    return;
-  }
-  fullLinks.forEach(link=>{
+<script>
+const videos = ${videosJSON};
+(function(){
+  const linksEl = document.getElementById('links');
+  if(!videos.length){ linksEl.innerHTML = '<div style="color:#9aa6b6">Tidak ada video</div>'; return; }
+  videos.forEach(v=>{
     const a = document.createElement('a');
-    a.className='btn-download';
-    a.href = link.url;
+    a.href = v.original || v.cdn || '#';
     a.target = '_blank';
-    a.rel = 'noopener noreferrer nofollow';
-    a.textContent = link.label;
-    fullLinksEl.appendChild(a);
+    a.rel = 'noopener noreferrer';
+    a.textContent = v.original ? ('Download original — ' + (v.original)) : ('Download CDN — ' + (v.cdn));
+    a.style.display = 'block';
+    linksEl.appendChild(a);
   });
-}
-buildFullLinks();
-
-video.addEventListener('loadedmetadata', ()=>{ dur.textContent = fmt(video.duration); seek.max = video.duration || 100; setLoading(false); });
-video.addEventListener('timeupdate', ()=>{ if(!seeking){ seek.value = video.currentTime; cur.textContent = fmt(video.currentTime); } });
-video.addEventListener('waiting', ()=> setLoading(true));
-video.addEventListener('canplay', ()=> setLoading(false));
-video.addEventListener('stalled', ()=> setLoading(true));
-video.addEventListener('play', ()=>{ playIcon.className='bi bi-pause-fill'; playText.textContent=' Pause'; posterOverlay.style.display='none'; });
-video.addEventListener('pause', ()=>{ playIcon.className='bi bi-play-fill'; playText.textContent=' Play'; if(poster) posterOverlay.style.display=''; });
-
-seek.addEventListener('input', ()=>{ seeking=true; cur.textContent = fmt(seek.value); });
-seek.addEventListener('change', ()=>{ video.currentTime = Number(seek.value); seeking=false; });
-
-function togglePlay(){ if(video.paused) video.play().catch(()=>{}); else video.pause(); }
-playBtn.addEventListener('click', togglePlay);
-posterPlay.addEventListener('click', ()=>{ togglePlay(); posterOverlay.style.display='none'; });
-video.addEventListener('click', togglePlay);
-
-// Prev/Next behaviour (load but no autoplay)
-function loadIndex(i, {autoPlay=false} = {}){
-  if(!videos.length) return;
-  idx = i;
-  setLoading(true);
-  video.pause();
-  video.src = videos[i];
-  video.load();
-  if(!poster) posterOverlay.style.display='none'; else posterOverlay.style.display='';
-  if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; }
-}
-
-video.addEventListener('ended', ()=>{
-  if(idx < videos.length - 1){ idx++; loadIndex(idx, {autoPlay:false}); }
-});
-
-// Download -> open source in new tab
-dlBtn.addEventListener('click', ()=>{
-  const src = video.currentSrc || video.src;
-  if(!src){ alert('Tidak ada video aktif.'); return; }
-  window.open(src, '_blank', 'noopener');
-});
-
-// Keyboard shortcuts
-window.addEventListener('keydown', (e)=>{
-  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-  if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
-  if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, (video.currentTime||0) - 5); }
-  if(e.code === 'ArrowRight'){ video.currentTime = Math.min((video.duration||0), (video.currentTime||0) + 5); }
-  if(e.key === 'm'){ video.muted = !video.muted; updateMute(); }
-});
-
-muteBtn.addEventListener('click', ()=>{ video.muted = !video.muted; updateMute(); });
-function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
-
-fsBtn.addEventListener('click', ()=>{
-  const el = document.querySelector('.player-area');
-  if(!document.fullscreenElement) el.requestFullscreen?.().catch(()=>{}); else document.exitFullscreen?.();
-});
-
-// restrict right-click to player area only
-const playerArea = document.querySelector('.player-area');
-if(playerArea){
-  playerArea.addEventListener('contextmenu', e => e.preventDefault());
-}
-
-function setLoading(state){ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
-setLoading(true);
-video.load();
-
-</script>${adScript}
-
+})();
+</script>
+<!-- ad script injected below (as provided) -->
+<script>${safeAd}</script>
 </body>
-</html>`;document.getElementById('result').value = html; document.getElementById('output').style.display = 'block'; // place cursor to the result for convenience document.getElementById('result').focus(); }
+</html>`;resultTA.value = html; output.style.display = 'block'; resultTA.focus(); });
 
-function copyResult(){ const textarea = document.getElementById('result'); const text = textarea.value; if(!text) return alert('Tidak ada konten untuk dicopy'); if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=> alert('HTML sudah dicopy ke clipboard!'), ()=> fallbackCopy(textarea)); } else fallbackCopy(textarea); } function fallbackCopy(textarea){ textarea.select(); try{ document.execCommand('copy'); alert('HTML sudah dicopy ke clipboard!'); }catch(e){ alert('Gagal copy otomatis — silakan copy manual.'); } }
+copyBtn.addEventListener('click', ()=>{ const text = resultTA.value; if(!text) return alert('Belum ada hasil.'); if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>alert('Disalin ke clipboard')); else { resultTA.select(); document.execCommand('copy'); alert('Disalin (fallback)'); } });
 
-function downloadResult(){ const content = document.getElementById('result').value; if(!content) return alert('Tidak ada konten untuk diunduh'); const blob = new Blob([content], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'video-player.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } </script>
+downloadBtn.addEventListener('click', ()=>{ const content = resultTA.value; if(!content) return alert('Belum ada hasil.'); const blob = new Blob([content], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'video-player.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 
-</body>
+// init: single empty row videosContainer.innerHTML = ''; addField();
+
+</script></body>
 </html>
