@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Video Player HTML Generator — Fixed</title>
+<title>Video Player HTML Generator — Fixed & Aman</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
@@ -25,19 +25,19 @@
   <div class="mb-3">
     <label class="form-label">Daftar Video (CDN URL + Original URL untuk download)</label>
     <div id="videosContainer">
-      <!-- satu field default -->
+      <!-- field akan ditambahkan via JS -->
     </div>
     <div class="controls">
       <button type="button" id="addVideo" class="btn btn-sm btn-primary">+ Tambah Video</button>
       <button type="button" id="clear" class="btn btn-sm btn-outline-secondary">Kosongkan Semua</button>
-      <div class="small-muted">CDN URL untuk player, Original URL untuk tombol download. Kosongkan jika tidak ada.</div>
+      <div class="small-muted">CDN URL untuk referensi, Original URL untuk tombol download. Kosongkan jika tidak dipakai.</div>
     </div>
   </div>
 
   <div class="mb-3">
-    <label class="form-label">Kode Iklan (opsional)</label>
+    <label class="form-label">Kode Iklan (opsional, akan disisipkan apa adanya)</label>
     <textarea id="adCode" class="form-control" rows="4">(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</textarea>
-    <div class="small-muted">Script iklan akan disisipkan apa adanya. Hapus isi textarea jika tidak ingin iklan.</div>
+    <div class="small-muted">Hapus isi textarea ini jika tidak ingin ada iklan.</div>
   </div>
 
   <div class="d-flex gap-2 mb-3">
@@ -47,13 +47,13 @@
   </div>
 
   <div id="output" style="display:none;">
-    <h6>Hasil HTML</h6>
+    <h6>Hasil HTML (siap disimpan atau upload)</h6>
     <textarea id="result" class="form-control" rows="16" readonly></textarea>
   </div>
 </div>
 
 <script>
-// ==== Generator Script (halaman ini) ====
+// ============== GENERATOR SCRIPT (halaman ini) ==============
 const addVideoBtn = document.getElementById('addVideo');
 const videosContainer = document.getElementById('videosContainer');
 const generateBtn = document.getElementById('generate');
@@ -69,18 +69,20 @@ function createVideoField() {
   const wrap = document.createElement('div');
   wrap.className = 'dynamic-field';
   wrap.innerHTML = `
-    <input type="text" class="form-control" placeholder="CDN URL (untuk player)" value="">
+    <input type="text" class="form-control" placeholder="CDN URL (untuk referensi)" value="">
     <input type="text" class="form-control" placeholder="Original URL (untuk download)" value="">
     <button type="button" class="btn btn-sm btn-danger btn-remove">-</button>
   `;
   videosContainer.appendChild(wrap);
 }
 
-// Hapus field
+// Hapus field (minimal 1 field tetap ada)
 videosContainer.addEventListener('click', e => {
   if (e.target.classList.contains('btn-remove')) {
     const row = e.target.closest('.dynamic-field');
-    if (row && videosContainer.children.length > 1) row.remove();
+    if (row && videosContainer.children.length > 1) {
+      row.remove();
+    }
   }
 });
 
@@ -95,9 +97,9 @@ clearBtn.addEventListener('click', () => {
   resultTA.value = '';
 });
 
-// ==== Bagian paling penting: generate HTML yang aman dari </script> ====
+// ============== BAGIAN UTAMA: BUILD HTML YANG AKAN DI-GENERATE ==============
 function buildGeneratedHTML(title, videos, adCode) {
-  const videosJson = JSON.stringify(videos);
+  const videosJson = JSON.stringify(videos); // aman, tidak akan menghasilkan </script>
 
   let html = `<!doctype html>
 <html lang="id">
@@ -109,53 +111,60 @@ function buildGeneratedHTML(title, videos, adCode) {
   <style>
     body{font-family:Inter,system-ui,Arial;background:#071029;color:#fff;margin:0;padding:18px}
     .card{max-width:1100px;margin:auto;background:#081226;padding:20px;border-radius:10px}
-    a{color:#8fb3ff;display:block;margin:8px 0}
-    #player{margin:20px 0;padding:20px;background:#000;border-radius:8px;text-align:center;color:#ccc}
+    a{color:#8fb3ff;display:block;margin:12px 0;padding:14px;background:#112240;border-radius:8px;text-align:center;font-size:16px;text-decoration:none}
+    a:hover{background:#1a3355}
+    #player{margin:20px 0;padding:40px;background:#000;border-radius:8px;text-align:center;color:#ccc;font-size:15px}
+    .note{color:#9aa6b6;font-size:14px;margin-top:20px}
   </style>
 </head>
 <body>
 <div class="card">
   <h2 class="text-center mb-4">${title || 'Video Player'}</h2>
 
-  <div id="player">Pilih link download di bawah untuk memutar video (atau gunakan player eksternal).</div>
+  <div id="player">
+    Klik link download di bawah untuk memutar video<br>
+    (bisa dibuka di VLC, MX Player, atau player lain)
+  </div>
 
-  <div style="margin-top:20px;font-size:14px;color:#9aa6b6">Download links:</div>
+  <div class="note">Download links:</div>
   <div id="links"></div>
 </div>
 
 <script>
-// Data video yang di-embed
+// Data video yang di-embed langsung di halaman
 const videos = ${videosJson};
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
   const linksEl = document.getElementById('links');
+  
   if (!videos || videos.length === 0) {
-    linksEl.innerHTML = '<div style="color:#9aa6b6">Tidak ada video</div>';
+    linksEl.innerHTML = '<div style="color:#9aa6b6;padding:30px;text-align:center">Tidak ada video</div>';
     return;
   }
 
-  videos.forEach(v => {
+  videos.forEach(function(v) {
     if (!v.cdn && !v.original) return;
 
     const a = document.createElement('a');
     a.href = v.original || v.cdn || '#';
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    a.textContent = v.original || v.cdn || 'Link video';
+    a.textContent = v.original || v.cdn || 'Link Video';
     linksEl.appendChild(a);
   });
 });
 </script>`;
 
-// Sisipkan iklan (jika ada) — langsung dimasukkan apa adanya
+  // Sisipkan kode iklan apa adanya (raw)
   if (adCode && adCode.trim()) {
-    html += `\n<!-- Iklan -->\n${adCode.trim()}`;
+    html += `\n<!-- Kode Iklan -->\n${adCode.trim()}\n`;
   }
 
   html += `\n</body>\n</html>`;
   return html;
 }
 
+// ============== EVENT GENERATE ==============
 generateBtn.addEventListener('click', () => {
   const title = pageTitleInput.value.trim();
   const adCode = adCodeEl.value;
@@ -167,7 +176,7 @@ generateBtn.addEventListener('click', () => {
       cdn: inputs[0].value.trim(),
       original: inputs[1].value.trim()
     };
-  }).filter(v => v.cdn || v.original); // hilangkan yang benar-benar kosong
+  }).filter(v => v.cdn || v.original); // buang yang kosong total
 
   const generatedHtml = buildGeneratedHTML(title, videos, adCode);
 
@@ -177,21 +186,20 @@ generateBtn.addEventListener('click', () => {
   resultTA.select();
 });
 
-// Copy ke clipboard
+// ============== COPY & DOWNLOAD ==============
 copyBtn.addEventListener('click', () => {
-  if (!resultTA.value) return alert('Belum ada hasil untuk dicopy');
+  if (!resultTA.value) return alert('Generate dulu HTML-nya!');
   resultTA.select();
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(resultTA.value).then(() => alert('Berhasil dicopy!'));
+    navigator.clipboard.writeText(resultTA.value).then(() => alert('Berhasil dicopy ke clipboard!'));
   } else {
     document.execCommand('copy');
     alert('Berhasil dicopy (fallback)');
   }
 });
 
-// Download file HTML
 downloadBtn.addEventListener('click', () => {
-  if (!resultTA.value) return alert('Generate dulu HTML-nya');
+  if (!resultTA.value) return alert('Generate dulu HTML-nya!');
   const blob = new Blob([resultTA.value], {type: 'text/html'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -201,8 +209,8 @@ downloadBtn.addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// Inisialisasi: satu field kosong
-createVideoField();
+// ============== INIT ==============
+createVideoField(); // tambah satu field kosong saat load
 
 </script>
 </body>
