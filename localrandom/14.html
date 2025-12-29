@@ -27,6 +27,7 @@ video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;ba
 .control-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0));}
 .ctrl-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.02);cursor:pointer;color:#eaf4ff}
 .ctrl-btn.primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0}
+.ctrl-section{display:flex;align-items:center;gap:8px}
 .seek{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}
 .range{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:999px;appearance:none;outline:none}
 .range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
@@ -38,10 +39,6 @@ video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;ba
 
 .full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
 .btn-download{display:inline-flex;gap:8px;align-items:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
-
-.playlist{margin-top:12px;display:flex;flex-direction:column;gap:8px}
-.playlist button{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:10px;border-radius:8px;color:inherit;text-align:left;cursor:pointer}
-.playlist button:hover{background:rgba(255,255,255,0.02)}
 
 @media(max-width:520px){
   .poster-btn{padding:12px 14px;font-size:14px}
@@ -107,14 +104,12 @@ video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;ba
           <div id="fullLinks" class="full-links" style="margin-top:8px"></div>
         </div>
 
-        <div class="playlist" id="playlist"></div>
-
       </div>
     </div>
   </div>
 
 <script>
-/* ===== DATA - edit jika perlu ===== */
+/* ===== DATA - ganti sesuai kebutuhan ===== */
 const titleText = "Local random part 14";
 const subtitleText = "";
 const poster = ""; // Foto : none
@@ -162,7 +157,6 @@ const dur = document.getElementById('dur');
 const muteBtn = document.getElementById('mute');
 const muteIcon = document.getElementById('muteIcon');
 const fullLinksEl = document.getElementById('fullLinks');
-const playlistEl = document.getElementById('playlist');
 
 let idx = 0;
 let seeking = false;
@@ -193,18 +187,6 @@ function buildFullLinks(){
   });
 }
 buildFullLinks();
-
-// build playlist UI
-function buildPlaylist(){
-  playlistEl.innerHTML = "";
-  videos.forEach((src,i)=>{
-    const btn = document.createElement('button');
-    btn.textContent = `Part ${i+1} — ${src.split('/').pop()}`;
-    btn.addEventListener('click', ()=> loadIndex(i, {autoPlay:false}));
-    playlistEl.appendChild(btn);
-  });
-}
-buildPlaylist();
 
 // helper: format seconds
 function fmt(s){ if(!isFinite(s)) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,"0"); return `${m}:${sec}`; }
@@ -253,7 +235,6 @@ function loadIndex(i, {autoPlay=false} = {}){
   idx = i;
   setLoading(true);
   video.pause();
-  // assign src then load
   video.src = videos[i];
   video.load();
   posterOverlay.style.display = '';
@@ -283,15 +264,13 @@ speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.va
 muteBtn.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
 function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
 
-// fullscreen (desktop & most mobile)
+// fullscreen (desktop & mobile)
 fsBtn.addEventListener('click', ()=> {
   const el = document.querySelector('.player-area');
   if(!document.fullscreenElement) {
-    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    el.requestFullscreen?.().catch(()=>{});
   } else {
-    if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-    else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    document.exitFullscreen?.catch(()=>{});
   }
 });
 
@@ -311,7 +290,6 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 function setLoading(state){ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
 
 // initial
-updateMute();
 setLoading(true);
 video.load();
 
@@ -320,4 +298,4 @@ video.load();
 <!-- ad script (zone 10359853) -->
 <script>(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
-</html>
+  </html>
