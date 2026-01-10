@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HIJAB MALAY 10JAN</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#060717; --panel:#071129; --muted:#9fb0c0; --accent:#4f8cff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#020617 0,#071129 100%);color:#eaf4ff;font-family:Inter,system-ui,Arial;-webkit-font-smoothing:antialiased}
+.container-player{max-width:1100px;margin:20px auto;padding:14px}
+.card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(2,6,23,0.6)}
+
+.player-shell{display:flex;flex-direction:column;gap:12px;padding:12px}
+.player-area{position:relative;border-radius:10px;overflow:hidden;background:#000; touch-action:manipulation}
+video{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;background:#000}
+
+.poster-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.poster-btn{pointer-events:auto;display:inline-flex;gap:12px;align-items:center;background:linear-gradient(90deg, rgba(0,0,0,0.65), rgba(0,0,0,0.25));padding:14px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;color:#fff;font-weight:800;font-size:16px;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+
+.control-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0));}
+.ctrl-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.02);cursor:pointer;color:#eaf4ff}
+.ctrl-btn.primary{background:linear-gradient(90deg,var(--accent),#2aa0ff);border:0}
+.ctrl-section{display:flex;align-items:center;gap:8px}
+.seek{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}
+.range{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:999px;appearance:none;outline:none}
+.range::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 6px 14px rgba(79,140,255,.18)}
+.time{min-width:48px;text-align:center;color:var(--muted);font-size:13px}
+
+.meta{padding:6px 6px 12px}
+.title{font-size:20px;font-weight:800;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+
+.full-links{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
+.btn-download{display:inline-flex;gap:8px;align-items:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:#eaf4ff;text-decoration:none}
+
+@media(max-width:520px){
+  .poster-btn{padding:12px 14px;font-size:14px}
+  .title{font-size:18px}
+}
+</style>
+</head>
+<body>
+  <div class="container-player">
+    <div class="card-player">
+      <div class="player-shell">
+
+        <div class="player-area" id="playerArea">
+          <video id="video" preload="metadata" playsinline webkit-playsinline></video>
+
+          <div class="poster-overlay" id="posterOverlay">
+            <button id="posterPlay" class="poster-btn" aria-label="Play">
+              <i class="bi bi-play-fill"></i> PLAY
+            </button>
+          </div>
+
+        </div>
+
+        <div class="control-strip" id="controlStrip">
+          <div class="ctrl-section">
+            <button id="prev" class="ctrl-btn" title="Prev"><i class="bi bi-skip-start-fill"></i> Prev</button>
+            <button id="play" class="ctrl-btn primary" title="Play/Pause"><i id="playIcon" class="bi bi-play-fill"></i><span id="playText" style="font-weight:800"> Play</span></button>
+            <button id="next" class="ctrl-btn" title="Next">Next <i class="bi bi-skip-end-fill"></i></button>
+          </div>
+
+          <div class="seek">
+            <div class="time" id="cur">0:00</div>
+            <input id="seek" type="range" min="0" max="100" value="0" class="range" />
+            <div class="time" id="dur">0:00</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <button id="dl" class="ctrl-btn" title="Download"><i class="bi bi-download"></i> Download</button>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="margin:0;color:var(--muted);font-size:13px">Speed</label>
+              <select id="speed" class="form-select form-select-sm" style="width:90px">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
+            </div>
+            <button id="mute" class="ctrl-btn" title="Mute"><i id="muteIcon" class="bi bi-volume-up-fill"></i></button>
+            <button id="fs" class="ctrl-btn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="title" id="title">HIJAB MALAY 10JAN</div>
+          <div class="sub" id="subtitle">--</div>
+        </div>
+
+        <div>
+          <div style="font-weight:800;font-size:15px">Full konten</div>
+          <div style="color:var(--muted);font-size:13px;margin-top:6px" id="fullnote">Klik tombol untuk membuka</div>
+          <div id="fullLinks" class="full-links" style="margin-top:8px"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===== DATA - ganti sesuai kebutuhan ===== */
+const titleText = "HIJAB MALAY 10JAN";
+const subtitleText = "";
+const poster = ""; // Foto : none
+const videos = [
+  "https://cdn.videy.co/G2iYnLlG1.mp4",
+  "https://cdn.videy.co/bSWn6qZV1.mp4",
+  "https://cdn.videy.co/Zj2CZ6XV1.mp4"
+];
+const fullLinks = [
+  { label: "UC Share — Full konten", url: "https://uc-share.com/s/faed87269dc44?la=en-us" },
+  { label: "Terabox — Full konten", url: "https://1024terabox.com/s/1eKIBDytn-ClbdMAlbR41Bg" }
+];
+/* ======================================== */
+
+const video = document.getElementById('video');
+const posterOverlay = document.getElementById('posterOverlay');
+const posterPlay = document.getElementById('posterPlay');
+const titleEl = document.getElementById('title');
+const subtitleEl = document.getElementById('subtitle');
+const playBtn = document.getElementById('play');
+const playIcon = document.getElementById('playIcon');
+const playText = document.getElementById('playText');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const dlBtn = document.getElementById('dl');
+const speedSel = document.getElementById('speed');
+const fsBtn = document.getElementById('fs');
+const seek = document.getElementById('seek');
+const cur = document.getElementById('cur');
+const dur = document.getElementById('dur');
+const muteBtn = document.getElementById('mute');
+const muteIcon = document.getElementById('muteIcon');
+const fullLinksEl = document.getElementById('fullLinks');
+
+let idx = 0;
+let seeking = false;
+
+// init meta
+titleEl.textContent = titleText;
+subtitleEl.textContent = subtitleText || "";
+if(poster) video.poster = poster;
+video.preload = "metadata";
+video.src = videos.length ? videos[0] : "";
+video.playbackRate = 1;
+
+// build fullLinks UI
+function buildFullLinks(){
+  fullLinksEl.innerHTML = "";
+  if(!fullLinks || !fullLinks.length){
+    fullLinksEl.innerHTML = '<div style="color:var(--muted)">Tidak ada full konten</div>';
+    return;
+  }
+  fullLinks.forEach(link=>{
+    const a = document.createElement('a');
+    a.className='btn-download';
+    a.href = link.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer nofollow';
+    a.innerHTML = `<i class="bi bi-cloud-arrow-down-fill"></i><div style="font-weight:700">${link.label}</div>`;
+    fullLinksEl.appendChild(a);
+  });
+}
+buildFullLinks();
+
+// helper: format seconds
+function fmt(s){ if(!isFinite(s)) return "0:00"; const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,"0"); return `${m}:${sec}`; }
+
+// helper: cdn -> watch URL
+function cdnToWatch(src){
+  try{
+    const name = new URL(src).pathname.split('/').pop();
+    const id = name.replace(/\.[^/.]+$/,'');
+    return `https://videy.co/v/?id=${encodeURIComponent(id)}`;
+  }catch(e){ return src; }
+}
+
+// video event wiring
+video.addEventListener('loadedmetadata', ()=> { dur.textContent = fmt(video.duration); seek.max = video.duration || 100; setLoading(false); });
+video.addEventListener('timeupdate', ()=> { if(!seeking){ seek.value = video.currentTime; cur.textContent = fmt(video.currentTime); } });
+video.addEventListener('waiting', ()=> setLoading(true));
+video.addEventListener('canplay', ()=> setLoading(false));
+video.addEventListener('stalled', ()=> setLoading(true));
+video.addEventListener('play', ()=> { playIcon.className='bi bi-pause-fill'; playText.textContent=' Pause'; posterOverlay.style.display='none'; });
+video.addEventListener('pause', ()=> { playIcon.className='bi bi-play-fill'; playText.textContent=' Play'; posterOverlay.style.display=''; });
+
+// seek handling
+seek.addEventListener('input', ()=> { seeking = true; cur.textContent = fmt(seek.value); });
+seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); seeking = false; });
+
+// play toggle
+function togglePlay(){ if(video.paused) video.play().catch(()=>{}); else video.pause(); }
+playBtn.addEventListener('click', togglePlay);
+posterPlay.addEventListener('click', ()=> { togglePlay(); posterOverlay.style.display='none'; });
+video.addEventListener('click', togglePlay);
+
+// prev/next: load only (no autoplay)
+prevBtn.addEventListener('click', ()=> {
+  if(!videos.length) return;
+  idx = idx > 0 ? idx-1 : videos.length-1;
+  loadIndex(idx, {autoPlay:false});
+});
+nextBtn.addEventListener('click', ()=> {
+  if(!videos.length) return;
+  idx = idx < videos.length-1 ? idx+1 : 0;
+  loadIndex(idx, {autoPlay:false});
+});
+
+function loadIndex(i, {autoPlay=false} = {}){
+  idx = i;
+  setLoading(true);
+  video.pause();
+  video.src = videos[i];
+  video.load();
+  posterOverlay.style.display = '';
+  if(autoPlay){ video.play().catch(()=>{}); posterOverlay.style.display='none'; }
+}
+
+// download button -> open watch URL (no cdn)
+dlBtn.addEventListener('click', ()=> {
+  const src = video.currentSrc || video.src;
+  if(!src){ alert('Tidak ada video aktif.'); return; }
+  const watch = cdnToWatch(src);
+  window.open(watch, '_blank', 'noopener');
+});
+
+// auto-next on ended -> load next but don't autoplay
+video.addEventListener('ended', ()=> {
+  if(idx < videos.length - 1){
+    idx++;
+    loadIndex(idx, {autoPlay:false});
+  }
+});
+
+// speed
+speedSel.addEventListener('change', ()=> video.playbackRate = Number(speedSel.value));
+
+// mute
+muteBtn.addEventListener('click', ()=> { video.muted = !video.muted; updateMute(); });
+function updateMute(){ muteIcon.className = video.muted ? 'bi bi-volume-mute-fill' : (video.volume === 0 ? 'bi bi-volume-off-fill' : 'bi bi-volume-up-fill'); }
+
+// fullscreen (desktop & mobile)
+fsBtn.addEventListener('click', ()=> {
+  const el = document.querySelector('.player-area');
+  if(!document.fullscreenElement) {
+    el.requestFullscreen?.().catch(()=>{});
+  } else {
+    document.exitFullscreen?.catch(()=>{});
+  }
+});
+
+// keyboard
+window.addEventListener('keydown', (e)=>{
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+  if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+  if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+  if(e.key === 'm'){ video.muted = !video.muted; updateMute(); }
+});
+
+// right-click block
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// loading UI
+function setLoading(state){ if(state) document.querySelector('.card-player').setAttribute('data-loading','1'); else document.querySelector('.card-player').removeAttribute('data-loading'); }
+
+// initial
+setLoading(true);
+video.load();
+
+</script>
+
+<!-- ad script (zone 9482531) -->
+<script>(function(s){s.dataset.zone='9482531',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+  </html>
