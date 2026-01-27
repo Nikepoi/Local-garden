@@ -134,7 +134,7 @@ const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769527741766-Youtube_-mr_raja_sawit__0.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769527843499-Youtube_-_mr_raja_sawit.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769527895869-Youtube_-mr_raja_sawit__18.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769527924294-Youtube_-mr_raja_sawit__23.mp4",
+  "https://cdn.vipoy.co/videos/cmkunk30a01mz01mzseksx2oy19il/1769527924294-Youtube_-mr_raja_sawit__23.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769528001680-Youtube_-mr_raja_sawit__5.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769528071144-Youtube_-mr_raja_sawit__17.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769528116603-Youtube_-mr_raja_sawit__3.mp4",
@@ -175,29 +175,22 @@ const speedSel = document.getElementById('speed');
 const seek = document.getElementById('seek');
 const currentT = document.getElementById('current');
 const durationT = document.getElementById('duration');
+const titleEl = document.getElementById('title');
 const downloadsWrap = document.getElementById('downloadButtons');
 const partsGrid = document.getElementById('partsGrid');
 const toast = document.getElementById('toast');
-const ucBtn = document.getElementById('ucBtn');
-const teraBtn = document.getElementById('teraBtn');
 
 let idx = 0;
 let isSeeking = false;
 
-document.getElementById('title').textContent = 'Local random part 17';
-document.getElementById('date').textContent = 'Foto : none';
+titleEl.textContent = "Local random part 17";
 speedSel.value = "1";
 
-// ===== HELPERS =====
-function fmt(s){
-  if(!isFinite(s)) return "0:00";
-  const sec = Math.floor(s % 60).toString().padStart(2,'0');
-  const min = Math.floor(s / 60);
-  return `${min}:${sec}`;
-}
+function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `\( {min}: \){sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
 function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; toast.style.opacity='1'; setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=> toast.style.display='none',300); }, time); }
+
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
 
 // Load source but DO NOT autoplay
@@ -217,8 +210,6 @@ video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
 });
-
-video.addEventListener('loadeddata', () => { hideLoading(); });
 
 video.addEventListener('canplay', () => { hideLoading(); });
 
@@ -325,7 +316,7 @@ window.addEventListener('keydown', (e)=> {
   if(e.key === 'm'){ video.muted = !video.muted; }
 });
 
-// Block right-click (optional — keep disabled if you want normal menu)
+// Block right-click
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // DOWNLOAD ACTIONS
@@ -347,9 +338,7 @@ function buildDownloadButtons(){
     a.rel = 'noopener noreferrer nofollow';
     a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>UC Share — Full konten</span>';
     downloadsWrap.appendChild(a);
-    ucBtn.href = downloads.uc;
-  } else ucBtn.href = '#';
-
+  }
   if(downloads.terabox){
     const a = document.createElement('a');
     a.className = 'download-btn';
@@ -358,9 +347,7 @@ function buildDownloadButtons(){
     a.rel = 'noopener noreferrer nofollow';
     a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
     downloadsWrap.appendChild(a);
-    teraBtn.href = downloads.terabox;
-  } else teraBtn.href = '#';
-
+  }
   if(!downloads.uc && !downloads.terabox){
     downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link.</div>';
   }
@@ -395,4 +382,4 @@ function updateThumb(){ if(video.paused) thumbPlay.classList.remove('hidden'); e
 <!-- iklan / zone script (ganti sesuai kebutuhan) -->
 <script>(function(s){s.dataset.zone='10359853',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
-      </html>
+</html>
