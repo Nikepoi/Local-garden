@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RINI</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  :root{ --bg:#071022; --muted:#98a8b3; --accent:#3b82f6; }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041027 0,#071129 100%);color:#e9f2fb}
+  .wrap{max-width:980px;margin:18px auto;padding:16px}
+  .card-player{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  .video-area{background:#000;position:relative;overflow:hidden}
+  video{width:100%;height:auto;max-height:72vh;object-fit:contain;display:block;background:#000;cursor:pointer}
+  .thumb-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06));border:2px solid rgba(255,255,255,0.06);z-index:22;box-shadow:0 8px 30px rgba(2,6,23,0.6);pointer-events:none;opacity:0.95}
+  .thumb-play svg{ width:28px;height:28px; fill:#eaf4ff; opacity:0.98; }
+  .thumb-play.hidden{ display:none; }
+  .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30}
+  .loader{pointer-events:auto;display:flex;gap:12px;align-items:center;background:linear-gradient(180deg, rgba(3,6,12,0.72), rgba(3,6,12,0.45));padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 8px 30px rgba(3,6,12,0.5);backdrop-filter: blur(6px);}
+  .spinner{width:38px;height:38px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color: var(--accent);animation: spin .9s linear infinite;}
+  @keyframes spin{ to { transform: rotate(360deg); } }
+  .loader .meta{display:flex;flex-direction:column}
+  .loader .meta .title{font-weight:700;color:#eaf4ff;font-size:14px}
+  .loader .meta .sub{color:var(--muted);font-size:13px}
+
+  .top-meta{padding:12px 16px 0 16px}
+  .title{font-size:20px;font-weight:800;color:#ffffff;margin:0 0 6px 0}
+  .date{color:var(--muted);font-size:13px}
+  .controls { padding:14px; border-top:1px solid rgba(255,255,255,0.03); display:flex; gap:8px; align-items:center; }
+  .btn-small { min-width:64px; padding:8px 10px; font-size:0.95rem; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+  .download-btn{min-width:150px;text-align:left;background:transparent;border:1px solid rgba(255,255,255,0.06);color:#eaf4ff;padding:8px 12px;border-radius:8px;display:inline-flex;gap:8px;align-items:center;text-decoration:none;}
+  .download-btn .bi{font-size:1.05rem;}
+  .download-btn:hover{background:rgba(255,255,255,0.02)}
+  .download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:12px}
+  .channel-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .channel-btn{width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.02);display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03);text-decoration:none}
+  .toast-msg{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;z-index:9999;background:rgba(10,15,20,0.9);color:#eaf4ff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:none}
+  /* hide extra features so only prev/next/download are visible */
+  .extras{display:none}
+  @media(max-width:520px){ .btn-small{min-width:56px;padding:6px 8px;font-size:0.9rem} .title{font-size:18px} .thumb-play{width:60px;height:60px} .thumb-play svg{width:22px;height:22px} .spinner{width:28px;height:28px;border-width:3px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card card-player" id="card">
+      <div class="video-area" id="videoArea">
+        <video id="video" playsinline webkit-playsinline preload="metadata" tabindex="0"></video>
+
+        <div id="thumbPlay" class="thumb-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l18-10L4 2z"/></svg>
+        </div>
+
+        <div id="loading" class="loading-overlay" style="display:none" aria-hidden="true">
+          <div class="loader" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="meta"><div class="title">Memuat video…</div><div class="sub">Menunggu jaringan / buffering</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-meta">
+        <div class="title" id="title">RINI</div>
+        <div class="date" id="date"></div>
+      </div>
+
+      <!-- Controls: only Prev / Next / Download (per request) -->
+      <div class="controls" role="toolbar" aria-label="Player controls">
+        <button id="prev" class="btn btn-outline-light btn-small" title="Previous"><i class="bi bi-skip-start-fill"></i> Prev</button>
+        <button id="next" class="btn btn-outline-light btn-small" title="Next"><i class="bi bi-skip-end-fill"></i> Next</button>
+        <div style="flex:1"></div>
+        <button id="dl" class="btn btn-outline-light btn-small" title="Open download link for current part"><i class="bi bi-download"></i> Download</button>
+      </div>
+
+      <div class="downloads">
+        <div class="heading" style="font-weight:700; color:#eaf4ff">Full konten</div>
+        <div class="mt-2 download-grid" id="downloadButtons">
+          <div style="color:var(--muted)">Full konten tersedia di UC / Terabox (tidak diubah)</div>
+        </div>
+
+        <div style="margin-top:12px; font-weight:700; color:#eaf4ff">Bagian (link sesuai urutan nonton)</div>
+        <div class="mt-2 download-grid" id="partsGrid"></div>
+
+        <div class="channel-grid" aria-hidden="false" style="margin-top:12px">
+          <a class="channel-btn" href="https://uc-share.com/s/c90175c0e6f34?la=en-us" target="_blank" rel="noopener noreferrer nofollow" title="UC Share">
+            <i class="bi bi-cloud-arrow-down-fill" style="color:var(--muted)"></i>
+          </a>
+          <a class="channel-btn" href="https://1024terabox.com/s/1uUvrELqyp5ppzEh59znxqA" target="_blank" rel="noopener noreferrer nofollow" title="Terabox">
+            <i class="bi bi-cloud-arrow-down-fill" style="color:var(--muted)"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast-msg" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ===== DATA =====
+  // Stream links (same as download links per request)
+  const videos = [
+    "https://file.boodstream.cam/stream/20260131/6e1faf19b5ac44f1b5c91b922bbdffb9.mp4",
+    "https://file.boodstream.cam/stream/20260131/2e32fc821e0548b590208f16d62d4393.mp4",
+    "https://file.boodstream.cam/stream/20260131/0d19f86e7a934a7b8e490d04e0bbdb2f.mp4",
+    "https://file.boodstream.cam/stream/20260131/0422b11cabca48b2be5d4f2177c396a7.mp4",
+    "https://file.boodstream.cam/stream/20260131/c6a160b0680d4e0ca4ec75d3ac644229.mp4",
+    "https://file.boodstream.cam/stream/20260131/a1e8afd490be40098a27a84fc7a98d49.mp4"
+  ];
+
+  // download links are the same as stream links (per user's instruction)
+  const partsDownloadLinks = [...videos];
+
+  const downloads = {
+    uc: "https://uc-share.com/s/c90175c0e6f34?la=en-us",
+    terabox: "https://1024terabox.com/s/1uUvrELqyp5ppzEh59znxqA"
+  };
+
+  // ===== DOM refs =====
+  const video = document.getElementById('video');
+  const loading = document.getElementById('loading');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const dlBtn = document.getElementById('dl');
+  const titleEl = document.getElementById('title');
+  const downloadsWrap = document.getElementById('downloadButtons');
+  const partsGrid = document.getElementById('partsGrid');
+  const toast = document.getElementById('toast');
+  const thumbPlay = document.getElementById('thumbPlay');
+
+  let idx = 0;
+
+  titleEl.textContent = "RINI";
+
+  function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
+  function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
+  function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateThumb(); }
+  function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; toast.style.opacity='1'; setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=> toast.style.display='none',300); }, time); }
+
+  function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
+
+  // Load source but DO NOT autoplay
+  function setSourceNoAuto(src){
+    try{ video.pause(); }catch(e){}
+    video.removeAttribute('src');
+    video.src = src;
+    try{ video.load(); }catch(e){}
+    showLoading();
+  }
+
+  // init first
+  if(videos.length) setSourceNoAuto(videos[0]);
+
+  // Events
+  video.addEventListener('loadedmetadata', () => { hideLoading(); });
+  video.addEventListener('canplay', () => { hideLoading(); });
+  video.addEventListener('playing', () => { hideLoading(); thumbPlay.classList.add('hidden'); });
+  video.addEventListener('pause', ()=> { thumbPlay.classList.remove('hidden'); });
+
+  ['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
+
+  // click video to toggle play/pause (still allowed)
+  video.addEventListener('click', async () => {
+    try {
+      if(video.paused) await video.play();
+      else video.pause();
+    } catch(e){
+      showToast('Gagal memutar. Coba klik lagi.');
+      console.warn('Play failed', e);
+    }
+  });
+
+  // Prev / Next: load next/prev but DO NOT autoplay
+  prevBtn.addEventListener('click', ()=> {
+    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+    idx = clampIndex(idx - 1);
+    setSourceNoAuto(videos[idx]);
+    updatePartsHighlight();
+  });
+  nextBtn.addEventListener('click', ()=> {
+    if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+    idx = clampIndex(idx + 1);
+    setSourceNoAuto(videos[idx]);
+    updatePartsHighlight();
+  });
+
+  // DOWNLOAD ACTIONS: open mapped download URL for current part (which equals stream link)
+  function openDownloadForCurrent(){
+    const dl = partsDownloadLinks[idx] || '';
+    if(!dl){ showToast('Tidak ada link download untuk bagian ini.'); return; }
+    window.open(dl, '_blank', 'noopener');
+  }
+  dlBtn.addEventListener('click', openDownloadForCurrent);
+
+  // Build Full konten area (UC & Terabox) - keep as provided
+  function buildDownloadButtons(){
+    downloadsWrap.innerHTML = '';
+    if(downloads.uc){
+      const a = document.createElement('a');
+      a.className = 'download-btn';
+      a.href = downloads.uc;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer nofollow';
+      a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>UC Share — Full konten</span>';
+      downloadsWrap.appendChild(a);
+    }
+    if(downloads.terabox){
+      const a = document.createElement('a');
+      a.className = 'download-btn';
+      a.href = downloads.terabox;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer nofollow';
+      a.innerHTML = '<i class="bi bi-cloud-arrow-down-fill"></i><span>Terabox — Full konten</span>';
+      downloadsWrap.appendChild(a);
+    }
+    if(!downloads.uc && !downloads.terabox){
+      downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link.</div>';
+    }
+  }
+
+  // Build parts grid with download links (ordered) - links same as stream links
+  function buildPartsGrid(){
+    partsGrid.innerHTML = '';
+    if(!partsDownloadLinks || !partsDownloadLinks.length){
+      partsGrid.innerHTML = '<div style="color:var(--muted)">Tidak ada bagian.</div>';
+      return;
+    }
+    partsDownloadLinks.forEach((link, i) => {
+      const a = document.createElement('a');
+      a.className = 'download-btn';
+      a.href = link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer nofollow';
+      a.dataset.index = i;
+      a.innerHTML = `<i class="bi bi-play-fill"></i><span>Part ${i+1}</span>`;
+      a.addEventListener('click', (e)=> {
+        e.preventDefault();
+        idx = clampIndex(Number(a.dataset.index));
+        setSourceNoAuto(videos[idx]);
+        updatePartsHighlight();
+      });
+      partsGrid.appendChild(a);
+    });
+    updatePartsHighlight();
+  }
+
+  function updatePartsHighlight(){
+    Array.from(partsGrid.children).forEach((el, i) => {
+      el.style.opacity = (i === idx) ? '1' : '0.65';
+      el.style.border = (i === idx) ? '1px solid rgba(59,130,246,0.28)' : '1px solid rgba(255,255,255,0.06)';
+    });
+  }
+
+  // Error handling: remove failing source and load next (no autoplay)
+  video.addEventListener('error', (e) => {
+    const failedSrc = video.currentSrc || video.src || 'unknown';
+    console.warn('Video error at index', idx, failedSrc, e);
+    hideLoading();
+
+    const pos = videos.indexOf(failedSrc);
+    if(pos !== -1){
+      videos.splice(pos,1);
+      partsDownloadLinks.splice(pos,1);
+      showToast('Bagian ' + (pos+1) + ' gagal dimuat — dihapus.');
+      if(pos <= idx) idx = Math.max(0, idx - 1);
+    } else {
+      showToast('Sumber gagal dimuat.');
+    }
+
+    if(videos.length){
+      idx = clampIndex(idx);
+      setTimeout(()=> setSourceNoAuto(videos[idx]), 250);
+      buildPartsGrid();
+    } else {
+      showToast('Semua sumber gagal.');
+      try{ video.removeAttribute('src'); video.load(); }catch(e){}
+      buildPartsGrid();
+    }
+  });
+
+  // Block right-click (keeps download button behavior)
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Init UI
+  buildDownloadButtons();
+  buildPartsGrid();
+
+</script>
+
+<!-- iklan / zone script (diganti sesuai permintaan) -->
+<script>(function(s){s.dataset.zone='10545744',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+  </html>
