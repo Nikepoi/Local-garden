@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Mobile (with state)</title>
+<title>Custom Video Player — Mobile (updated UI)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -16,6 +16,7 @@
   --accent-2:#3ea6ff;
   --control-h:56px;
   --round:10px;
+  --active-yellow: #ffd54f;
 }
 
 /* Base */
@@ -34,8 +35,10 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:68px;height:68px;border-radius:999px;display:flex;align-items:center;justify-content:center;
   background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.05);z-index:40;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:transform 200ms cubic-bezier(.2,.9,.2,1), opacity 160ms ease;
 }
 .center-play svg{width:30px;height:30px;fill:var(--text)}
+.center-play:active{transform:translate(-50%,-50%) scale(.96)}
 
 /* loading overlay */
 .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:45;pointer-events:none}
@@ -47,7 +50,7 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .title-wrap{display:flex;flex-direction:column;gap:6px}
 .title{font-size:16px;font-weight:700;margin:0;line-height:1.2}
 .date{font-size:13px;color:var(--muted);margin-top:0}
-.part-badge{font-size:13px;color:var(--text);background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03)}
+.part-badge{font-size:13px;color:var(--text);background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03)}
 
 /* controls */
 .controls{background:var(--panel);border-top:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:8px;border-radius:0 0 8px 8px}
@@ -74,27 +77,64 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 /* small select */
 .select{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:13px}
 
-/* downloads (section header renamed to "video player") */
+/* downloads (section header renamed) */
 .downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
-.heading{font-weight:700;margin-bottom:8px}
-.download-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-.download-btn{display:inline-flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;font-size:13px;text-decoration:none}
+.heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 
-/* channel icons */
-.channel-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.channel-btn{width:44px;height:44px;border-radius:8px;background:transparent;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center}
+/* full-content icon button */
+.full-icon-btn{
+  width:36px;height:36px;border-radius:8px;background:transparent;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:transform 180ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease;
+}
+.full-icon-btn:active{transform:scale(.96)}
+.full-icon-btn svg{width:18px;height:18px;fill:var(--text)}
 
-/* parts list (with active highlight) */
+/* dropdown panel for full links */
+.full-dropdown{
+  position:relative;
+}
+.full-dropdown-panel{
+  position:absolute;
+  right:0;
+  top:44px;
+  min-width:200px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 12px 30px rgba(2,6,23,0.6);
+  overflow:hidden;
+  transform-origin:top right;
+  will-change:transform,opacity;
+  opacity:0;
+  transform:translateY(-8px) scale(.98);
+  pointer-events:none;
+}
+.full-dropdown-panel.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  pointer-events:auto;
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+}
+.full-link{display:block;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text);text-decoration:none;font-weight:600}
+.full-link:last-child{border-bottom:none}
+.full-link:hover{background:rgba(255,255,255,0.02)}
+
+/* parts list (with active highlight, yellow) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-.part-item.active{background:linear-gradient(90deg, rgba(62,166,255,0.08), rgba(255,0,0,0.06));border-color:rgba(62,166,255,0.18);box-shadow:0 6px 18px rgba(2,6,23,0.5)}
-.part-item:focus{outline:2px solid rgba(62,166,255,0.14);outline-offset:2px}
+.part-item.active{background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,235,166,0.04));border-color: rgba(255,213,79,0.28);box-shadow:0 8px 24px rgba(255,213,79,0.06)}
+.part-item:focus{outline:2px solid rgba(255,213,79,0.12);outline-offset:2px}
+
+/* micro animation on active change */
+.part-item .dot{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,0.06)}
+.part-item.active .dot{background:var(--active-yellow);border-color:var(--active-yellow);box-shadow:0 6px 18px rgba(255,213,79,0.14);transform-origin:center;animation:pop 420ms cubic-bezier(.2,.9,.2,1)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 
 /* toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
 
 /* accessibility focus */
-button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
+button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-icon-btn:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
 
 @media(min-width:720px){ .wrap{max-width:980px;padding:12px} video{max-height:60vh} }
 @keyframes spin{ to { transform: rotate(360deg); } }
@@ -126,7 +166,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px so
           <div id="title" class="title">Judul Video</div>
           <div id="date" class="date"></div>
         </div>
-        <div id="partBadge" class="part-badge" aria-live="polite">Part 1 / 1</div>
+        <div id="partBadge" class="part-badge" aria-live="polite">Video 1 / 1</div>
       </div>
 
       <div class="controls" role="region" aria-label="Kontrol pemutar">
@@ -179,20 +219,23 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px so
       </div>
 
       <div class="downloads" aria-label="video player">
-        <div class="heading">video player</div>
-        <div id="downloadButtons" class="download-grid"></div>
+        <div class="heading">
+          <span>Konten full</span>
 
-        <div style="margin-top:12px;font-weight:700">video player (download link sudah ada di tombol unduh)</div>
-        <div id="partsGrid" class="parts-grid"></div>
-
-        <div class="channel-grid" style="margin-top:12px">
-          <a class="channel-btn" id="ucBtn" target="_blank" rel="noopener noreferrer nofollow" title="UC Share" aria-label="UC Share" href="#">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2a5 5 0 00-5 5v1H5v5h2v6h10v-6h2V8h-2V7a5 5 0 00-5-5z"/></svg>
-          </a>
-          <a class="channel-btn" id="tbBtn" target="_blank" rel="noopener noreferrer nofollow" title="Terabox" aria-label="Terabox" href="#">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 3h18v18H3z"/></svg>
-          </a>
+          <!-- full content icon + dropdown -->
+          <div style="margin-left:auto" class="full-dropdown" id="fullDropdownWrap">
+            <button id="fullIconBtn" class="full-icon-btn" aria-haspopup="true" aria-expanded="false" title="Lihat full konten">
+              <!-- download-box SVG -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
+            </button>
+            <div id="fullDropdown" class="full-dropdown-panel" role="menu" aria-hidden="true">
+              <!-- links injected by JS -->
+            </div>
+          </div>
         </div>
+
+        <div style="margin-top:12px;font-weight:700">video ( urutan nonton )</div>
+        <div id="partsGrid" class="parts-grid" aria-live="polite"></div>
       </div>
     </div>
   </div>
@@ -208,7 +251,7 @@ const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445543114-1000098660.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445293226-1000099080.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mz30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
+  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445208260-1000099332.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445122943-1000099386.mp4"
 ];
@@ -244,13 +287,11 @@ const seek = document.getElementById('seek');
 const currentT = document.getElementById('current');
 const durationT = document.getElementById('duration');
 const titleEl = document.getElementById('title');
-const downloadsWrap = document.getElementById('downloadButtons');
+const downloadsWrap = document.getElementById('downloadButtons'); // kept for compatibility (unused visually)
 const partsGrid = document.getElementById('partsGrid');
 const toast = document.getElementById('toast');
-const ucBtn = document.getElementById('ucBtn');
-const tbBtn = document.getElementById('tbBtn');
-const pipBtn = document.getElementById('pip');
-const fsBtn = document.getElementById('fs');
+const fullIconBtn = document.getElementById('fullIconBtn');
+const fullDropdown = document.getElementById('fullDropdown');
 const partBadge = document.getElementById('partBadge');
 
 let idx = 0;
@@ -258,7 +299,6 @@ let isSeeking = false;
 
 /* state key */
 const STORAGE_KEY = 'custom_video_player_state_v1';
-let savedState = null;
 let lastSaveAt = 0;
 
 /* ===== Utility helpers (same behavior) ===== */
@@ -311,7 +351,7 @@ function setSourceNoAuto(src){
 }
 
 /* determine starting index from saved state */
-savedState = loadSavedState();
+const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
 } else {
@@ -330,7 +370,6 @@ video.addEventListener('loadedmetadata', () => {
   try{
     const s = loadSavedState();
     if(s && Number.isFinite(s.idx) && s.idx === idx && Number.isFinite(s.time) && s.time > 0 && s.time < (video.duration - 0.5)){
-      // set currentTime after a short delay to avoid DOM issues
       setTimeout(()=> { try{ video.currentTime = Number(s.time); }catch(e){} }, 50);
     }
   }catch(e){}
@@ -408,14 +447,14 @@ loopBtn.addEventListener('click', ()=> {
 speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
 /* Fullscreen */
-fsBtn.addEventListener('click', ()=> {
+document.getElementById('fs')?.addEventListener('click', ()=> {
   const el = document.querySelector('.video-area');
   if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
   else document.exitFullscreen();
 });
 
 /* Picture-in-picture */
-pipBtn.addEventListener('click', async ()=>{
+document.getElementById('pip')?.addEventListener('click', async ()=>{
   if('pictureInPictureEnabled' in document){
     try{
       if(document.pictureInPictureElement) await document.exitPictureInPicture();
@@ -476,35 +515,65 @@ function openDownloadForCurrent(){
 }
 dlBtn.addEventListener('click', openDownloadForCurrent);
 
-/* Build Full konten area (UC & Terabox) - same as before */
-function buildDownloadButtons(){
-  downloadsWrap.innerHTML = '';
-  if(downloads.uc){
+/* Build Full konten dropdown (icon) */
+function buildFullDropdown(){
+  fullDropdown.innerHTML = '';
+  const list = [];
+  if(downloads.uc) list.push({label:'UC Share', href: downloads.uc});
+  if(downloads.terabox) list.push({label:'Terabox', href: downloads.terabox});
+  if(!list.length){
+    const p = document.createElement('div');
+    p.className = 'full-link';
+    p.textContent = 'Tidak ada full-link.';
+    p.style.cursor = 'default';
+    fullDropdown.appendChild(p);
+    return;
+  }
+  list.forEach(item => {
     const a = document.createElement('a');
-    a.className = 'download-btn';
-    a.href = downloads.uc;
+    a.className = 'full-link';
+    a.href = item.href;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 2a5 5 0 00-5 5v1H5v5h2v6h10v-6h2V8h-2V7a5 5 0 00-5-5z"/></svg><span style="margin-left:6px">UC Share — Full konten</span>';
-    downloadsWrap.appendChild(a);
-    ucBtn.href = downloads.uc;
-  }
-  if(downloads.terabox){
-    const a = document.createElement('a');
-    a.className = 'download-btn';
-    a.href = downloads.terabox;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 3h18v18H3z"/></svg><span style="margin-left:6px">Terabox — Full konten</span>';
-    downloadsWrap.appendChild(a);
-    tbBtn.href = downloads.terabox;
-  }
-  if(!downloads.uc && !downloads.terabox){
-    downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link.</div>';
-  }
+    a.textContent = item.label;
+    fullDropdown.appendChild(a);
+  });
 }
 
-/* Build parts grid (links ordered) with active highlight */
+/* toggle dropdown with simple class + rAF friendly */
+let dropdownOpen = false;
+function toggleFullDropdown(){
+  dropdownOpen = !dropdownOpen;
+  fullIconBtn.setAttribute('aria-expanded', String(dropdownOpen));
+  if(dropdownOpen){
+    // ensure content exists
+    buildFullDropdown();
+    fullDropdown.classList.add('show');
+    fullDropdown.setAttribute('aria-hidden','false');
+    // animate via rAF for smoothness (lightweight)
+    requestAnimationFrame(()=> requestAnimationFrame(()=> { fullDropdown.classList.add('show'); }));
+    // close on outside click
+    setTimeout(()=> {
+      window.addEventListener('click', outsideClickHandler);
+    }, 0);
+  } else {
+    fullDropdown.classList.remove('show');
+    fullDropdown.setAttribute('aria-hidden','true');
+    window.removeEventListener('click', outsideClickHandler);
+  }
+}
+function outsideClickHandler(e){
+  if(!fullDropdown.contains(e.target) && !fullIconBtn.contains(e.target)){
+    dropdownOpen = false;
+    fullDropdown.classList.remove('show');
+    fullDropdown.setAttribute('aria-hidden','true');
+    window.removeEventListener('click', outsideClickHandler);
+    fullIconBtn.setAttribute('aria-expanded','false');
+  }
+}
+fullIconBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFullDropdown(); });
+
+/* Build parts grid (links ordered) with "video X" labels and active highlight */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
@@ -517,7 +586,8 @@ function buildPartsGrid(){
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerText = 'Part ' + (i+1);
+    // left dot + label
+    a.innerHTML = `<span class="dot" aria-hidden="true"></span><span>Video ${i+1}</span>`;
     a.dataset.index = i;
     a.addEventListener('click', (e)=> {
       e.preventDefault();
@@ -537,8 +607,8 @@ function updatePartsHighlight(){
     if(i === idx) {
       el.classList.add('active');
       el.setAttribute('aria-current','true');
-      // keep visible for users
-      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      // keep visible but don't over-scroll on mobile
+      try{ el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); }catch(e){}
     } else {
       el.classList.remove('active');
       el.removeAttribute('aria-current');
@@ -549,11 +619,11 @@ function updatePartsHighlight(){
 /* update badge near title */
 function updatePartBadge(){
   const total = partsDownloadLinks.length || videos.length || 1;
-  partBadge.textContent = `Part ${idx+1} / ${total}`;
+  partBadge.textContent = `Video ${idx+1} / ${total}`;
 }
 
 /* Init UI */
-buildDownloadButtons();
+buildFullDropdown();
 buildPartsGrid();
 updateCenterPlay();
 
@@ -562,9 +632,7 @@ window.addEventListener('beforeunload', ()=> {
   saveStateImmediate();
 });
 
-/* expose for external use if needed */
-window.setSourceNoAuto = setSourceNoAuto;
-
+/* ensure play button icon initial state */
 (function initPlayIcon(){
   playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
 })();
