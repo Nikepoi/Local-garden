@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Mobile</title>
+<title>Custom Video Player — Mobile (with state)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -43,9 +43,11 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .loading-spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin .9s linear infinite}
 
 /* meta */
-.top-meta{padding:10px 6px}
+.top-meta{padding:10px 6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.title-wrap{display:flex;flex-direction:column;gap:6px}
 .title{font-size:16px;font-weight:700;margin:0;line-height:1.2}
-.date{font-size:13px;color:var(--muted);margin-top:6px}
+.date{font-size:13px;color:var(--muted);margin-top:0}
+.part-badge{font-size:13px;color:var(--text);background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03)}
 
 /* controls */
 .controls{background:var(--panel);border-top:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:8px;border-radius:0 0 8px 8px}
@@ -72,7 +74,7 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 /* small select */
 .select{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:13px}
 
-/* downloads */
+/* downloads (section header renamed to "video player") */
 .downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
 .heading{font-weight:700;margin-bottom:8px}
 .download-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
@@ -82,9 +84,11 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .channel-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .channel-btn{width:44px;height:44px;border-radius:8px;background:transparent;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center}
 
-/* parts list */
+/* parts list (with active highlight) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.part-item.active{background:linear-gradient(90deg, rgba(62,166,255,0.08), rgba(255,0,0,0.06));border-color:rgba(62,166,255,0.18);box-shadow:0 6px 18px rgba(2,6,23,0.5)}
+.part-item:focus{outline:2px solid rgba(62,166,255,0.14);outline-offset:2px}
 
 /* toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
@@ -92,7 +96,6 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 /* accessibility focus */
 button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
 
-/* misc */
 @media(min-width:720px){ .wrap{max-width:980px;padding:12px} video{max-height:60vh} }
 @keyframes spin{ to { transform: rotate(360deg); } }
 </style>
@@ -101,11 +104,9 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px so
   <div class="wrap">
     <div class="card-player" id="card">
       <div class="video-area" id="videoArea" aria-label="Video area">
-        <!-- pure video element - no native controls -->
         <video id="video" playsinline webkit-playsinline preload="metadata" tabindex="0"></video>
 
         <button id="centerPlay" class="center-play" aria-label="Play">
-          <!-- SVG play -->
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         </button>
 
@@ -121,8 +122,11 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px so
       </div>
 
       <div class="top-meta">
-        <div id="title" class="title">Judul Video</div>
-        <div id="date" class="date"></div>
+        <div class="title-wrap">
+          <div id="title" class="title">Judul Video</div>
+          <div id="date" class="date"></div>
+        </div>
+        <div id="partBadge" class="part-badge" aria-live="polite">Part 1 / 1</div>
       </div>
 
       <div class="controls" role="region" aria-label="Kontrol pemutar">
@@ -174,11 +178,11 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus{outline:2px so
         </div>
       </div>
 
-      <div class="downloads" aria-label="Downloads area">
-        <div class="heading">Full konten</div>
+      <div class="downloads" aria-label="video player">
+        <div class="heading">video player</div>
         <div id="downloadButtons" class="download-grid"></div>
 
-        <div style="margin-top:12px;font-weight:700">Bagian (download links sesuai urutan)</div>
+        <div style="margin-top:12px;font-weight:700">video player (download link sudah ada di tombol unduh)</div>
         <div id="partsGrid" class="parts-grid"></div>
 
         <div class="channel-grid" style="margin-top:12px">
@@ -204,9 +208,9 @@ const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445543114-1000098660.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445293226-1000099080.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
+  "https://cdn.vipoy.co/videos/cmkunk30a01mz30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445208260-1000099332.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mz19il/1769445122943-1000099386.mp4"
+  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445122943-1000099386.mp4"
 ];
 
 const partsDownloadLinks = [
@@ -226,7 +230,7 @@ const downloads = {
   terabox: "https://1024terabox.com/s/1gcGs04775L7mTUFhQ1_RWw"
 };
 
-/* ===== DOM refs (keep IDs same so logic unchanged) ===== */
+/* ===== DOM refs (keep IDs same) ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
 const loading = document.getElementById('loading');
@@ -247,9 +251,15 @@ const ucBtn = document.getElementById('ucBtn');
 const tbBtn = document.getElementById('tbBtn');
 const pipBtn = document.getElementById('pip');
 const fsBtn = document.getElementById('fs');
+const partBadge = document.getElementById('partBadge');
 
 let idx = 0;
 let isSeeking = false;
+
+/* state key */
+const STORAGE_KEY = 'custom_video_player_state_v1';
+let savedState = null;
+let lastSaveAt = 0;
 
 /* ===== Utility helpers (same behavior) ===== */
 function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
@@ -259,22 +269,71 @@ function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.displ
 
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
 
-/* ===== Core functions (names preserved) ===== */
+/* ===== Persistence: load saved state (idx + time) ===== */
+function loadSavedState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj;
+    return null;
+  }catch(e){
+    return null;
+  }
+}
+
+function saveStateImmediate(){
+  try{
+    const state = { idx: idx, time: Math.floor(video.currentTime || 0) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    lastSaveAt = Date.now();
+  }catch(e){}
+}
+
+/* save periodically (throttled) */
+function saveStateThrottled(){
+  const now = Date.now();
+  if(now - lastSaveAt > 2000){ saveStateImmediate(); }
+}
+
+/* ===== Core functions (preserve names) ===== */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
   video.src = src;
   try{ video.load(); }catch(e){}
   showLoading();
+  // update UI badge and highlight
+  updatePartBadge();
+  updatePartsHighlight();
+  // save idx change immediately
+  saveStateImmediate();
 }
 
-/* init first source */
-if(videos.length) setSourceNoAuto(videos[0]);
+/* determine starting index from saved state */
+savedState = loadSavedState();
+if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
+  idx = clampIndex(savedState.idx);
+} else {
+  idx = 0;
+}
+
+/* init first source (may be overridden by saved time on loadedmetadata) */
+if(videos.length) setSourceNoAuto(videos[idx]);
 
 /* Events: metadata / canplay / playing / waiting / timeupdate similar to old logic */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
+
+  // If savedState matches current idx, restore time (if valid)
+  try{
+    const s = loadSavedState();
+    if(s && Number.isFinite(s.idx) && s.idx === idx && Number.isFinite(s.time) && s.time > 0 && s.time < (video.duration - 0.5)){
+      // set currentTime after a short delay to avoid DOM issues
+      setTimeout(()=> { try{ video.currentTime = Number(s.time); }catch(e){} }, 50);
+    }
+  }catch(e){}
 });
 
 video.addEventListener('canplay', () => { hideLoading(); });
@@ -282,7 +341,7 @@ video.addEventListener('canplay', () => { hideLoading(); });
 video.addEventListener('playing', () => {
   hideLoading();
   // change play icon to pause
-  playBtn.querySelector('svg').innerHTML = '<path d=\"M6 19h4V5H6v14zm8-14v14h4V5h-4z\"/>';
+  playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
   centerPlay.style.display = 'none';
 });
 
@@ -290,6 +349,8 @@ video.addEventListener('playing', () => {
 
 video.addEventListener('timeupdate', () => {
   if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  // throttle save
+  saveStateThrottled();
 });
 
 /* seek interactions */
@@ -301,11 +362,11 @@ async function togglePlay(){
   try {
     if(video.paused){
       await video.play();
-      playBtn.querySelector('svg').innerHTML = '<path d=\"M6 19h4V5H6v14zm8-14v14h4V5h-4z\"/>'; // pause icon
+      playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // pause icon
       centerPlay.style.display = 'none';
     } else {
       video.pause();
-      playBtn.querySelector('svg').innerHTML = '<path d=\"M8 5v14l11-7z\"/>'; // play icon
+      playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; // play icon
       centerPlay.style.display = '';
     }
   } catch(e){
@@ -320,7 +381,7 @@ centerPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); }
 video.addEventListener('click', togglePlay);
 
 /* pause event restore center play */
-video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d=\"M8 5v14l11-7z\"/>'; centerPlay.style.display = ''; });
+video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlay.style.display = ''; });
 
 function updateCenterPlay(){ centerPlay.style.display = video.paused ? '' : 'none'; }
 
@@ -404,7 +465,7 @@ window.addEventListener('keydown', (e)=> {
   if(e.key === 'm'){ video.muted = !video.muted; }
 });
 
-/* Block right-click (keeps download UI behavior) */
+/* Block right-click */
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 /* DOWNLOAD ACTIONS: open mapped download URL for current part */
@@ -424,7 +485,7 @@ function buildDownloadButtons(){
     a.href = downloads.uc;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = '<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"M12 2a5 5 0 00-5 5v1H5v5h2v6h10v-6h2V8h-2V7a5 5 0 00-5-5z\"/></svg><span style=\"margin-left:6px\">UC Share — Full konten</span>';
+    a.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 2a5 5 0 00-5 5v1H5v5h2v6h10v-6h2V8h-2V7a5 5 0 00-5-5z"/></svg><span style="margin-left:6px">UC Share — Full konten</span>';
     downloadsWrap.appendChild(a);
     ucBtn.href = downloads.uc;
   }
@@ -434,20 +495,20 @@ function buildDownloadButtons(){
     a.href = downloads.terabox;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = '<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"M3 3h18v18H3z\"/></svg><span style=\"margin-left:6px\">Terabox — Full konten</span>';
+    a.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 3h18v18H3z"/></svg><span style="margin-left:6px">Terabox — Full konten</span>';
     downloadsWrap.appendChild(a);
     tbBtn.href = downloads.terabox;
   }
   if(!downloads.uc && !downloads.terabox){
-    downloadsWrap.innerHTML = '<div style=\"color:var(--muted)\">Tidak ada full-link.</div>';
+    downloadsWrap.innerHTML = '<div style="color:var(--muted)">Tidak ada full-link.</div>';
   }
 }
 
-/* Build parts grid (links ordered) */
+/* Build parts grid (links ordered) with active highlight */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
-    partsGrid.innerHTML = '<div style=\"color:var(--muted)\">Tidak ada bagian.</div>';
+    partsGrid.innerHTML = '<div style="color:var(--muted)">Tidak ada bagian.</div>';
     return;
   }
   partsDownloadLinks.forEach((link, i) => {
@@ -457,13 +518,38 @@ function buildPartsGrid(){
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
     a.innerText = 'Part ' + (i+1);
+    a.dataset.index = i;
     a.addEventListener('click', (e)=> {
       e.preventDefault();
-      idx = clampIndex(i);
+      idx = clampIndex(Number(a.dataset.index));
       setSourceNoAuto(videos[idx]);
     });
     partsGrid.appendChild(a);
   });
+  updatePartsHighlight();
+  updatePartBadge();
+}
+
+/* highlight active part in UI */
+function updatePartsHighlight(){
+  const items = partsGrid.querySelectorAll('.part-item');
+  items.forEach((el, i) => {
+    if(i === idx) {
+      el.classList.add('active');
+      el.setAttribute('aria-current','true');
+      // keep visible for users
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    } else {
+      el.classList.remove('active');
+      el.removeAttribute('aria-current');
+    }
+  });
+}
+
+/* update badge near title */
+function updatePartBadge(){
+  const total = partsDownloadLinks.length || videos.length || 1;
+  partBadge.textContent = `Part ${idx+1} / ${total}`;
 }
 
 /* Init UI */
@@ -471,14 +557,17 @@ buildDownloadButtons();
 buildPartsGrid();
 updateCenterPlay();
 
-/* Expose setSourceNoAuto on window (keeps integration points stable) */
+/* Save state on unload */
+window.addEventListener('beforeunload', ()=> {
+  saveStateImmediate();
+});
+
+/* expose for external use if needed */
 window.setSourceNoAuto = setSourceNoAuto;
 
-/* ensure play button icon initial state */
 (function initPlayIcon(){
   playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
 })();
-
 </script>
 </body>
 </html>
