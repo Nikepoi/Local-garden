@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Final (glossy modal)</title>
+<title>Custom Video Player — Final (glossy) + Download Popover</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -78,6 +78,7 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
 .part-item{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);font-weight:700}
 .part-item.active{background:linear-gradient(180deg, rgba(255,213,79,0.22), rgba(255,213,79,0.06));border-color:rgba(255,213,79,0.36);color:#111;box-shadow:0 10px 30px rgba(255,213,79,0.06)}
+.part-item .dl-icon{width:14px;height:14px;margin-left:8px;opacity:0.95}
 
 /* modal: darker + stronger blur + glossy panel */
 .full-modal{
@@ -113,8 +114,29 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .modal-item{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,213,79,0.24), rgba(255,213,79,0.06));border:1px solid rgba(255,213,79,0.36);font-weight:800;color:#111;text-decoration:none;display:block;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)}
 .modal-note{text-align:center;margin-top:10px;color:var(--muted);font-size:13px}
 
+/* DOWNLOAD POPOVER */
+.dl-popover{
+  position:fixed;
+  z-index:1400;
+  min-width:220px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5));
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:0 12px 32px rgba(0,0,0,0.6);
+  padding:8px;
+  transform-origin:top left;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s cubic-bezier(.2,.9,.2,1);
+}
+.dl-popover.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+.dl-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}
+.dl-item a{flex:1;text-decoration:none;color:var(--text);font-weight:700}
+.dl-item .action{font-size:13px;color:var(--muted)}
+.dl-spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin .8s linear infinite;display:inline-block}
+
 /* toast */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.78);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:1300}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.78);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:1500}
 
 /* accessibility */
 button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3px}
@@ -226,7 +248,13 @@ button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3p
     </div>
   </div>
 
+  <!-- Download popover (positioned by JS) -->
+  <div id="dlPopover" class="dl-popover" role="menu" aria-hidden="true" style="display:none;">
+    <!-- items injected by JS -->
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
 
 <script>
 /* ===== DATA ===== */
@@ -262,11 +290,11 @@ const downloads = {
 /* ===== DOM refs ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
+const centerPlayWrap = document.getElementById('centerPlayWrap');
 const loading = document.getElementById('loading');
 const playBtn = document.getElementById('play');
 const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
-const loopBtn = document.getElementById('loop');
 const dlBtn = document.getElementById('dl');
 const speedSel = document.getElementById('speed');
 const seek = document.getElementById('seek');
@@ -280,6 +308,7 @@ const fullModal = document.getElementById('fullModal');
 const fullModalList = document.getElementById('fullModalList');
 const fullModalClose = document.getElementById('fullModalClose');
 const partBadge = document.getElementById('partBadge');
+const dlPopover = document.getElementById('dlPopover');
 
 let idx = 0;
 let isSeeking = false;
@@ -290,9 +319,22 @@ let lastSaveAt = 0;
 function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
-function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
+function showToast(msg, time = 2600){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
 
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((res, rej) => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); res(); }catch(e){ rej(e);} finally{ ta.remove(); }
+  });
+}
+
+/* Persistence */
 function loadSavedState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -314,7 +356,7 @@ function saveStateThrottled(){
   if(now - lastSaveAt > 2000){ saveStateImmediate(); }
 }
 
-/* ===== Core (kept same) ===== */
+/* ===== Core player functions (unchanged logic) ===== */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
@@ -326,12 +368,11 @@ function setSourceNoAuto(src){
   saveStateImmediate();
 }
 
-/* init index from storage if present */
+/* init index from storage */
 const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
 } else { idx = 0; }
-
 if(videos.length) setSourceNoAuto(videos[idx]);
 
 video.addEventListener('loadedmetadata', () => {
@@ -349,7 +390,7 @@ video.addEventListener('canplay', () => { hideLoading(); });
 video.addEventListener('playing', () => {
   hideLoading();
   playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-  centerPlay.parentElement.style.display = 'none';
+  centerPlayWrap.style.display = 'none';
 });
 ['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
 
@@ -365,11 +406,11 @@ async function togglePlay(){
     if(video.paused){
       await video.play();
       playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-      centerPlay.parentElement.style.display = 'none';
+      centerPlayWrap.style.display = 'none';
     } else {
       video.pause();
       playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
-      centerPlay.parentElement.style.display = '';
+      centerPlayWrap.style.display = '';
     }
   } catch(e){
     showToast('Gagal memutar. Coba klik lagi.');
@@ -380,7 +421,7 @@ async function togglePlay(){
 playBtn.addEventListener('click', togglePlay);
 centerPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
 video.addEventListener('click', togglePlay);
-video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlay.parentElement.style.display = ''; });
+video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlayWrap.style.display = ''; });
 
 prevBtn.addEventListener('click', ()=> {
   if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
@@ -391,12 +432,6 @@ nextBtn.addEventListener('click', ()=> {
   if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
   idx = clampIndex(idx + 1);
   setSourceNoAuto(videos[idx]);
-});
-
-loopBtn?.addEventListener('click', ()=> {
-  if(!video) return;
-  video.loop = !video.loop;
-  loopBtn.setAttribute && loopBtn.setAttribute('aria-pressed', String(video.loop));
 });
 
 speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
@@ -461,7 +496,100 @@ function openDownloadForCurrent(){
   if(!dl){ showToast('Tidak ada link download untuk bagian ini.'); return; }
   window.open(dl, '_blank', 'noopener');
 }
-dlBtn.addEventListener('click', openDownloadForCurrent);
+
+/* ===== Download popover logic ===== */
+let dlOpen = false;
+function buildDlPopover(){
+  dlPopover.innerHTML = '';
+  const link = partsDownloadLinks[idx] || '';
+  const wrapper = document.createElement('div');
+
+  // Download / open
+  const itemOpen = document.createElement('div');
+  itemOpen.className = 'dl-item';
+  itemOpen.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex:1">
+      <strong>Download</strong>
+      <span class="action" style="margin-left:auto">${link ? '' : '(tidak tersedia)'}</span>
+    </div>
+  `;
+  itemOpen.addEventListener('click', (e) => {
+    if(!link){ showToast('Tidak ada link download.'); return; }
+    // show spinner then open
+    const spinner = document.createElement('span'); spinner.className='dl-spinner';
+    itemOpen.appendChild(spinner);
+    setTimeout(()=> {
+      window.open(link, '_blank', 'noopener');
+      spinner.remove();
+      closeDlPopover();
+    }, 450);
+  });
+  dlPopover.appendChild(itemOpen);
+
+  // Open preview (same as open, kept for clarity)
+  const itemOpen2 = document.createElement('div');
+  itemOpen2.className = 'dl-item';
+  itemOpen2.innerHTML = `<a href="${link || '#'}" target="_blank" rel="noopener">${link ? 'Buka link (preview)' : 'Tidak ada link'}</a>`;
+  dlPopover.appendChild(itemOpen2);
+
+  // Copy link
+  const itemCopy = document.createElement('div');
+  itemCopy.className = 'dl-item';
+  itemCopy.innerHTML = `<div style="flex:1">Salin link</div><div class="action">Copy</div>`;
+  itemCopy.addEventListener('click', (e) => {
+    if(!link){ showToast('Tidak ada link untuk disalin.'); return; }
+    copyToClipboard(link).then(()=> {
+      showToast('Link disalin ke clipboard');
+      closeDlPopover();
+    }).catch(()=> showToast('Gagal menyalin'));
+  });
+  dlPopover.appendChild(itemCopy);
+}
+
+function openDlPopover(){
+  buildDlPopover();
+  const rect = dlBtn.getBoundingClientRect();
+  // position popover under the button, adjust to viewport
+  const left = Math.min(window.innerWidth - 16 - 220, Math.max(8, rect.left));
+  const top = rect.bottom + 8;
+  dlPopover.style.left = left + 'px';
+  dlPopover.style.top = top + 'px';
+  dlPopover.style.display = 'block';
+  // apply small transform for entry
+  dlPopover.style.transform = 'translateY(-6px) scale(.98)';
+  requestAnimationFrame(()=> {
+    dlPopover.classList.add('show');
+    dlPopover.style.transform = 'translateY(0) scale(1)';
+    dlPopover.setAttribute('aria-hidden','false');
+  });
+  dlOpen = true;
+  setTimeout(()=> window.addEventListener('click', outsideDlClick), 0);
+  window.addEventListener('keydown', dlKeyHandler);
+}
+
+function closeDlPopover(){
+  dlPopover.classList.remove('show');
+  dlPopover.style.transform = 'translateY(-6px) scale(.98)';
+  dlPopover.setAttribute('aria-hidden','true');
+  setTimeout(()=> { dlPopover.style.display='none'; dlPopover.innerHTML=''; }, 180);
+  dlOpen = false;
+  window.removeEventListener('click', outsideDlClick);
+  window.removeEventListener('keydown', dlKeyHandler);
+}
+
+function outsideDlClick(e){
+  if(!dlPopover.contains(e.target) && !dlBtn.contains(e.target)){
+    closeDlPopover();
+  }
+}
+function dlKeyHandler(e){
+  if(e.key === 'Escape') closeDlPopover();
+}
+
+dlBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if(dlOpen) closeDlPopover(); else openDlPopover();
+});
 
 /* parts grid build */
 function buildPartsGrid(){
@@ -476,12 +604,14 @@ function buildPartsGrid(){
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = `Video ${i+1}`;
+    a.innerHTML = `Video ${i+1}<svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16l4-5h-3V4h-2v7H8zM4 18h16v2H4z"/></svg>`;
     a.dataset.index = i;
     a.addEventListener('click', (e)=> {
       e.preventDefault();
       idx = clampIndex(Number(a.dataset.index));
       setSourceNoAuto(videos[idx]);
+      // close any open popovers
+      closeDlPopover();
     });
     partsGrid.appendChild(a);
   });
@@ -508,7 +638,7 @@ function updatePartBadge(){
   partBadge.textContent = `Video ${idx+1} / ${total}`;
 }
 
-/* full modal content & handlers */
+/* full modal content & handlers (unchanged) */
 function buildFullModal(){
   fullModalList.innerHTML = '';
   const list = [];
@@ -556,9 +686,9 @@ window.addEventListener('keydown', (e) => { if(e.key === 'Escape' && fullModal.c
 
 /* init UI */
 buildPartsGrid();
-updateCenterPlay = () => { document.getElementById('centerPlayWrap').style.display = video.paused ? 'block' : 'none'; };
+updateCenterPlay = () => { centerPlayWrap.style.display = video.paused ? 'block' : 'none'; };
 updateCenterPlay();
 (function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
 </script>
 </body>
-            </html>
+  </html>
