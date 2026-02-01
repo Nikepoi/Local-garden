@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-US">
+<html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -24,17 +24,6 @@
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter, Roboto, Arial, sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 .wrap{max-width:980px;margin:0 auto;padding:0 12px}
-
-/* Cinema mode: full dark blur background, player lebih besar */
-body.cinema-mode {
-  background:#000 !important;
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
-body.cinema-mode .wrap { padding:0; max-width:100%; }
-body.cinema-mode .card-player { margin:0; border-radius:0; height:100vh; display:flex; flex-direction:column; justify-content:center; background:transparent; }
-body.cinema-mode .video-area { max-height:90vh; border-radius:0; }
-body.cinema-mode video { max-height:90vh; object-fit:contain; }
 
 /* Player card */
 .card-player{margin-top:10px;border-radius:8px;overflow:hidden}
@@ -78,23 +67,12 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .left{display:flex;align-items:center;gap:6px}
 .right{margin-left:auto;display:flex;align-items:center;gap:6px}
 
-/* buttons with active state */
-.btn{background:transparent;border:none;color:var(--text);padding:8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+/* buttons */
+.btn{background:transparent;border:none;color:var(--text);padding:8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .btn:active{transform:scale(0.98)}
 .btn svg{width:22px;height:22px;display:block;fill:var(--text)}
-.btn.active { background:rgba(255,213,79,0.12); border:1px solid rgba(255,213,79,0.3); box-shadow:0 0 12px rgba(255,213,79,0.2); }
-.btn.active svg { fill:var(--active-yellow); }
 .btn-play{width:44px;height:44px;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center}
 .btn-play svg{width:18px;height:18px;fill:#fff}
-
-/* Tooltip hint untuk download (visible di desktop/hover) */
-.btn[title]:hover::after,
-.btn[title]:focus::after {
-  content: attr(title);
-  position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
-  background:rgba(0,0,0,0.85); color:#fff; padding:4px 8px; border-radius:6px;
-  font-size:12px; white-space:nowrap; z-index:50; pointer-events:none;
-}
 
 /* small select */
 .select{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:13px}
@@ -103,22 +81,20 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
 .heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:center}
 
-/* full action - improved contrast */
+/* full action centered and using yellow theme */
 .full-action{
   display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;
-  background:linear-gradient(90deg, rgba(255,213,79,0.24), rgba(255,235,166,0.14));
-  border:1px solid rgba(255,213,79,0.35);
-  color:#ffffff;font-weight:800;cursor:pointer;
+  background:linear-gradient(90deg, rgba(255,213,79,0.14), rgba(255,235,166,0.04));
+  border:1px solid rgba(255,213,79,0.18);color:var(--text);font-weight:800;cursor:pointer;
   transition:transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms ease;
-  text-shadow:0 1px 3px rgba(0,0,0,0.6);
 }
 .full-action:active{transform:scale(.98)}
 .full-action svg{width:16px;height:16px;fill:var(--active-yellow)}
 
-/* modal overlay */
+/* modal overlay with heavy blur for background readability */
 .full-modal{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;
-  background:rgba(0,0,0,0.75);
+  background:rgba(0,0,0,0.55);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   opacity:0;pointer-events:none;transition:opacity 220ms ease;
@@ -129,56 +105,53 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .full-modal-panel{
   width:92%;
   max-width:420px;
-  background:rgba(30,30,30,0.95);
-  border-radius:12px;padding:16px;
-  border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 20px 50px rgba(0,0,0,0.7);
-  transform:translateY(12px) scale(.98);opacity:0;
-  transition:transform 240ms cubic-bezier(.2,.9,.2,1),opacity 200ms ease;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+  border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);
+  box-shadow:0 18px 40px rgba(2,6,23,0.6);
+  transform:translateY(12px) scale(.98);opacity:0;transition:transform 240ms cubic-bezier(.2,.9,.2,1),opacity 200ms ease;
 }
 .full-modal.show .full-modal-panel{transform:translateY(0) scale(1);opacity:1}
 
 /* panel header */
-.modal-header{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:12px}
+.modal-header{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px}
 .modal-title{font-weight:800;color:var(--text)}
 .modal-close{background:transparent;border:none;padding:8px;border-radius:8px;cursor:pointer}
 .modal-close svg{width:18px;height:18px;fill:var(--text)}
 
 /* modal list */
 .modal-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-.modal-item{
-  display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;
-  background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,213,79,0.06));
-  border:1px solid rgba(255,213,79,0.25);
-  font-weight:700;color:#000;text-decoration:none;
-}
+.modal-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:linear-gradient(90deg, rgba(255,213,79,0.06), rgba(255,213,79,0.02));border:1px solid rgba(255,213,79,0.12);font-weight:700;color:#000;text-decoration:none}
 .modal-item a{color:inherit;text-decoration:none;flex:1}
 
 /* small note */
-.modal-note{font-size:13px;color:var(--muted);margin-top:12px}
+.modal-note{font-size:13px;color:var(--muted);margin-top:8px}
 
-/* parts grid */
+/* parts list (centered header, active yellow) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px;justify-content:center}
 .part-item.active{background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,235,166,0.04));border-color: rgba(255,213,79,0.28);box-shadow:0 8px 24px rgba(255,213,79,0.06)}
 .part-item:focus{outline:2px solid rgba(255,213,79,0.12);outline-offset:2px}
 
-/* dot animation */
+/* micro animation on active change */
 .part-item .dot{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,0.06)}
-.part-item.active .dot{background:var(--active-yellow);border-color:var(--active-yellow);box-shadow:0 6px 18px rgba(255,213,79,0.14);animation:pop 420ms cubic-bezier(.2,.9,.2,1)}
+.part-item.active .dot{background:var(--active-yellow);border-color:var(--active-yellow);box-shadow:0 6px 18px rgba(255,213,79,0.14);transform-origin:center;animation:pop 420ms cubic-bezier(.2,.9,.2,1)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 
-/* center section title */
-.downloads .section-title { text-align:center; font-weight:700; margin-top:12px; }
+/* center the "video ( urutan nonton )" label */
+.downloads .section-title {
+  text-align:center;
+  font-weight:700;
+  margin-top:12px;
+}
 
 /* toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
 
-/* accessibility */
+/* accessibility focus */
 button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:focus, .modal-close:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
 
 @media(min-width:720px){ .wrap{max-width:980px;padding:12px} video{max-height:60vh} }
 @keyframes spin{ to { transform: rotate(360deg); } }
-@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -219,7 +192,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
 
         <div class="control-row" aria-hidden="false">
           <div class="left" role="group" aria-label="Main controls">
-            <button id="prev" class="btn" title="Previous part" aria-label="Previous">
+            <button id="prev" class="btn" title="Previous" aria-label="Previous">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3 6l9 6V6z"/></svg>
             </button>
 
@@ -227,19 +200,14 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
               <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
             </button>
 
-            <button id="next" class="btn" title="Next part" aria-label="Next">
+            <button id="next" class="btn" title="Next" aria-label="Next">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l9-6-9-6z"/></svg>
             </button>
 
-            <button id="loop" class="btn" title="Loop (toggle)" aria-pressed="false" aria-label="Loop">Loop</button>
+            <button id="loop" class="btn" title="Loop" aria-pressed="false" aria-label="Loop">Loop</button>
 
-            <button id="dl" class="btn" title="Download this part" aria-label="Download">
+            <button id="dl" class="btn" title="Download" aria-label="Download">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16l4-5h-3V4h-2v7H8zM4 18h16v2H4z"/></svg>
-            </button>
-
-            <!-- New: Cinema mode toggle -->
-            <button id="cinema" class="btn" title="Cinema mode (full dark blur)" aria-label="Cinema mode" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
             </button>
           </div>
 
@@ -266,6 +234,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
 
       <div class="downloads" aria-label="video player">
         <div class="heading">
+          <!-- removed text "Konten full" — only centered button -->
           <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
             <span style="color:var(--text);margin-left:6px">Buka konten full</span>
@@ -278,7 +247,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
     </div>
   </div>
 
-  <!-- Modal full konten -->
+  <!-- Modal with strong blur background -->
   <div id="fullModal" class="full-modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="full-modal-panel" role="document" aria-labelledby="fullModalTitle">
       <div class="modal-header">
@@ -299,7 +268,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* DATA sama */
+/* ===== DATA (same as before) ===== */
 const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445408126-1000098857.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
@@ -329,7 +298,7 @@ const downloads = {
   terabox: "https://1024terabox.com/s/1gcGs04775L7mTUFhQ1_RWw"
 };
 
-/* DOM refs */
+/* ===== DOM refs (keep IDs same) ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
 const loading = document.getElementById('loading');
@@ -338,7 +307,6 @@ const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
 const loopBtn = document.getElementById('loop');
 const dlBtn = document.getElementById('dl');
-const cinemaBtn = document.getElementById('cinema');
 const speedSel = document.getElementById('speed');
 const seek = document.getElementById('seek');
 const currentT = document.getElementById('current');
@@ -354,18 +322,20 @@ const partBadge = document.getElementById('partBadge');
 
 let idx = 0;
 let isSeeking = false;
+
+/* Keep previous storage key and helpers unchanged */
 const STORAGE_KEY = 'custom_video_player_state_v1';
 let lastSaveAt = 0;
-
-function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `\( {min}: \){sec}`; }
+function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
-function showToast(msg, time = 4000){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
+function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
 function loadSavedState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return null; const obj = JSON.parse(raw); if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj; return null; }catch(e){ return null; } }
 function saveStateImmediate(){ try{ const state = { idx: idx, time: Math.floor(video.currentTime || 0) }; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lastSaveAt = Date.now(); }catch(e){} }
 function saveStateThrottled(){ const now = Date.now(); if(now - lastSaveAt > 2000){ saveStateImmediate(); } }
 
+/* Core: setSourceNoAuto unchanged */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
@@ -377,6 +347,7 @@ function setSourceNoAuto(src){
   saveStateImmediate();
 }
 
+/* init index from storage if available */
 const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
@@ -385,7 +356,7 @@ if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && saved
 }
 if(videos.length) setSourceNoAuto(videos[idx]);
 
-/* Events */
+/* Events (preserve logic) */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
@@ -427,7 +398,7 @@ async function togglePlay(){
       centerPlay.style.display = '';
     }
   } catch(e){
-    showToast('Gagal memutar video. Coba lagi atau lanjut ke bagian berikutnya.');
+    showToast('Gagal memutar. Coba klik lagi.');
     console.warn('Play failed', e);
   }
 }
@@ -439,12 +410,12 @@ video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = 
 function updateCenterPlay(){ centerPlay.style.display = video.paused ? '' : 'none'; }
 
 prevBtn.addEventListener('click', ()=> {
-  if(!videos.length){ showToast('Tidak ada bagian sebelumnya.'); return; }
+  if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
   idx = clampIndex(idx - 1);
   setSourceNoAuto(videos[idx]);
 });
 nextBtn.addEventListener('click', ()=> {
-  if(!videos.length){ showToast('Tidak ada bagian berikutnya.'); return; }
+  if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
   idx = clampIndex(idx + 1);
   setSourceNoAuto(videos[idx]);
 });
@@ -472,16 +443,7 @@ document.getElementById('pip')?.addEventListener('click', async ()=>{
   }
 });
 
-/* Cinema mode toggle */
-cinemaBtn.addEventListener('click', ()=> {
-  document.body.classList.toggle('cinema-mode');
-  cinemaBtn.setAttribute('aria-pressed', document.body.classList.contains('cinema-mode'));
-  cinemaBtn.classList.toggle('active', document.body.classList.contains('cinema-mode'));
-  showToast(document.body.classList.contains('cinema-mode') ? 'Cinema mode ON' : 'Cinema mode OFF', 2000);
-});
-
 video.addEventListener('ended', ()=> {
-  if(video.loop) return;
   if(videos.length && idx < videos.length - 1){ idx++; setSourceNoAuto(videos[idx]); }
 });
 
@@ -489,21 +451,23 @@ video.addEventListener('error', (e) => {
   const failedSrc = video.currentSrc || video.src || 'unknown';
   console.warn('Video error at index', idx, failedSrc, e);
   hideLoading();
-  showToast(`Error memuat video bagian ${idx+1}. Melewati ke berikutnya...`, 5000);
 
   const pos = videos.indexOf(failedSrc);
   if(pos !== -1){
     videos.splice(pos,1);
     if(partsDownloadLinks[pos]) partsDownloadLinks.splice(pos,1);
+    showToast('Bagian ' + (pos+1) + ' gagal dimuat — dihapus.');
     if(pos <= idx) idx = Math.max(0, idx - 1);
+  } else {
+    showToast('Sumber gagal dimuat.');
   }
 
   if(videos.length){
     idx = clampIndex(idx);
-    setTimeout(()=> setSourceNoAuto(videos[idx]), 300);
+    setTimeout(()=> setSourceNoAuto(videos[idx]), 250);
     buildPartsGrid();
   } else {
-    showToast('Semua sumber video gagal dimuat.');
+    showToast('Semua sumber gagal.');
     try{ video.removeAttribute('src'); video.load(); }catch(e){}
     buildPartsGrid();
   }
@@ -515,9 +479,6 @@ window.addEventListener('keydown', (e)=> {
   if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
   if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
   if(e.key === 'm'){ video.muted = !video.muted; }
-  if(e.key.toLowerCase() === 'c'){ // shortcut C untuk cinema mode
-    cinemaBtn.click();
-  }
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -529,7 +490,7 @@ function openDownloadForCurrent(){
 }
 dlBtn.addEventListener('click', openDownloadForCurrent);
 
-/* Build parts grid */
+/* Build parts grid (Video X labels) */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
@@ -555,6 +516,7 @@ function buildPartsGrid(){
   updatePartBadge();
 }
 
+/* highlight active part in UI */
 function updatePartsHighlight(){
   const items = partsGrid.querySelectorAll('.part-item');
   items.forEach((el, i) => {
@@ -569,11 +531,13 @@ function updatePartsHighlight(){
   });
 }
 
+/* update badge near title */
 function updatePartBadge(){
   const total = partsDownloadLinks.length || videos.length || 1;
   partBadge.textContent = `Video ${idx+1} / ${total}`;
 }
 
+/* Build modal content with available full links (UC / Terabox) */
 function buildFullModal(){
   fullModalList.innerHTML = '';
   const list = [];
@@ -599,6 +563,7 @@ function buildFullModal(){
   });
 }
 
+/* Open / close modal (uses class toggles) */
 function openFullModal(){
   buildFullModal();
   fullModal.classList.add('show');
@@ -616,12 +581,13 @@ function closeFullModal(){
   fullActionBtn.focus();
 }
 
+/* events for modal */
 fullActionBtn.addEventListener('click', (e) => { e.stopPropagation(); openFullModal(); });
 fullModalClose.addEventListener('click', closeFullModal);
 fullModal.addEventListener('click', (e) => { if(e.target === fullModal) closeFullModal(); });
 window.addEventListener('keydown', (e) => { if(e.key === 'Escape' && fullModal.classList.contains('show')) closeFullModal(); });
 
-/* Init */
+/* Init UI */
 buildPartsGrid();
 updateCenterPlay();
 (function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
