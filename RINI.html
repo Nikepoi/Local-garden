@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Mobile (modal full content)</title>
+<title>Custom Video Player — Mobile (modal + blur)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -77,23 +77,26 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 /* small select */
 .select{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:13px}
 
-/* downloads (section header renamed) */
+/* downloads area */
 .downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
-.heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:center}
 
-/* full content button (yellow style similar to active) */
+/* full action centered and using yellow theme */
 .full-action{
-  margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;
+  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;
   background:linear-gradient(90deg, rgba(255,213,79,0.14), rgba(255,235,166,0.04));
-  border:1px solid rgba(255,213,79,0.18);color:var(--text);font-weight:700;cursor:pointer;
+  border:1px solid rgba(255,213,79,0.18);color:var(--text);font-weight:800;cursor:pointer;
   transition:transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms ease;
 }
 .full-action:active{transform:scale(.98)}
 .full-action svg{width:16px;height:16px;fill:var(--active-yellow)}
 
-/* modal overlay */
+/* modal overlay with heavy blur for background readability */
 .full-modal{
-  position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;
+  background:rgba(0,0,0,0.55);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   opacity:0;pointer-events:none;transition:opacity 220ms ease;
 }
 .full-modal.show{opacity:1;pointer-events:auto}
@@ -123,9 +126,9 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 /* small note */
 .modal-note{font-size:13px;color:var(--muted);margin-top:8px}
 
-/* parts list (with active highlight, yellow) */
+/* parts list (centered header, active yellow) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
-.part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px;justify-content:center}
 .part-item.active{background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,235,166,0.04));border-color: rgba(255,213,79,0.28);box-shadow:0 8px 24px rgba(255,213,79,0.06)}
 .part-item:focus{outline:2px solid rgba(255,213,79,0.12);outline-offset:2px}
 
@@ -133,6 +136,13 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .part-item .dot{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,0.06)}
 .part-item.active .dot{background:var(--active-yellow);border-color:var(--active-yellow);box-shadow:0 6px 18px rgba(255,213,79,0.14);transform-origin:center;animation:pop 420ms cubic-bezier(.2,.9,.2,1)}
 @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+
+/* center the "video ( urutan nonton )" label */
+.downloads .section-title {
+  text-align:center;
+  font-weight:700;
+  margin-top:12px;
+}
 
 /* toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
@@ -224,27 +234,25 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
 
       <div class="downloads" aria-label="video player">
         <div class="heading">
-          <span>Konten full</span>
+          <!-- removed text "Konten full" — only centered button -->
           <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
-            <!-- download-box SVG + label -->
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
             <span style="color:var(--text);margin-left:6px">Buka konten full</span>
           </button>
         </div>
 
-        <div style="margin-top:12px;font-weight:700">video ( urutan nonton )</div>
+        <div class="section-title">video ( urutan nonton )</div>
         <div id="partsGrid" class="parts-grid" aria-live="polite"></div>
       </div>
     </div>
   </div>
 
-  <!-- Modal (hidden by default) -->
+  <!-- Modal with strong blur background -->
   <div id="fullModal" class="full-modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="full-modal-panel" role="document" aria-labelledby="fullModalTitle">
       <div class="modal-header">
         <div id="fullModalTitle" class="modal-title">Pilih Konten Full</div>
         <button id="fullModalClose" class="modal-close" aria-label="Tutup">
-          <!-- X SVG -->
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.41L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4z"/></svg>
         </button>
       </div>
@@ -266,7 +274,7 @@ const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445587141-1000098654.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445543114-1000098660.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mz30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
+  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445293226-1000099080.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445208260-1000099332.mp4",
@@ -555,13 +563,12 @@ function buildFullModal(){
   });
 }
 
-/* Open / close modal (uses class toggles + rAF for smoothness) */
+/* Open / close modal (uses class toggles) */
 function openFullModal(){
   buildFullModal();
   fullModal.classList.add('show');
   fullModal.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
-  // focus first link for accessibility
   setTimeout(()=> {
     const first = fullModalList.querySelector('a');
     if(first) first.focus();
