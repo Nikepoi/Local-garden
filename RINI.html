@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Final (glossy) + Download Popover</title>
+<title>Custom Video Player — Download UI (updated)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -11,9 +11,9 @@
   --panel:#141414;
   --muted:#9aa0a6;
   --text:#ffffff;
-  --accent:#ff0000;
+  --accent:#ff4d4d;
   --accent-2:#3ea6ff;
-  --yellow:#ffd54f;
+  --yellow:#ffd600; /* kuning cerah */
   --glass-strong: rgba(15,15,15,0.94);
   --radius:14px;
 }
@@ -62,42 +62,49 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .btn svg{width:20px;height:20px;fill:var(--text)}
 .btn-play{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent-2),var(--accent));border:none;color:#fff}
 
+/* DOWNLOAD BUTTON styling - make it match active bar (kuning) */
+#dl{
+  background: linear-gradient(90deg, rgba(255,214,86,0.95), var(--yellow));
+  color:#111 !important;
+  border-radius:10px;
+  padding:8px 10px;
+  border:1px solid rgba(255,215,0,0.25);
+  box-shadow: 0 8px 24px rgba(255,214,86,0.08);
+}
+
 /* downloads block */
 .downloads{background:var(--panel);padding:14px;border-radius:12px;margin-top:12px;border:1px solid rgba(255,255,255,0.02)}
 /* full action centered */
 .full-action{margin:10px auto 6px;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
-  background:linear-gradient(180deg, rgba(255,213,79,0.22), rgba(255,213,79,0.06));
-  border:1px solid rgba(255,213,79,0.32);
+  background:linear-gradient(180deg, rgba(255,214,86,0.25), rgba(255,214,86,0.08));
+  border:1px solid rgba(255,214,86,0.32);
   font-weight:800;color:#111;cursor:pointer}
 .full-action svg{width:18px;height:18px;fill:var(--yellow)}
 
 /* section title centered */
-.section-title{text-align:center;font-weight:700;margin-top:12px;margin-bottom:8px}
+.section-title{text-align:center;font-weight:700;margin-top:12px;margin-bottom:8px;color:var(--text)}
 
-/* parts list */
+/* parts list: just 'Video X' (no icons) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
 .part-item{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);font-weight:700}
-.part-item.active{background:linear-gradient(180deg, rgba(255,213,79,0.22), rgba(255,213,79,0.06));border-color:rgba(255,213,79,0.36);color:#111;box-shadow:0 10px 30px rgba(255,213,79,0.06)}
-.part-item .dl-icon{width:14px;height:14px;margin-left:8px;opacity:0.95}
+.part-item.active{background:linear-gradient(180deg, rgba(255,214,86,0.25), rgba(255,214,86,0.08));border-color:var(--yellow);color:#111;box-shadow:0 10px 30px rgba(255,214,86,0.06)}
 
 /* modal: darker + stronger blur + glossy panel */
 .full-modal{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.72);
+  background:rgba(0,0,0,0.78);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   backdrop-filter: blur(20px) saturate(140%);
   opacity:0;pointer-events:none;z-index:1200;transition:opacity .22s ease;
 }
 .full-modal.show{opacity:1;pointer-events:auto}
 
-/* panel glossy */
+/* panel glossy; keep panel readable but not transparent */
 .full-modal-panel{
   width:92%;max-width:440px;border-radius:18px;padding:14px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
-    var(--glass-strong);
+  background: linear-gradient(180deg, rgba(20,20,20,0.98), rgba(10,10,10,0.98));
   border:1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 30px 60px rgba(0,0,0,0.75);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.85);
   transform:translateY(12px) scale(.98);opacity:0;
   transition:transform .26s cubic-bezier(.2,.9,.25,1),opacity .22s ease;
 }
@@ -111,15 +118,15 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 
 /* modal list items */
 .modal-list{display:flex;flex-direction:column;gap:10px}
-.modal-item{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,213,79,0.24), rgba(255,213,79,0.06));border:1px solid rgba(255,213,79,0.36);font-weight:800;color:#111;text-decoration:none;display:block;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)}
+.modal-item{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,214,86,0.24), rgba(255,214,86,0.06));border:1px solid rgba(255,214,86,0.36);font-weight:800;color:#111;text-decoration:none;display:block;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)}
 .modal-note{text-align:center;margin-top:10px;color:var(--muted);font-size:13px}
 
-/* DOWNLOAD POPOVER */
+/* DOWNLOAD POPOVER: make it solid & readable (not transparent) */
 .dl-popover{
   position:fixed;
   z-index:1400;
   min-width:220px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5));
+  background: linear-gradient(180deg, rgba(25,25,25,0.98), rgba(12,12,12,0.98));
   border-radius:10px;
   border:1px solid rgba(255,255,255,0.06);
   box-shadow:0 12px 32px rgba(0,0,0,0.6);
@@ -128,6 +135,7 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
   opacity:0;
   pointer-events:none;
   transition:opacity .18s ease, transform .18s cubic-bezier(.2,.9,.2,1);
+  color:var(--text);
 }
 .dl-popover.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
 .dl-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}
@@ -257,7 +265,7 @@ button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3p
 </div>
 
 <script>
-/* ===== DATA ===== */
+/* ===== DATA (unchanged) ===== */
 const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445408126-1000098857.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
@@ -287,7 +295,7 @@ const downloads = {
   terabox: "https://1024terabox.com/s/1gcGs04775L7mTUFhQ1_RWw"
 };
 
-/* ===== DOM refs ===== */
+/* ===== DOM refs (unchanged) ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
 const centerPlayWrap = document.getElementById('centerPlayWrap');
@@ -315,7 +323,7 @@ let isSeeking = false;
 const STORAGE_KEY = 'custom_video_player_state_v1';
 let lastSaveAt = 0;
 
-/* ===== Helpers ===== */
+/* ===== Helpers (unchanged except popover changes) ===== */
 function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
@@ -334,7 +342,7 @@ function copyToClipboard(text){
   });
 }
 
-/* Persistence */
+/* Persistence helpers unchanged */
 function loadSavedState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -356,7 +364,7 @@ function saveStateThrottled(){
   if(now - lastSaveAt > 2000){ saveStateImmediate(); }
 }
 
-/* ===== Core player functions (unchanged logic) ===== */
+/* Core: setSourceNoAuto unchanged */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
@@ -368,13 +376,14 @@ function setSourceNoAuto(src){
   saveStateImmediate();
 }
 
-/* init index from storage */
+/* init index from storage if available */
 const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
 } else { idx = 0; }
 if(videos.length) setSourceNoAuto(videos[idx]);
 
+/* Events (main logic unchanged) */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
@@ -497,45 +506,41 @@ function openDownloadForCurrent(){
   window.open(dl, '_blank', 'noopener');
 }
 
-/* ===== Download popover logic ===== */
+/* ===== Download popover logic (updated: only Download + Copy) ===== */
 let dlOpen = false;
 function buildDlPopover(){
   dlPopover.innerHTML = '';
   const link = partsDownloadLinks[idx] || '';
-  const wrapper = document.createElement('div');
 
   // Download / open
   const itemOpen = document.createElement('div');
   itemOpen.className = 'dl-item';
-  itemOpen.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;flex:1">
-      <strong>Download</strong>
-      <span class="action" style="margin-left:auto">${link ? '' : '(tidak tersedia)'}</span>
-    </div>
-  `;
+  const openText = document.createElement('div');
+  openText.textContent = 'Download';
+  openText.style.fontWeight = '800';
+  const openAction = document.createElement('div');
+  openAction.className = 'action';
+  openAction.textContent = link ? '' : '(tidak tersedia)';
+  itemOpen.appendChild(openText);
+  itemOpen.appendChild(openAction);
   itemOpen.addEventListener('click', (e) => {
     if(!link){ showToast('Tidak ada link download.'); return; }
-    // show spinner then open
     const spinner = document.createElement('span'); spinner.className='dl-spinner';
     itemOpen.appendChild(spinner);
     setTimeout(()=> {
       window.open(link, '_blank', 'noopener');
       spinner.remove();
       closeDlPopover();
-    }, 450);
+    }, 350);
   });
   dlPopover.appendChild(itemOpen);
-
-  // Open preview (same as open, kept for clarity)
-  const itemOpen2 = document.createElement('div');
-  itemOpen2.className = 'dl-item';
-  itemOpen2.innerHTML = `<a href="${link || '#'}" target="_blank" rel="noopener">${link ? 'Buka link (preview)' : 'Tidak ada link'}</a>`;
-  dlPopover.appendChild(itemOpen2);
 
   // Copy link
   const itemCopy = document.createElement('div');
   itemCopy.className = 'dl-item';
-  itemCopy.innerHTML = `<div style="flex:1">Salin link</div><div class="action">Copy</div>`;
+  const copyText = document.createElement('div'); copyText.textContent = 'Salin link';
+  const copyAction = document.createElement('div'); copyAction.className = 'action'; copyAction.textContent = 'Copy';
+  itemCopy.appendChild(copyText); itemCopy.appendChild(copyAction);
   itemCopy.addEventListener('click', (e) => {
     if(!link){ showToast('Tidak ada link untuk disalin.'); return; }
     copyToClipboard(link).then(()=> {
@@ -549,13 +554,14 @@ function buildDlPopover(){
 function openDlPopover(){
   buildDlPopover();
   const rect = dlBtn.getBoundingClientRect();
-  // position popover under the button, adjust to viewport
-  const left = Math.min(window.innerWidth - 16 - 220, Math.max(8, rect.left));
+  // position popover under the button, adjust to viewport (keep it solid)
+  const popW = Math.min(360, Math.max(220, rect.width + 80));
+  dlPopover.style.minWidth = popW + 'px';
+  const left = Math.min(window.innerWidth - 16 - popW, Math.max(8, rect.left));
   const top = rect.bottom + 8;
   dlPopover.style.left = left + 'px';
   dlPopover.style.top = top + 'px';
   dlPopover.style.display = 'block';
-  // apply small transform for entry
   dlPopover.style.transform = 'translateY(-6px) scale(.98)';
   requestAnimationFrame(()=> {
     dlPopover.classList.add('show');
@@ -591,7 +597,7 @@ dlBtn.addEventListener('click', (e) => {
   if(dlOpen) closeDlPopover(); else openDlPopover();
 });
 
-/* parts grid build */
+/* parts grid build (no icons) */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
@@ -604,13 +610,12 @@ function buildPartsGrid(){
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = `Video ${i+1}<svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16l4-5h-3V4h-2v7H8zM4 18h16v2H4z"/></svg>`;
+    a.innerHTML = `Video ${i+1}`;
     a.dataset.index = i;
     a.addEventListener('click', (e)=> {
       e.preventDefault();
       idx = clampIndex(Number(a.dataset.index));
       setSourceNoAuto(videos[idx]);
-      // close any open popovers
       closeDlPopover();
     });
     partsGrid.appendChild(a);
@@ -691,4 +696,4 @@ updateCenterPlay();
 (function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
 </script>
 </body>
-  </html>
+</html>
