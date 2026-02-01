@@ -1,179 +1,126 @@
 <!doctype html>
-<html lang="en-US">
+<html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Mobile (modal + blur)</title>
+<title>Custom Video Player — Final (glossy modal)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
-  --bg:#0f0f0f;
-  --panel:#181818;
-  --border:#232323;
-  --muted:#9ea8b4;
+  --bg:#0b0b0b;
+  --panel:#141414;
+  --muted:#9aa0a6;
   --text:#ffffff;
   --accent:#ff0000;
   --accent-2:#3ea6ff;
-  --control-h:56px;
-  --round:10px;
-  --active-yellow:#ffd54f;
+  --yellow:#ffd54f;
+  --glass-strong: rgba(15,15,15,0.94);
+  --radius:14px;
 }
 
-/* Base */
+/* reset / base */
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter, Roboto, Arial, sans-serif;-webkit-font-smoothing:antialiased}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
-.wrap{max-width:980px;margin:0 auto;padding:0 12px}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
 
-/* Player card */
-.card-player{margin-top:10px;border-radius:8px;overflow:hidden}
-.video-area{position:relative;background:#000;border-radius:8px;overflow:hidden}
+/* video area */
+.card-player{border-radius:var(--radius);overflow:hidden}
+.video-area{position:relative;background:#000;border-radius:var(--radius);overflow:hidden}
 video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 
-/* Center big play */
+/* center big play */
 .center-play{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:68px;height:68px;border-radius:999px;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.05);z-index:40;cursor:pointer;-webkit-tap-highlight-color:transparent;
-  transition:transform 200ms cubic-bezier(.2,.9,.2,1), opacity 160ms ease;
+  z-index:40;
 }
-.center-play svg{width:30px;height:30px;fill:var(--text)}
-.center-play:active{transform:translate(-50%,-50%) scale(.96)}
+.center-play button{
+  width:72px;height:72px;border-radius:50%;border:1px solid rgba(255,255,255,0.06);
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.45));
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.center-play svg{width:34px;height:34px;fill:#fff}
 
-/* loading overlay */
+/* loading */
 .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:45;pointer-events:none}
-.loading-box{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.04)}
+.loading-box{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
 .loading-spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin .9s linear infinite}
 
 /* meta */
-.top-meta{padding:10px 6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
-.title-wrap{display:flex;flex-direction:column;gap:6px}
-.title{font-size:16px;font-weight:700;margin:0;line-height:1.2}
-.date{font-size:13px;color:var(--muted);margin-top:0}
-.part-badge{font-size:13px;color:var(--text);background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03)}
+.top-meta{display:flex;justify-content:space-between;align-items:center;padding:12px 4px}
+.title{font-weight:700;font-size:16px}
+.part-badge{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-size:13px;}
 
 /* controls */
-.controls{background:var(--panel);border-top:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:8px;border-radius:0 0 8px 8px}
+.controls{background:linear-gradient(180deg,#141414,#0f0f0f);padding:12px;border-radius:0 0 var(--radius) var(--radius);margin-top:8px}
 .seek-row{display:flex;align-items:center;gap:8px}
-.time{width:54px;font-size:12px;color:var(--muted);text-align:center}
-.seek{flex:1;-webkit-appearance:none;background:transparent;height:6px;position:relative}
-.seek::-webkit-slider-runnable-track{height:6px;background:#333;border-radius:6px}
-.seek::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);margin-top:-3px;box-shadow:0 0 0 6px rgba(255,0,0,0.06)}
-.seek::-moz-range-track{height:6px;background:#333;border-radius:6px}
-.seek::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.time{width:54px;font-size:13px;color:var(--muted);text-align:center}
+.seek{flex:1;-webkit-appearance:none;height:6px;background:#333;border-radius:6px}
+.seek::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(255,0,0,0.06)}
+.control-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.btn{background:transparent;border:none;color:var(--text);padding:8px;border-radius:8px;cursor:pointer}
+.btn svg{width:20px;height:20px;fill:var(--text)}
+.btn-play{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent-2),var(--accent));border:none;color:#fff}
 
-/* control row */
-.control-row{display:flex;align-items:center;gap:8px;height:var(--control-h)}
-.left{display:flex;align-items:center;gap:6px}
-.right{margin-left:auto;display:flex;align-items:center;gap:6px}
+/* downloads block */
+.downloads{background:var(--panel);padding:14px;border-radius:12px;margin-top:12px;border:1px solid rgba(255,255,255,0.02)}
+/* full action centered */
+.full-action{margin:10px auto 6px;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,213,79,0.22), rgba(255,213,79,0.06));
+  border:1px solid rgba(255,213,79,0.32);
+  font-weight:800;color:#111;cursor:pointer}
+.full-action svg{width:18px;height:18px;fill:var(--yellow)}
 
-/* buttons */
-.btn{background:transparent;border:none;color:var(--text);padding:8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
-.btn:active{transform:scale(0.98)}
-.btn svg{width:22px;height:22px;display:block;fill:var(--text)}
+/* section title centered */
+.section-title{text-align:center;font-weight:700;margin-top:12px;margin-bottom:8px}
 
-/* Perjelas tombol download */
-.btn#dl:hover::after,
-.btn#dl:focus::after {
-  content: "DL";
-  position: absolute;
-  top: -26px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.9);
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: bold;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 50;
-}
-.btn#dl { position: relative; }
+/* parts list */
+.parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+.part-item{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);font-weight:700}
+.part-item.active{background:linear-gradient(180deg, rgba(255,213,79,0.22), rgba(255,213,79,0.06));border-color:rgba(255,213,79,0.36);color:#111;box-shadow:0 10px 30px rgba(255,213,79,0.06)}
 
-.btn-play{width:44px;height:44px;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center}
-.btn-play svg{width:18px;height:18px;fill:#fff}
-
-/* small select */
-.select{background:transparent;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;font-size:13px}
-
-/* downloads area */
-.downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
-.heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:center}
-
-/* full action centered and using yellow theme */
-.full-action{
-  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;
-  background:linear-gradient(90deg, rgba(255,213,79,0.14), rgba(255,235,166,0.04));
-  border:1px solid rgba(255,213,79,0.18);color:var(--text);font-weight:800;cursor:pointer;
-  transition:transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms ease;
-}
-.full-action:active{transform:scale(.98)}
-.full-action svg{width:16px;height:16px;fill:var(--active-yellow)}
-
-/* modal overlay with heavy blur for background readability - lebih solid */
+/* modal: darker + stronger blur + glossy panel */
 .full-modal{
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;
-  background:rgba(0,0,0,0.75); /* dinaikin opacity biar lebih jelas */
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  opacity:0;pointer-events:none;transition:opacity 220ms ease;
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  opacity:0;pointer-events:none;z-index:1200;transition:opacity .22s ease;
 }
 .full-modal.show{opacity:1;pointer-events:auto}
 
-/* modal panel - lebih solid */
+/* panel glossy */
 .full-modal-panel{
-  width:92%;
-  max-width:420px;
-  background:rgba(30,30,30,0.96); /* ganti gradient jadi dark semi-opaque */
-  border-radius:12px;padding:12px;
-  border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 18px 40px rgba(2,6,23,0.7);
-  transform:translateY(12px) scale(.98);opacity:0;transition:transform 240ms cubic-bezier(.2,.9,.2,1),opacity 200ms ease;
+  width:92%;max-width:440px;border-radius:18px;padding:14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+    var(--glass-strong);
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.75);
+  transform:translateY(12px) scale(.98);opacity:0;
+  transition:transform .26s cubic-bezier(.2,.9,.25,1),opacity .22s ease;
 }
 .full-modal.show .full-modal-panel{transform:translateY(0) scale(1);opacity:1}
 
-/* panel header */
-.modal-header{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px}
-.modal-title{font-weight:800;color:var(--text)}
-.modal-close{background:transparent;border:none;padding:8px;border-radius:8px;cursor:pointer}
-.modal-close svg{width:18px;height:18px;fill:var(--text)}
+/* header */
+.modal-header{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px}
+.modal-title{font-weight:900;font-size:16px;color:#fff;text-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.modal-close{position:absolute;right:0;top:0;background:transparent;border:none;padding:8px;cursor:pointer}
+.modal-close svg{width:18px;height:18px;fill:#fff}
 
-/* modal list - item lebih kontras */
-.modal-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-.modal-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,213,79,0.06));border:1px solid rgba(255,213,79,0.25);font-weight:700;color:#000;text-decoration:none}
-.modal-item a{color:inherit;text-decoration:none;flex:1}
-
-/* small note */
-.modal-note{font-size:13px;color:var(--muted);margin-top:8px}
-
-/* parts list (centered header, active yellow) */
-.parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
-.part-item{padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;font-weight:600;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px;justify-content:center}
-.part-item.active{background:linear-gradient(90deg, rgba(255,213,79,0.12), rgba(255,235,166,0.04));border-color: rgba(255,213,79,0.28);box-shadow:0 8px 24px rgba(255,213,79,0.06)}
-.part-item:focus{outline:2px solid rgba(255,213,79,0.12);outline-offset:2px}
-
-/* micro animation on active change */
-.part-item .dot{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,0.06)}
-.part-item.active .dot{background:var(--active-yellow);border-color:var(--active-yellow);box-shadow:0 6px 18px rgba(255,213,79,0.14);transform-origin:center;animation:pop 420ms cubic-bezier(.2,.9,.2,1)}
-@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
-
-/* center the "video ( urutan nonton )" label */
-.downloads .section-title {
-  text-align:center;
-  font-weight:700;
-  margin-top:12px;
-}
+/* modal list items */
+.modal-list{display:flex;flex-direction:column;gap:10px}
+.modal-item{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,213,79,0.24), rgba(255,213,79,0.06));border:1px solid rgba(255,213,79,0.36);font-weight:800;color:#111;text-decoration:none;display:block;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)}
+.modal-note{text-align:center;margin-top:10px;color:var(--muted);font-size:13px}
 
 /* toast */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.78);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:1300}
 
-/* accessibility focus */
-button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:focus, .modal-close:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
+/* accessibility */
+button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3px}
 
-@media(min-width:720px){ .wrap{max-width:980px;padding:12px} video{max-height:60vh} }
 @keyframes spin{ to { transform: rotate(360deg); } }
+@media(min-width:720px){ .wrap{max-width:980px;padding:16px} video{max-height:64vh} }
 </style>
 </head>
 <body>
@@ -182,11 +129,13 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
       <div class="video-area" id="videoArea" aria-label="Video area">
         <video id="video" playsinline webkit-playsinline preload="metadata" tabindex="0"></video>
 
-        <button id="centerPlay" class="center-play" aria-label="Play">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-        </button>
+        <div class="center-play" id="centerPlayWrap">
+          <button id="centerPlay" aria-label="Play">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
 
-        <div id="loading" class="loading-overlay" style="display:none;pointer-events:none" aria-hidden="true">
+        <div id="loading" class="loading-overlay" style="display:none" aria-hidden="true">
           <div class="loading-box" role="status" aria-live="polite">
             <div class="loading-spinner" aria-hidden="true"></div>
             <div>
@@ -198,11 +147,8 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
       </div>
 
       <div class="top-meta">
-        <div class="title-wrap">
-          <div id="title" class="title">Judul Video</div>
-          <div id="date" class="date"></div>
-        </div>
-        <div id="partBadge" class="part-badge" aria-live="polite">Video 1 / 1</div>
+        <div class="title" id="title">Judul Video</div>
+        <div id="partBadge" class="part-badge">Video 1 / 1</div>
       </div>
 
       <div class="controls" role="region" aria-label="Kontrol pemutar">
@@ -213,7 +159,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
         </div>
 
         <div class="control-row" aria-hidden="false">
-          <div class="left" role="group" aria-label="Main controls">
+          <div style="display:flex;gap:8px;align-items:center">
             <button id="prev" class="btn" title="Previous" aria-label="Previous">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3 6l9 6V6z"/></svg>
             </button>
@@ -226,15 +172,13 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l9-6-9-6z"/></svg>
             </button>
 
-            <button id="loop" class="btn" title="Loop" aria-pressed="false" aria-label="Loop">Loop</button>
-
-            <button id="dl" class="btn" title="Download bagian ini" aria-label="Download">
+            <button id="dl" class="btn" title="Download" aria-label="Download">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16l4-5h-3V4h-2v7H8zM4 18h16v2H4z"/></svg>
             </button>
           </div>
 
-          <div class="right">
-            <select id="speed" class="select" aria-label="Playback speed">
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <select id="speed" class="btn" aria-label="Playback speed" title="Speed" style="background:transparent;border:1px solid rgba(255,255,255,0.03);padding:6px;border-radius:8px;color:var(--text)">
               <option value="0.5">0.5x</option>
               <option value="0.75">0.75x</option>
               <option value="1" selected>1x</option>
@@ -242,25 +186,21 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
               <option value="1.5">1.5x</option>
               <option value="2">2x</option>
             </select>
-
             <button id="pip" class="btn" title="Picture-in-Picture" aria-label="Picture in picture">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7H5v10h14V7zm0-2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14zM7 9h6v4H7z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M19 7H5v10h14V7zm0-2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14zM7 9h6v4H7z"/></svg>
             </button>
-
             <button id="fs" class="btn" title="Fullscreen" aria-label="Fullscreen">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7zm0-4h2V7h3V5H5v5zm10 9h-3v2h5v-5h-2zm-3-14v2h3v3h2V5z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7zm0-4h2V7h3V5H5v5zm10 9h-3v2h5v-5h-2zm-3-14v2h3v3h2V5z"/></svg>
             </button>
           </div>
         </div>
       </div>
 
       <div class="downloads" aria-label="video player">
-        <div class="heading">
-          <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
-            <span style="color:var(--text);margin-left:6px">Buka konten full</span>
-          </button>
-        </div>
+        <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
+          <span>Buka konten full</span>
+        </button>
 
         <div class="section-title">video ( urutan nonton )</div>
         <div id="partsGrid" class="parts-grid" aria-live="polite"></div>
@@ -268,7 +208,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
     </div>
   </div>
 
-  <!-- Modal with strong blur background -->
+  <!-- Modal -->
   <div id="fullModal" class="full-modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="full-modal-panel" role="document" aria-labelledby="fullModalTitle">
       <div class="modal-header">
@@ -289,7 +229,7 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* ===== DATA (same as before) ===== */
+/* ===== DATA ===== */
 const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445408126-1000098857.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
@@ -319,7 +259,7 @@ const downloads = {
   terabox: "https://1024terabox.com/s/1gcGs04775L7mTUFhQ1_RWw"
 };
 
-/* ===== DOM refs (keep IDs same) ===== */
+/* ===== DOM refs ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
 const loading = document.getElementById('loading');
@@ -343,20 +283,38 @@ const partBadge = document.getElementById('partBadge');
 
 let idx = 0;
 let isSeeking = false;
-
-/* Keep previous storage key and helpers unchanged */
 const STORAGE_KEY = 'custom_video_player_state_v1';
 let lastSaveAt = 0;
-function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `\( {min}: \){sec}`; }
+
+/* ===== Helpers ===== */
+function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
 function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
-function loadSavedState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return null; const obj = JSON.parse(raw); if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj; return null; }catch(e){ return null; } }
-function saveStateImmediate(){ try{ const state = { idx: idx, time: Math.floor(video.currentTime || 0) }; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lastSaveAt = Date.now(); }catch(e){} }
-function saveStateThrottled(){ const now = Date.now(); if(now - lastSaveAt > 2000){ saveStateImmediate(); } }
 
-/* Core: setSourceNoAuto unchanged */
+function loadSavedState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj;
+    return null;
+  }catch(e){ return null; }
+}
+function saveStateImmediate(){
+  try{
+    const state = { idx: idx, time: Math.floor(video.currentTime || 0) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    lastSaveAt = Date.now();
+  }catch(e){}
+}
+function saveStateThrottled(){
+  const now = Date.now();
+  if(now - lastSaveAt > 2000){ saveStateImmediate(); }
+}
+
+/* ===== Core (kept same) ===== */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
@@ -368,16 +326,14 @@ function setSourceNoAuto(src){
   saveStateImmediate();
 }
 
-/* init index from storage if available */
+/* init index from storage if present */
 const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
-} else {
-  idx = 0;
-}
+} else { idx = 0; }
+
 if(videos.length) setSourceNoAuto(videos[idx]);
 
-/* Events (preserve logic) */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
@@ -390,20 +346,17 @@ video.addEventListener('loadedmetadata', () => {
 });
 
 video.addEventListener('canplay', () => { hideLoading(); });
-
 video.addEventListener('playing', () => {
   hideLoading();
   playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-  centerPlay.style.display = 'none';
+  centerPlay.parentElement.style.display = 'none';
 });
-
 ['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
 
 video.addEventListener('timeupdate', () => {
   if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
   saveStateThrottled();
 });
-
 seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
 seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
@@ -412,11 +365,11 @@ async function togglePlay(){
     if(video.paused){
       await video.play();
       playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-      centerPlay.style.display = 'none';
+      centerPlay.parentElement.style.display = 'none';
     } else {
       video.pause();
       playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
-      centerPlay.style.display = '';
+      centerPlay.parentElement.style.display = '';
     }
   } catch(e){
     showToast('Gagal memutar. Coba klik lagi.');
@@ -427,8 +380,7 @@ async function togglePlay(){
 playBtn.addEventListener('click', togglePlay);
 centerPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
 video.addEventListener('click', togglePlay);
-video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlay.style.display = ''; });
-function updateCenterPlay(){ centerPlay.style.display = video.paused ? '' : 'none'; }
+video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlay.parentElement.style.display = ''; });
 
 prevBtn.addEventListener('click', ()=> {
   if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
@@ -441,10 +393,10 @@ nextBtn.addEventListener('click', ()=> {
   setSourceNoAuto(videos[idx]);
 });
 
-loopBtn.addEventListener('click', ()=> {
+loopBtn?.addEventListener('click', ()=> {
+  if(!video) return;
   video.loop = !video.loop;
-  loopBtn.setAttribute('aria-pressed', String(video.loop));
-  loopBtn.classList.toggle('active', video.loop);
+  loopBtn.setAttribute && loopBtn.setAttribute('aria-pressed', String(video.loop));
 });
 
 speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
@@ -511,7 +463,7 @@ function openDownloadForCurrent(){
 }
 dlBtn.addEventListener('click', openDownloadForCurrent);
 
-/* Build parts grid (Video X labels) */
+/* parts grid build */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
@@ -524,7 +476,7 @@ function buildPartsGrid(){
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    a.innerHTML = `<span class="dot" aria-hidden="true"></span><span>Video ${i+1}</span>`;
+    a.innerHTML = `Video ${i+1}`;
     a.dataset.index = i;
     a.addEventListener('click', (e)=> {
       e.preventDefault();
@@ -537,7 +489,6 @@ function buildPartsGrid(){
   updatePartBadge();
 }
 
-/* highlight active part in UI */
 function updatePartsHighlight(){
   const items = partsGrid.querySelectorAll('.part-item');
   items.forEach((el, i) => {
@@ -552,13 +503,12 @@ function updatePartsHighlight(){
   });
 }
 
-/* update badge near title */
 function updatePartBadge(){
   const total = partsDownloadLinks.length || videos.length || 1;
   partBadge.textContent = `Video ${idx+1} / ${total}`;
 }
 
-/* Build modal content with available full links (UC / Terabox) */
+/* full modal content & handlers */
 function buildFullModal(){
   fullModalList.innerHTML = '';
   const list = [];
@@ -572,19 +522,16 @@ function buildFullModal(){
     return;
   }
   list.forEach(item => {
-    const wrap = document.createElement('div');
-    wrap.className = 'modal-item';
     const a = document.createElement('a');
+    a.className = 'modal-item';
     a.href = item.href;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
     a.textContent = item.label;
-    wrap.appendChild(a);
-    fullModalList.appendChild(wrap);
+    fullModalList.appendChild(a);
   });
 }
 
-/* Open / close modal (uses class toggles) */
 function openFullModal(){
   buildFullModal();
   fullModal.classList.add('show');
@@ -602,16 +549,16 @@ function closeFullModal(){
   fullActionBtn.focus();
 }
 
-/* events for modal */
 fullActionBtn.addEventListener('click', (e) => { e.stopPropagation(); openFullModal(); });
 fullModalClose.addEventListener('click', closeFullModal);
 fullModal.addEventListener('click', (e) => { if(e.target === fullModal) closeFullModal(); });
 window.addEventListener('keydown', (e) => { if(e.key === 'Escape' && fullModal.classList.contains('show')) closeFullModal(); });
 
-/* Init UI */
+/* init UI */
 buildPartsGrid();
+updateCenterPlay = () => { document.getElementById('centerPlayWrap').style.display = video.paused ? 'block' : 'none'; };
 updateCenterPlay();
 (function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
 </script>
 </body>
-  </html>
+            </html>
