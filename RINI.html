@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Download UI (updated)</title>
+<title>RINI — Custom Video Player</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -177,8 +177,8 @@ button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3p
       </div>
 
       <div class="top-meta">
-        <div class="title" id="title">Judul Video</div>
-        <div id="partBadge" class="part-badge">Video 1 / 1</div>
+        <div class="title" id="title">RINI</div>
+        <div id="partBadge" class="part-badge">Video 1 / 6</div>
       </div>
 
       <div class="controls" role="region" aria-label="Kontrol pemutar">
@@ -265,37 +265,31 @@ button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3p
 </div>
 
 <script>
-/* ===== DATA (unchanged) ===== */
+/* ===== DATA ===== */
 const videos = [
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445408126-1000098857.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445587141-1000098654.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445543114-1000098660.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445293226-1000099080.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445208260-1000099332.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445122943-1000099386.mp4"
+  "https://file.boodstream.cam/stream/20260131/6e1faf19b5ac44f1b5c91b922bbdffb9.mp4",
+  "https://file.boodstream.cam/stream/20260131/2e32fc821e0548b590208f16d62d4393.mp4",
+  "https://file.boodstream.cam/stream/20260131/0d19f86e7a934a7b8e490d04e0bbdb2f.mp4",
+  "https://file.boodstream.cam/stream/20260131/0422b11cabca48b2be5d4f2177c396a7.mp4",
+  "https://file.boodstream.cam/stream/20260131/c6a160b0680d4e0ca4ec75d3ac644229.mp4",
+  "https://file.boodstream.cam/stream/20260131/a1e8afd490be40098a27a84fc7a98d49.mp4"
 ];
 
 const partsDownloadLinks = [
-  "https://vipoy.co/view/k10pepch",
-  "https://vipoy.co/view/czu1oxm1",
-  "https://vipoy.co/view/a2h5t352",
-  "https://vipoy.co/view/1fs8ojba",
-  "https://vipoy.co/view/nfda2171",
-  "https://vipoy.co/view/12eo8y55",
-  "https://vipoy.co/view/uoqmpjnh",
-  "https://vipoy.co/view/tdykl7x6",
-  "https://vipoy.co/view/phslcvzl"
+  "https://share.boodstream.club/I54V8K",
+  "https://share.boodstream.club/I5KV1K",
+  "https://share.boodstream.club/I5NVF8",
+  "https://share.boodstream.cc/I59V9U",
+  "https://share.boodstream.club/I5JVEP",
+  "https://share.boodstream.club/I5IVXN"
 ];
 
 const downloads = {
-  uc: "https://uc-share.com/s/c274d9a2762f4?la=en-us",
-  terabox: "https://1024terabox.com/s/1gcGs04775L7mTUFhQ1_RWw"
+  uc: "https://uc-share.com/s/c90175c0e6f34?la=en-us",
+  terabox: "https://1024terabox.com/s/1uUvrELqyp5ppzEh59znxqA"
 };
 
-/* ===== DOM refs (unchanged) ===== */
+/* ===== DOM refs ===== */
 const video = document.getElementById('video');
 const centerPlay = document.getElementById('centerPlay');
 const centerPlayWrap = document.getElementById('centerPlayWrap');
@@ -323,7 +317,7 @@ let isSeeking = false;
 const STORAGE_KEY = 'custom_video_player_state_v1';
 let lastSaveAt = 0;
 
-/* ===== Helpers (unchanged except popover changes) ===== */
+/* ===== Helpers ===== */
 function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
@@ -342,7 +336,7 @@ function copyToClipboard(text){
   });
 }
 
-/* Persistence helpers unchanged */
+/* Persistence helpers */
 function loadSavedState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -383,7 +377,7 @@ if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && saved
 } else { idx = 0; }
 if(videos.length) setSourceNoAuto(videos[idx]);
 
-/* Events (main logic unchanged) */
+/* Events (preserve logic) */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
@@ -695,5 +689,8 @@ updateCenterPlay = () => { centerPlayWrap.style.display = video.paused ? 'block'
 updateCenterPlay();
 (function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
 </script>
+
+<!-- Kode iklan (sesuai permintaan) -->
+<script>(function(s){s.dataset.zone='10545744',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
 </html>
