@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Video Player — Mobile (updated UI)</title>
+<title>Custom Video Player — Mobile (modal full content)</title>
 <link rel="icon" href="favicon.ico">
 <style>
 :root{
@@ -16,7 +16,7 @@
   --accent-2:#3ea6ff;
   --control-h:56px;
   --round:10px;
-  --active-yellow: #ffd54f;
+  --active-yellow:#ffd54f;
 }
 
 /* Base */
@@ -81,43 +81,47 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .downloads{padding:10px 6px;background:var(--panel);border-top:1px solid var(--border)}
 .heading{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 
-/* full-content icon button */
-.full-icon-btn{
-  width:36px;height:36px;border-radius:8px;background:transparent;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
-  transition:transform 180ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease;
+/* full content button (yellow style similar to active) */
+.full-action{
+  margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;
+  background:linear-gradient(90deg, rgba(255,213,79,0.14), rgba(255,235,166,0.04));
+  border:1px solid rgba(255,213,79,0.18);color:var(--text);font-weight:700;cursor:pointer;
+  transition:transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms ease;
 }
-.full-icon-btn:active{transform:scale(.96)}
-.full-icon-btn svg{width:18px;height:18px;fill:var(--text)}
+.full-action:active{transform:scale(.98)}
+.full-action svg{width:16px;height:16px;fill:var(--active-yellow)}
 
-/* dropdown panel for full links */
-.full-dropdown{
-  position:relative;
+/* modal overlay */
+.full-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;
+  opacity:0;pointer-events:none;transition:opacity 220ms ease;
 }
-.full-dropdown-panel{
-  position:absolute;
-  right:0;
-  top:44px;
-  min-width:200px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:10px;
-  box-shadow:0 12px 30px rgba(2,6,23,0.6);
-  overflow:hidden;
-  transform-origin:top right;
-  will-change:transform,opacity;
-  opacity:0;
-  transform:translateY(-8px) scale(.98);
-  pointer-events:none;
+.full-modal.show{opacity:1;pointer-events:auto}
+
+/* modal panel */
+.full-modal-panel{
+  width:92%;
+  max-width:420px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+  border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);
+  box-shadow:0 18px 40px rgba(2,6,23,0.6);
+  transform:translateY(12px) scale(.98);opacity:0;transition:transform 240ms cubic-bezier(.2,.9,.2,1),opacity 200ms ease;
 }
-.full-dropdown-panel.show{
-  opacity:1;
-  transform:translateY(0) scale(1);
-  pointer-events:auto;
-  transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
-}
-.full-link{display:block;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text);text-decoration:none;font-weight:600}
-.full-link:last-child{border-bottom:none}
-.full-link:hover{background:rgba(255,255,255,0.02)}
+.full-modal.show .full-modal-panel{transform:translateY(0) scale(1);opacity:1}
+
+/* panel header */
+.modal-header{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px}
+.modal-title{font-weight:800;color:var(--text)}
+.modal-close{background:transparent;border:none;padding:8px;border-radius:8px;cursor:pointer}
+.modal-close svg{width:18px;height:18px;fill:var(--text)}
+
+/* modal list */
+.modal-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.modal-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:linear-gradient(90deg, rgba(255,213,79,0.06), rgba(255,213,79,0.02));border:1px solid rgba(255,213,79,0.12);font-weight:700;color:#000;text-decoration:none}
+.modal-item a{color:inherit;text-decoration:none;flex:1}
+
+/* small note */
+.modal-note{font-size:13px;color:var(--muted);margin-top:8px}
 
 /* parts list (with active highlight, yellow) */
 .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
@@ -134,7 +138,7 @@ video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.8);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:60}
 
 /* accessibility focus */
-button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-icon-btn:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
+button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-action:focus, .modal-close:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:2px}
 
 @media(min-width:720px){ .wrap{max-width:980px;padding:12px} video{max-height:60vh} }
 @keyframes spin{ to { transform: rotate(360deg); } }
@@ -221,17 +225,11 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-icon-bt
       <div class="downloads" aria-label="video player">
         <div class="heading">
           <span>Konten full</span>
-
-          <!-- full content icon + dropdown -->
-          <div style="margin-left:auto" class="full-dropdown" id="fullDropdownWrap">
-            <button id="fullIconBtn" class="full-icon-btn" aria-haspopup="true" aria-expanded="false" title="Lihat full konten">
-              <!-- download-box SVG -->
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
-            </button>
-            <div id="fullDropdown" class="full-dropdown-panel" role="menu" aria-hidden="true">
-              <!-- links injected by JS -->
-            </div>
-          </div>
+          <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
+            <!-- download-box SVG + label -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
+            <span style="color:var(--text);margin-left:6px">Buka konten full</span>
+          </button>
         </div>
 
         <div style="margin-top:12px;font-weight:700">video ( urutan nonton )</div>
@@ -240,16 +238,35 @@ button:focus, .download-btn:focus, .part-item:focus, select:focus, .full-icon-bt
     </div>
   </div>
 
+  <!-- Modal (hidden by default) -->
+  <div id="fullModal" class="full-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="full-modal-panel" role="document" aria-labelledby="fullModalTitle">
+      <div class="modal-header">
+        <div id="fullModalTitle" class="modal-title">Pilih Konten Full</div>
+        <button id="fullModalClose" class="modal-close" aria-label="Tutup">
+          <!-- X SVG -->
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.41L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4z"/></svg>
+        </button>
+      </div>
+
+      <div id="fullModalList" class="modal-list" role="menu" aria-labelledby="fullModalTitle">
+        <!-- injected links -->
+      </div>
+
+      <div class="modal-note">Pilih salah satu sumber untuk membuka konten full.</div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* ===== DATA (sama seperti sebelumnya) ===== */
+/* ===== DATA (same as before) ===== */
 const videos = [
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445408126-1000098857.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445041400-1000099491.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445587141-1000098654.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445543114-1000098660.mp4",
-  "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
+  "https://cdn.vipoy.co/videos/cmkunk30a01mz30a01mzseksx2oy19il/1769445467259-1000098667.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445293226-1000099080.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445230849-1000099292.mp4",
   "https://cdn.vipoy.co/videos/cmkunk30a01mzseksx2oy19il/1769445208260-1000099332.mp4",
@@ -287,86 +304,54 @@ const seek = document.getElementById('seek');
 const currentT = document.getElementById('current');
 const durationT = document.getElementById('duration');
 const titleEl = document.getElementById('title');
-const downloadsWrap = document.getElementById('downloadButtons'); // kept for compatibility (unused visually)
 const partsGrid = document.getElementById('partsGrid');
 const toast = document.getElementById('toast');
-const fullIconBtn = document.getElementById('fullIconBtn');
-const fullDropdown = document.getElementById('fullDropdown');
+const fullActionBtn = document.getElementById('fullActionBtn');
+const fullModal = document.getElementById('fullModal');
+const fullModalList = document.getElementById('fullModalList');
+const fullModalClose = document.getElementById('fullModalClose');
 const partBadge = document.getElementById('partBadge');
 
 let idx = 0;
 let isSeeking = false;
 
-/* state key */
+/* Keep previous storage key and helpers unchanged */
 const STORAGE_KEY = 'custom_video_player_state_v1';
 let lastSaveAt = 0;
-
-/* ===== Utility helpers (same behavior) ===== */
 function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
 function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
 function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
 function showToast(msg, time = 3200){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
-
 function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
+function loadSavedState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return null; const obj = JSON.parse(raw); if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj; return null; }catch(e){ return null; } }
+function saveStateImmediate(){ try{ const state = { idx: idx, time: Math.floor(video.currentTime || 0) }; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lastSaveAt = Date.now(); }catch(e){} }
+function saveStateThrottled(){ const now = Date.now(); if(now - lastSaveAt > 2000){ saveStateImmediate(); } }
 
-/* ===== Persistence: load saved state (idx + time) ===== */
-function loadSavedState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return null;
-    const obj = JSON.parse(raw);
-    if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj;
-    return null;
-  }catch(e){
-    return null;
-  }
-}
-
-function saveStateImmediate(){
-  try{
-    const state = { idx: idx, time: Math.floor(video.currentTime || 0) };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    lastSaveAt = Date.now();
-  }catch(e){}
-}
-
-/* save periodically (throttled) */
-function saveStateThrottled(){
-  const now = Date.now();
-  if(now - lastSaveAt > 2000){ saveStateImmediate(); }
-}
-
-/* ===== Core functions (preserve names) ===== */
+/* Core: setSourceNoAuto unchanged */
 function setSourceNoAuto(src){
   try{ video.pause(); }catch(e){}
   video.removeAttribute('src');
   video.src = src;
   try{ video.load(); }catch(e){}
   showLoading();
-  // update UI badge and highlight
   updatePartBadge();
   updatePartsHighlight();
-  // save idx change immediately
   saveStateImmediate();
 }
 
-/* determine starting index from saved state */
+/* init index from storage if available */
 const savedState = loadSavedState();
 if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
   idx = clampIndex(savedState.idx);
 } else {
   idx = 0;
 }
-
-/* init first source (may be overridden by saved time on loadedmetadata) */
 if(videos.length) setSourceNoAuto(videos[idx]);
 
-/* Events: metadata / canplay / playing / waiting / timeupdate similar to old logic */
+/* Events (preserve logic) */
 video.addEventListener('loadedmetadata', () => {
   durationT.textContent = fmt(video.duration || 0);
   seek.max = video.duration || 100;
-
-  // If savedState matches current idx, restore time (if valid)
   try{
     const s = loadSavedState();
     if(s && Number.isFinite(s.idx) && s.idx === idx && Number.isFinite(s.time) && s.time > 0 && s.time < (video.duration - 0.5)){
@@ -379,7 +364,6 @@ video.addEventListener('canplay', () => { hideLoading(); });
 
 video.addEventListener('playing', () => {
   hideLoading();
-  // change play icon to pause
   playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
   centerPlay.style.display = 'none';
 });
@@ -388,24 +372,21 @@ video.addEventListener('playing', () => {
 
 video.addEventListener('timeupdate', () => {
   if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
-  // throttle save
   saveStateThrottled();
 });
 
-/* seek interactions */
 seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
 seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
 
-/* togglePlay (preserve semantics) */
 async function togglePlay(){
   try {
     if(video.paused){
       await video.play();
-      playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // pause icon
+      playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
       centerPlay.style.display = 'none';
     } else {
       video.pause();
-      playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; // play icon
+      playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
       centerPlay.style.display = '';
     }
   } catch(e){
@@ -414,17 +395,12 @@ async function togglePlay(){
   }
 }
 
-/* wire UI - keep same listeners as before but mapped to custom controls */
 playBtn.addEventListener('click', togglePlay);
 centerPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
 video.addEventListener('click', togglePlay);
-
-/* pause event restore center play */
 video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlay.style.display = ''; });
-
 function updateCenterPlay(){ centerPlay.style.display = video.paused ? '' : 'none'; }
 
-/* Prev / Next: same logic (no autoplay) */
 prevBtn.addEventListener('click', ()=> {
   if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
   idx = clampIndex(idx - 1);
@@ -436,24 +412,20 @@ nextBtn.addEventListener('click', ()=> {
   setSourceNoAuto(videos[idx]);
 });
 
-/* Loop toggle */
 loopBtn.addEventListener('click', ()=> {
   video.loop = !video.loop;
   loopBtn.setAttribute('aria-pressed', String(video.loop));
   loopBtn.classList.toggle('active', video.loop);
 });
 
-/* Speed control (still same) */
 speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
 
-/* Fullscreen */
 document.getElementById('fs')?.addEventListener('click', ()=> {
   const el = document.querySelector('.video-area');
   if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
   else document.exitFullscreen();
 });
 
-/* Picture-in-picture */
 document.getElementById('pip')?.addEventListener('click', async ()=>{
   if('pictureInPictureEnabled' in document){
     try{
@@ -463,12 +435,10 @@ document.getElementById('pip')?.addEventListener('click', async ()=>{
   }
 });
 
-/* Auto-next on ended (no autoplay) */
 video.addEventListener('ended', ()=> {
   if(videos.length && idx < videos.length - 1){ idx++; setSourceNoAuto(videos[idx]); }
 });
 
-/* Error handling: identical to previous logic */
 video.addEventListener('error', (e) => {
   const failedSrc = video.currentSrc || video.src || 'unknown';
   console.warn('Video error at index', idx, failedSrc, e);
@@ -495,7 +465,6 @@ video.addEventListener('error', (e) => {
   }
 });
 
-/* Keyboard shortcuts (preserve) */
 window.addEventListener('keydown', (e)=> {
   if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
   if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
@@ -504,10 +473,8 @@ window.addEventListener('keydown', (e)=> {
   if(e.key === 'm'){ video.muted = !video.muted; }
 });
 
-/* Block right-click */
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-/* DOWNLOAD ACTIONS: open mapped download URL for current part */
 function openDownloadForCurrent(){
   const dl = partsDownloadLinks[idx] || '';
   if(!dl){ showToast('Tidak ada link download untuk bagian ini.'); return; }
@@ -515,65 +482,7 @@ function openDownloadForCurrent(){
 }
 dlBtn.addEventListener('click', openDownloadForCurrent);
 
-/* Build Full konten dropdown (icon) */
-function buildFullDropdown(){
-  fullDropdown.innerHTML = '';
-  const list = [];
-  if(downloads.uc) list.push({label:'UC Share', href: downloads.uc});
-  if(downloads.terabox) list.push({label:'Terabox', href: downloads.terabox});
-  if(!list.length){
-    const p = document.createElement('div');
-    p.className = 'full-link';
-    p.textContent = 'Tidak ada full-link.';
-    p.style.cursor = 'default';
-    fullDropdown.appendChild(p);
-    return;
-  }
-  list.forEach(item => {
-    const a = document.createElement('a');
-    a.className = 'full-link';
-    a.href = item.href;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer nofollow';
-    a.textContent = item.label;
-    fullDropdown.appendChild(a);
-  });
-}
-
-/* toggle dropdown with simple class + rAF friendly */
-let dropdownOpen = false;
-function toggleFullDropdown(){
-  dropdownOpen = !dropdownOpen;
-  fullIconBtn.setAttribute('aria-expanded', String(dropdownOpen));
-  if(dropdownOpen){
-    // ensure content exists
-    buildFullDropdown();
-    fullDropdown.classList.add('show');
-    fullDropdown.setAttribute('aria-hidden','false');
-    // animate via rAF for smoothness (lightweight)
-    requestAnimationFrame(()=> requestAnimationFrame(()=> { fullDropdown.classList.add('show'); }));
-    // close on outside click
-    setTimeout(()=> {
-      window.addEventListener('click', outsideClickHandler);
-    }, 0);
-  } else {
-    fullDropdown.classList.remove('show');
-    fullDropdown.setAttribute('aria-hidden','true');
-    window.removeEventListener('click', outsideClickHandler);
-  }
-}
-function outsideClickHandler(e){
-  if(!fullDropdown.contains(e.target) && !fullIconBtn.contains(e.target)){
-    dropdownOpen = false;
-    fullDropdown.classList.remove('show');
-    fullDropdown.setAttribute('aria-hidden','true');
-    window.removeEventListener('click', outsideClickHandler);
-    fullIconBtn.setAttribute('aria-expanded','false');
-  }
-}
-fullIconBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFullDropdown(); });
-
-/* Build parts grid (links ordered) with "video X" labels and active highlight */
+/* Build parts grid (Video X labels) */
 function buildPartsGrid(){
   partsGrid.innerHTML = '';
   if(!partsDownloadLinks || !partsDownloadLinks.length){
@@ -586,7 +495,6 @@ function buildPartsGrid(){
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer nofollow';
-    // left dot + label
     a.innerHTML = `<span class="dot" aria-hidden="true"></span><span>Video ${i+1}</span>`;
     a.dataset.index = i;
     a.addEventListener('click', (e)=> {
@@ -607,7 +515,6 @@ function updatePartsHighlight(){
     if(i === idx) {
       el.classList.add('active');
       el.setAttribute('aria-current','true');
-      // keep visible but don't over-scroll on mobile
       try{ el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); }catch(e){}
     } else {
       el.classList.remove('active');
@@ -622,20 +529,61 @@ function updatePartBadge(){
   partBadge.textContent = `Video ${idx+1} / ${total}`;
 }
 
+/* Build modal content with available full links (UC / Terabox) */
+function buildFullModal(){
+  fullModalList.innerHTML = '';
+  const list = [];
+  if(downloads.uc) list.push({label:'UC Share', href: downloads.uc});
+  if(downloads.terabox) list.push({label:'Terabox', href: downloads.terabox});
+  if(!list.length){
+    const p = document.createElement('div');
+    p.className = 'modal-note';
+    p.textContent = 'Tidak ada konten full tersedia.';
+    fullModalList.appendChild(p);
+    return;
+  }
+  list.forEach(item => {
+    const wrap = document.createElement('div');
+    wrap.className = 'modal-item';
+    const a = document.createElement('a');
+    a.href = item.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer nofollow';
+    a.textContent = item.label;
+    wrap.appendChild(a);
+    fullModalList.appendChild(wrap);
+  });
+}
+
+/* Open / close modal (uses class toggles + rAF for smoothness) */
+function openFullModal(){
+  buildFullModal();
+  fullModal.classList.add('show');
+  fullModal.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  // focus first link for accessibility
+  setTimeout(()=> {
+    const first = fullModalList.querySelector('a');
+    if(first) first.focus();
+  }, 50);
+}
+function closeFullModal(){
+  fullModal.classList.remove('show');
+  fullModal.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  fullActionBtn.focus();
+}
+
+/* events for modal */
+fullActionBtn.addEventListener('click', (e) => { e.stopPropagation(); openFullModal(); });
+fullModalClose.addEventListener('click', closeFullModal);
+fullModal.addEventListener('click', (e) => { if(e.target === fullModal) closeFullModal(); });
+window.addEventListener('keydown', (e) => { if(e.key === 'Escape' && fullModal.classList.contains('show')) closeFullModal(); });
+
 /* Init UI */
-buildFullDropdown();
 buildPartsGrid();
 updateCenterPlay();
-
-/* Save state on unload */
-window.addEventListener('beforeunload', ()=> {
-  saveStateImmediate();
-});
-
-/* ensure play button icon initial state */
-(function initPlayIcon(){
-  playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
-})();
+(function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
 </script>
 </body>
 </html>
