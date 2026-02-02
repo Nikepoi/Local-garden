@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Local random part 18 — Custom Video Player</title>
+<link rel="icon" href="favicon.ico">
+<style>
+:root{
+  --bg:#0b0b0b;
+  --panel:#141414;
+  --muted:#9aa0a6;
+  --text:#ffffff;
+  --accent:#ff4d4d;
+  --accent-2:#3ea6ff;
+  --yellow:#ffd600; /* kuning cerah */
+  --glass-strong: rgba(15,15,15,0.94);
+  --radius:14px;
+}
+
+/* reset / base */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+
+/* video area */
+.card-player{border-radius:var(--radius);overflow:hidden}
+.video-area{position:relative;background:#000;border-radius:var(--radius);overflow:hidden}
+video{width:100%;height:auto;display:block;background:#000;object-fit:contain}
+
+/* center big play */
+.center-play{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:40;
+}
+.center-play button{
+  width:72px;height:72px;border-radius:50%;border:1px solid rgba(255,255,255,0.06);
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.45));
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.center-play svg{width:34px;height:34px;fill:#fff}
+
+/* loading */
+.loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:45;pointer-events:none}
+.loading-box{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+.loading-spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin .9s linear infinite}
+
+/* meta */
+.top-meta{display:flex;justify-content:space-between;align-items:center;padding:12px 4px}
+.title{font-weight:700;font-size:16px}
+.part-badge{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-size:13px;}
+
+/* controls */
+.controls{background:linear-gradient(180deg,#141414,#0f0f0f);padding:12px;border-radius:0 0 var(--radius) var(--radius);margin-top:8px}
+.seek-row{display:flex;align-items:center;gap:8px}
+.time{width:54px;font-size:13px;color:var(--muted);text-align:center}
+.seek{flex:1;-webkit-appearance:none;height:6px;background:#333;border-radius:6px}
+.seek::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(255,0,0,0.06)}
+.control-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.btn{background:transparent;border:none;color:var(--text);padding:8px;border-radius:8px;cursor:pointer}
+.btn svg{width:20px;height:20px;fill:var(--text)}
+.btn-play{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent-2),var(--accent));border:none;color:#fff}
+
+/* DOWNLOAD BUTTON styling - make it match active bar (kuning) */
+#dl{
+  background: linear-gradient(90deg, rgba(255,214,86,0.95), var(--yellow));
+  color:#111 !important;
+  border-radius:10px;
+  padding:8px 10px;
+  border:1px solid rgba(255,215,0,0.25);
+  box-shadow: 0 8px 24px rgba(255,214,86,0.08);
+}
+
+/* downloads block */
+.downloads{background:var(--panel);padding:14px;border-radius:12px;margin-top:12px;border:1px solid rgba(255,255,255,0.02)}
+/* full action centered */
+.full-action{margin:10px auto 6px;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,214,86,0.25), rgba(255,214,86,0.08));
+  border:1px solid rgba(255,214,86,0.32);
+  font-weight:800;color:#111;cursor:pointer}
+.full-action svg{width:18px;height:18px;fill:var(--yellow)}
+
+/* section title centered */
+.section-title{text-align:center;font-weight:700;margin-top:12px;margin-bottom:8px;color:var(--text)}
+
+/* parts list: just 'Video X' (no icons) */
+.parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+.part-item{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);font-weight:700}
+.part-item.active{background:linear-gradient(180deg, rgba(255,214,86,0.25), rgba(255,214,86,0.08));border-color:var(--yellow);color:#111;box-shadow:0 10px 30px rgba(255,214,86,0.06)}
+
+/* modal: darker + stronger blur + glossy panel */
+.full-modal{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.78);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  opacity:0;pointer-events:none;z-index:1200;transition:opacity .22s ease;
+}
+.full-modal.show{opacity:1;pointer-events:auto}
+
+/* panel glossy; keep panel readable but not transparent */
+.full-modal-panel{
+  width:92%;max-width:440px;border-radius:18px;padding:14px;
+  background: linear-gradient(180deg, rgba(20,20,20,0.98), rgba(10,10,10,0.98));
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.85);
+  transform:translateY(12px) scale(.98);opacity:0;
+  transition:transform .26s cubic-bezier(.2,.9,.25,1),opacity .22s ease;
+}
+.full-modal.show .full-modal-panel{transform:translateY(0) scale(1);opacity:1}
+
+/* header */
+.modal-header{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px}
+.modal-title{font-weight:900;font-size:16px;color:#fff;text-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.modal-close{position:absolute;right:0;top:0;background:transparent;border:none;padding:8px;cursor:pointer}
+.modal-close svg{width:18px;height:18px;fill:#fff}
+
+/* modal list items */
+.modal-list{display:flex;flex-direction:column;gap:10px}
+.modal-item{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,214,86,0.24), rgba(255,214,86,0.06));border:1px solid rgba(255,214,86,0.36);font-weight:800;color:#111;text-decoration:none;display:block;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35)}
+.modal-note{text-align:center;margin-top:10px;color:var(--muted);font-size:13px}
+
+/* DOWNLOAD POPOVER: make it solid & readable (not transparent) */
+.dl-popover{
+  position:fixed;
+  z-index:1400;
+  min-width:220px;
+  background: linear-gradient(180deg, rgba(25,25,25,0.98), rgba(12,12,12,0.98));
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:0 12px 32px rgba(0,0,0,0.6);
+  padding:8px;
+  transform-origin:top left;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s cubic-bezier(.2,.9,.2,1);
+  color:var(--text);
+}
+.dl-popover.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+.dl-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}
+.dl-item a{flex:1;text-decoration:none;color:var(--text);font-weight:700}
+.dl-item .action{font-size:13px;color:var(--muted)}
+.dl-spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin .8s linear infinite;display:inline-block}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,0.78);color:var(--text);padding:10px 14px;border-radius:10px;display:none;font-size:13px;z-index:1500}
+
+/* accessibility */
+button:focus, a:focus{outline:2px solid rgba(255,255,255,0.06);outline-offset:3px}
+
+@keyframes spin{ to { transform: rotate(360deg); } }
+@media(min-width:720px){ .wrap{max-width:980px;padding:16px} video{max-height:64vh} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card-player" id="card">
+      <div class="video-area" id="videoArea" aria-label="Video area">
+        <video id="video" playsinline webkit-playsinline preload="metadata" tabindex="0"></video>
+
+        <div class="center-play" id="centerPlayWrap">
+          <button id="centerPlay" aria-label="Play">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+
+        <div id="loading" class="loading-overlay" style="display:none" aria-hidden="true">
+          <div class="loading-box" role="status" aria-live="polite">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Memuat video…</div>
+              <div style="color:var(--muted);font-size:13px">Menunggu jaringan / buffering</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-meta">
+        <div class="title" id="title">Local random part 18</div>
+        <div id="partBadge" class="part-badge">Video 1 / 22</div>
+      </div>
+
+      <div class="controls" role="region" aria-label="Kontrol pemutar">
+        <div class="seek-row">
+          <div id="current" class="time">0:00</div>
+          <input id="seek" class="seek" type="range" min="0" max="100" step="0.01" value="0" aria-label="Seek bar">
+          <div id="duration" class="time">0:00</div>
+        </div>
+
+        <div class="control-row" aria-hidden="false">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="prev" class="btn" title="Previous" aria-label="Previous">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3 6l9 6V6z"/></svg>
+            </button>
+
+            <button id="play" class="btn-play" title="Play/Pause" aria-label="Play/Pause">
+              <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+
+            <button id="next" class="btn" title="Next" aria-label="Next">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l9-6-9-6z"/></svg>
+            </button>
+
+            <button id="dl" class="btn" title="Download" aria-label="Download">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16l4-5h-3V4h-2v7H8zM4 18h16v2H4z"/></svg>
+            </button>
+          </div>
+
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <select id="speed" class="btn" aria-label="Playback speed" title="Speed" style="background:transparent;border:1px solid rgba(255,255,255,0.03);padding:6px;border-radius:8px;color:var(--text)">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <button id="pip" class="btn" title="Picture-in-Picture" aria-label="Picture in picture">
+              <svg viewBox="0 0 24 24"><path d="M19 7H5v10h14V7zm0-2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14zM7 9h6v4H7z"/></svg>
+            </button>
+            <button id="fs" class="btn" title="Fullscreen" aria-label="Fullscreen">
+              <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7zm0-4h2V7h3V5H5v5zm10 9h-3v2h5v-5h-2zm-3-14v2h3v3h2V5z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="downloads" aria-label="video player">
+        <button id="fullActionBtn" class="full-action" aria-haspopup="dialog" aria-expanded="false" title="Buka konten full">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v7h-2V7H8l4-4zm9 14v4H3v-4H1v6a2 2 0 002 2h18a2 2 0 002-2v-6h-2z"/></svg>
+          <span>Buka konten full</span>
+        </button>
+
+        <div class="section-title">video ( urutan nonton )</div>
+        <div id="partsGrid" class="parts-grid" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="fullModal" class="full-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="full-modal-panel" role="document" aria-labelledby="fullModalTitle">
+      <div class="modal-header">
+        <div id="fullModalTitle" class="modal-title">Pilih Konten Full</div>
+        <button id="fullModalClose" class="modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.41L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4z"/></svg>
+        </button>
+      </div>
+
+      <div id="fullModalList" class="modal-list" role="menu" aria-labelledby="fullModalTitle">
+        <!-- injected links -->
+      </div>
+
+      <div class="modal-note">Pilih salah satu sumber untuk membuka konten full.</div>
+    </div>
+  </div>
+
+  <!-- Download popover (positioned by JS) -->
+  <div id="dlPopover" class="dl-popover" role="menu" aria-hidden="true" style="display:none;">
+    <!-- items injected by JS -->
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+/* ===== DATA ===== */
+const videos = [
+  "https://file.boodstream.cam/stream/20260201/31da4a9e24584c9b81ee4a37f9e8f17d.mp4",
+  "https://file.boodstream.cam/stream/20260201/b0dee1e83a0046eba7ff07de3c278553.mp4",
+  "https://file.boodstream.cam/stream/20260201/62b7b7ff4dad4f8baaa600341affb83a.mp4",
+  "https://file.boodstream.cam/stream/20260201/bda4f5eedbfb4bb0bcc8ab4c6c01f8a3.mp4",
+  "https://file.boodstream.cam/stream/20260201/e0121caadc454889ac286fa877990ee0.mp4",
+  "https://file.boodstream.cam/stream/20260201/34cbba92b6bd4606aba4911cb23e7d27.mp4",
+  "https://file.boodstream.cam/stream/20260201/8863e5532034428c9224f6e509c86038.mp4",
+  "https://file.boodstream.cam/stream/20260201/9033a321a6d540e193b8e07155a0507e.mp4",
+  "https://file.boodstream.cam/stream/20260201/25eb5781e21343698929103075e8276b.mp4",
+  "https://file.boodstream.cam/stream/20260201/9fd9afa173d84e0391660c467161d256.mp4",
+  "https://file.boodstream.cam/stream/20260201/10ff1dce137c4bc29bf2345a4e4933bc.mp4",
+  "https://file.boodstream.cam/stream/20260201/22f5c386881e434c82bbf871b48aa3a3.mp4",
+  "https://file.boodstream.cam/stream/20260201/18038203c6324c08ba8927ddc01e9248.mp4",
+  "https://file.boodstream.cam/stream/20260201/5fc8d910c90b420a9a1828e718da19aa.mp4",
+  "https://file.boodstream.cam/stream/20260201/9deda2a1cb7645938a23eccff1adab5d.mp4",
+  "https://file.boodstream.cam/stream/20260201/ff61f22dae9b4cc1a262b3a087cbaebc.mp4",
+  "https://file.boodstream.cam/stream/20260201/6c536cdc6d194bfca88c722d53be7210.mp4",
+  "https://file.boodstream.cam/stream/20260201/4f1b0d52694445878e73aae6958cc6e1.mp4",
+  "https://file.boodstream.cam/stream/20260201/762ace26e32d48689ff7b60837eded86.mp4",
+  "https://file.boodstream.cam/stream/20260201/56c339092b3d42399595c550ebe6b639.mp4",
+  "https://file.boodstream.cam/stream/20260201/68049a96afd4410fa2b4c3a8ec423dde.mp4",
+  "https://file.boodstream.cam/stream/20260201/e5fada80b7d547da80488afadbe2859e.mp4"
+];
+
+const partsDownloadLinks = [
+  "https://share.boodstream.cc/I8AVUM",
+  "https://share.boodstream.club/I8ZV3R",
+  "https://share.boodstream.club/IISV54",
+  "https://share.boodstream.club/II5VVH",
+  "https://share.boodstream.cc/II8VX3",
+  "https://share.glunvropix.space/IIFVJL",
+  "https://share.bleedtube.site/IIUVLL",
+  "https://share.boodstream.cc/IIPV4N",
+  "https://share.flowveins.online/IIYVR5",
+  "https://share.boodstream.club/II2VV3",
+  "https://share.boodstream.cc/IIRVEI",
+  "https://share.boodstream.club/IIHVTF",
+  "https://share.boodstream.cc/II7V9F",
+  "https://share.glunvropix.space/IIBVL9",
+  "https://share.boodstream.cc/IIVVLX",
+  "https://share.boodstream.cam/IILV4G",
+  "https://share.boodstream.cc/I86VZK",
+  "https://share.boodstream.cc/I8EVT4",
+  "https://share.boodstream.club/I81VFU",
+  "https://share.boodstream.club/I83VPR",
+  "https://share.boodstream.club/I84VSR",
+  "https://share.boodstream.club/I8KVP7"
+];
+
+const downloads = {
+  uc: "https://uc-share.com/s/495f000007444?la=en-us",
+  terabox: "https://1024terabox.com/s/15-juwwAL91cv_SKHrxy-AQ"
+};
+
+/* ===== DOM refs ===== */
+const video = document.getElementById('video');
+const centerPlay = document.getElementById('centerPlay');
+const centerPlayWrap = document.getElementById('centerPlayWrap');
+const loading = document.getElementById('loading');
+const playBtn = document.getElementById('play');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const dlBtn = document.getElementById('dl');
+const speedSel = document.getElementById('speed');
+const seek = document.getElementById('seek');
+const currentT = document.getElementById('current');
+const durationT = document.getElementById('duration');
+const titleEl = document.getElementById('title');
+const partsGrid = document.getElementById('partsGrid');
+const toast = document.getElementById('toast');
+const fullActionBtn = document.getElementById('fullActionBtn');
+const fullModal = document.getElementById('fullModal');
+const fullModalList = document.getElementById('fullModalList');
+const fullModalClose = document.getElementById('fullModalClose');
+const partBadge = document.getElementById('partBadge');
+const dlPopover = document.getElementById('dlPopover');
+
+let idx = 0;
+let isSeeking = false;
+const STORAGE_KEY = 'custom_video_player_state_v1';
+let lastSaveAt = 0;
+
+/* ===== Helpers ===== */
+function fmt(s){ if(!isFinite(s)) return "0:00"; const sec = Math.floor(s%60).toString().padStart(2,'0'); const min = Math.floor(s/60); return `${min}:${sec}`; }
+function showLoading(){ loading.style.display = ''; loading.setAttribute('aria-hidden','false'); }
+function hideLoading(){ loading.style.display = 'none'; loading.setAttribute('aria-hidden','true'); updateCenterPlay(); }
+function showToast(msg, time = 2600){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display = 'none', time); }
+function clampIndex(i){ if(!videos.length) return 0; return ((i % videos.length) + videos.length) % videos.length; }
+
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((res, rej) => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); res(); }catch(e){ rej(e);} finally{ ta.remove(); }
+  });
+}
+
+/* Persistence helpers */
+function loadSavedState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(typeof obj === 'object' && Number.isFinite(obj.idx)) return obj;
+    return null;
+  }catch(e){ return null; }
+}
+function saveStateImmediate(){
+  try{
+    const state = { idx: idx, time: Math.floor(video.currentTime || 0) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    lastSaveAt = Date.now();
+  }catch(e){}
+}
+function saveStateThrottled(){
+  const now = Date.now();
+  if(now - lastSaveAt > 2000){ saveStateImmediate(); }
+}
+
+/* Core: setSourceNoAuto unchanged */
+function setSourceNoAuto(src){
+  try{ video.pause(); }catch(e){}
+  video.removeAttribute('src');
+  video.src = src;
+  try{ video.load(); }catch(e){}
+  showLoading();
+  updatePartBadge();
+  updatePartsHighlight();
+  saveStateImmediate();
+}
+
+/* init index from storage if available */
+const savedState = loadSavedState();
+if(savedState && Number.isFinite(savedState.idx) && savedState.idx >= 0 && savedState.idx < videos.length){
+  idx = clampIndex(savedState.idx);
+} else { idx = 0; }
+if(videos.length) setSourceNoAuto(videos[idx]);
+
+/* Events (preserve logic) */
+video.addEventListener('loadedmetadata', () => {
+  durationT.textContent = fmt(video.duration || 0);
+  seek.max = video.duration || 100;
+  try{
+    const s = loadSavedState();
+    if(s && Number.isFinite(s.idx) && s.idx === idx && Number.isFinite(s.time) && s.time > 0 && s.time < (video.duration - 0.5)){
+      setTimeout(()=> { try{ video.currentTime = Number(s.time); }catch(e){} }, 50);
+    }
+  }catch(e){}
+});
+
+video.addEventListener('canplay', () => { hideLoading(); });
+video.addEventListener('playing', () => {
+  hideLoading();
+  playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+  centerPlayWrap.style.display = 'none';
+});
+['waiting','stalled'].forEach(ev => video.addEventListener(ev, () => { showLoading(); }));
+
+video.addEventListener('timeupdate', () => {
+  if(!isSeeking){ seek.value = video.currentTime; currentT.textContent = fmt(video.currentTime); }
+  saveStateThrottled();
+});
+seek.addEventListener('input', ()=> { isSeeking = true; currentT.textContent = fmt(seek.value); });
+seek.addEventListener('change', ()=> { video.currentTime = Number(seek.value); isSeeking = false; });
+
+async function togglePlay(){
+  try {
+    if(video.paused){
+      await video.play();
+      playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+      centerPlayWrap.style.display = 'none';
+    } else {
+      video.pause();
+      playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+      centerPlayWrap.style.display = '';
+    }
+  } catch(e){
+    showToast('Gagal memutar. Coba klik lagi.');
+    console.warn('Play failed', e);
+  }
+}
+
+playBtn.addEventListener('click', togglePlay);
+centerPlay.addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
+video.addEventListener('click', togglePlay);
+video.addEventListener('pause', ()=> { playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; centerPlayWrap.style.display = ''; });
+
+prevBtn.addEventListener('click', ()=> {
+  if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+  idx = clampIndex(idx - 1);
+  setSourceNoAuto(videos[idx]);
+});
+nextBtn.addEventListener('click', ()=> {
+  if(!videos.length){ showToast('Tidak ada bagian tersisa.'); return; }
+  idx = clampIndex(idx + 1);
+  setSourceNoAuto(videos[idx]);
+});
+
+speedSel.addEventListener('change', ()=> { video.playbackRate = Number(speedSel.value); });
+
+document.getElementById('fs')?.addEventListener('click', ()=> {
+  const el = document.querySelector('.video-area');
+  if(!document.fullscreenElement) el.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+});
+
+document.getElementById('pip')?.addEventListener('click', async ()=>{
+  if('pictureInPictureEnabled' in document){
+    try{
+      if(document.pictureInPictureElement) await document.exitPictureInPicture();
+      else await video.requestPictureInPicture();
+    }catch(e){ console.warn('PIP failed', e); }
+  }
+});
+
+video.addEventListener('ended', ()=> {
+  if(videos.length && idx < videos.length - 1){ idx++; setSourceNoAuto(videos[idx]); }
+});
+
+video.addEventListener('error', (e) => {
+  const failedSrc = video.currentSrc || video.src || 'unknown';
+  console.warn('Video error at index', idx, failedSrc, e);
+  hideLoading();
+
+  const pos = videos.indexOf(failedSrc);
+  if(pos !== -1){
+    videos.splice(pos,1);
+    if(partsDownloadLinks[pos]) partsDownloadLinks.splice(pos,1);
+    showToast('Bagian ' + (pos+1) + ' gagal dimuat — dihapus.');
+    if(pos <= idx) idx = Math.max(0, idx - 1);
+  } else {
+    showToast('Sumber gagal dimuat.');
+  }
+
+  if(videos.length){
+    idx = clampIndex(idx);
+    setTimeout(()=> setSourceNoAuto(videos[idx]), 250);
+    buildPartsGrid();
+  } else {
+    showToast('Semua sumber gagal.');
+    try{ video.removeAttribute('src'); video.load(); }catch(e){}
+    buildPartsGrid();
+  }
+});
+
+window.addEventListener('keydown', (e)=> {
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+  if(e.code === 'ArrowLeft'){ video.currentTime = Math.max(0, video.currentTime - 5); }
+  if(e.code === 'ArrowRight'){ video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+  if(e.key === 'm'){ video.muted = !video.muted; }
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+function openDownloadForCurrent(){
+  const dl = partsDownloadLinks[idx] || '';
+  if(!dl){ showToast('Tidak ada link download untuk bagian ini.'); return; }
+  window.open(dl, '_blank', 'noopener');
+}
+
+/* ===== Download popover logic (only Download + Copy) ===== */
+let dlOpen = false;
+function buildDlPopover(){
+  dlPopover.innerHTML = '';
+  const link = partsDownloadLinks[idx] || '';
+
+  // Download / open
+  const itemOpen = document.createElement('div');
+  itemOpen.className = 'dl-item';
+  const openText = document.createElement('div');
+  openText.textContent = 'Download';
+  openText.style.fontWeight = '800';
+  const openAction = document.createElement('div');
+  openAction.className = 'action';
+  openAction.textContent = link ? '' : '(tidak tersedia)';
+  itemOpen.appendChild(openText);
+  itemOpen.appendChild(openAction);
+  itemOpen.addEventListener('click', (e) => {
+    if(!link){ showToast('Tidak ada link download.'); return; }
+    const spinner = document.createElement('span'); spinner.className='dl-spinner';
+    itemOpen.appendChild(spinner);
+    setTimeout(()=> {
+      window.open(link, '_blank', 'noopener');
+      spinner.remove();
+      closeDlPopover();
+    }, 350);
+  });
+  dlPopover.appendChild(itemOpen);
+
+  // Copy link
+  const itemCopy = document.createElement('div');
+  itemCopy.className = 'dl-item';
+  const copyText = document.createElement('div'); copyText.textContent = 'Salin link';
+  const copyAction = document.createElement('div'); copyAction.className = 'action'; copyAction.textContent = 'Copy';
+  itemCopy.appendChild(copyText); itemCopy.appendChild(copyAction);
+  itemCopy.addEventListener('click', (e) => {
+    if(!link){ showToast('Tidak ada link untuk disalin.'); return; }
+    copyToClipboard(link).then(()=> {
+      showToast('Link disalin ke clipboard');
+      closeDlPopover();
+    }).catch(()=> showToast('Gagal menyalin'));
+  });
+  dlPopover.appendChild(itemCopy);
+}
+
+function openDlPopover(){
+  buildDlPopover();
+  const rect = dlBtn.getBoundingClientRect();
+  // position popover under the button, adjust to viewport (keep it solid)
+  const popW = Math.min(360, Math.max(220, rect.width + 80));
+  dlPopover.style.minWidth = popW + 'px';
+  const left = Math.min(window.innerWidth - 16 - popW, Math.max(8, rect.left));
+  const top = rect.bottom + 8;
+  dlPopover.style.left = left + 'px';
+  dlPopover.style.top = top + 'px';
+  dlPopover.style.display = 'block';
+  dlPopover.style.transform = 'translateY(-6px) scale(.98)';
+  requestAnimationFrame(()=> {
+    dlPopover.classList.add('show');
+    dlPopover.style.transform = 'translateY(0) scale(1)';
+    dlPopover.setAttribute('aria-hidden','false');
+  });
+  dlOpen = true;
+  setTimeout(()=> window.addEventListener('click', outsideDlClick), 0);
+  window.addEventListener('keydown', dlKeyHandler);
+}
+
+function closeDlPopover(){
+  dlPopover.classList.remove('show');
+  dlPopover.style.transform = 'translateY(-6px) scale(.98)';
+  dlPopover.setAttribute('aria-hidden','true');
+  setTimeout(()=> { dlPopover.style.display='none'; dlPopover.innerHTML=''; }, 180);
+  dlOpen = false;
+  window.removeEventListener('click', outsideDlClick);
+  window.removeEventListener('keydown', dlKeyHandler);
+}
+
+function outsideDlClick(e){
+  if(!dlPopover.contains(e.target) && !dlBtn.contains(e.target)){
+    closeDlPopover();
+  }
+}
+function dlKeyHandler(e){
+  if(e.key === 'Escape') closeDlPopover();
+}
+
+dlBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if(dlOpen) closeDlPopover(); else openDlPopover();
+});
+
+/* parts grid build (no icons) */
+function buildPartsGrid(){
+  partsGrid.innerHTML = '';
+  if(!partsDownloadLinks || !partsDownloadLinks.length){
+    partsGrid.innerHTML = '<div style="color:var(--muted)">Tidak ada bagian.</div>';
+    return;
+  }
+  partsDownloadLinks.forEach((link, i) => {
+    const a = document.createElement('a');
+    a.className = 'part-item';
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer nofollow';
+    a.innerHTML = `Video ${i+1}`;
+    a.dataset.index = i;
+    a.addEventListener('click', (e)=> {
+      e.preventDefault();
+      idx = clampIndex(Number(a.dataset.index));
+      setSourceNoAuto(videos[idx]);
+      closeDlPopover();
+    });
+    partsGrid.appendChild(a);
+  });
+  updatePartsHighlight();
+  updatePartBadge();
+}
+
+function updatePartsHighlight(){
+  const items = partsGrid.querySelectorAll('.part-item');
+  items.forEach((el, i) => {
+    if(i === idx) {
+      el.classList.add('active');
+      el.setAttribute('aria-current','true');
+      try{ el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); }catch(e){}
+    } else {
+      el.classList.remove('active');
+      el.removeAttribute('aria-current');
+    }
+  });
+}
+
+function updatePartBadge(){
+  const total = partsDownloadLinks.length || videos.length || 1;
+  partBadge.textContent = `Video ${idx+1} / ${total}`;
+}
+
+/* full modal content & handlers (unchanged) */
+function buildFullModal(){
+  fullModalList.innerHTML = '';
+  const list = [];
+  if(downloads.uc) list.push({label:'UC Share', href: downloads.uc});
+  if(downloads.terabox) list.push({label:'Terabox', href: downloads.terabox});
+  if(!list.length){
+    const p = document.createElement('div');
+    p.className = 'modal-note';
+    p.textContent = 'Tidak ada konten full tersedia.';
+    fullModalList.appendChild(p);
+    return;
+  }
+  list.forEach(item => {
+    const a = document.createElement('a');
+    a.className = 'modal-item';
+    a.href = item.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer nofollow';
+    a.textContent = item.label;
+    fullModalList.appendChild(a);
+  });
+}
+
+function openFullModal(){
+  buildFullModal();
+  fullModal.classList.add('show');
+  fullModal.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  setTimeout(()=> {
+    const first = fullModalList.querySelector('a');
+    if(first) first.focus();
+  }, 50);
+}
+function closeFullModal(){
+  fullModal.classList.remove('show');
+  fullModal.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  fullActionBtn.focus();
+}
+
+fullActionBtn.addEventListener('click', (e) => { e.stopPropagation(); openFullModal(); });
+fullModalClose.addEventListener('click', closeFullModal);
+fullModal.addEventListener('click', (e) => { if(e.target === fullModal) closeFullModal(); });
+window.addEventListener('keydown', (e) => { if(e.key === 'Escape' && fullModal.classList.contains('show')) closeFullModal(); });
+
+/* init UI */
+buildPartsGrid();
+updateCenterPlay = () => { centerPlayWrap.style.display = video.paused ? 'block' : 'none'; };
+updateCenterPlay();
+(function initPlayIcon(){ playBtn.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>'; })();
+</script>
+
+<!-- Kode iklan (tetap / ubah sesuai kebutuhan) -->
+<script>(function(s){s.dataset.zone='10545744',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+                </html>
